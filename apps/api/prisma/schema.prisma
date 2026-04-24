@@ -1,0 +1,469 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL_UNPOOLED")
+}
+
+// ─── ENUMS ───────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  OWNER
+  FINANCE
+  VIEWER
+  AUDITOR
+}
+
+enum CounterpartyType {
+  THIRD_PARTY
+  RELATED
+}
+
+enum Classification {
+  QI          // Qualifying Income
+  NQI         // Non-Qualifying Income
+  EXCLUDED    // Excluded (not in de-minimis denominator)
+  UNCLASSIFIED
+}
+
+enum TransactionSource {
+  MANUAL
+  ZOHO
+  XERO
+  QUICKBOOKS
+  CSV
+}
+
+enum TaxPeriodStatus {
+  OPEN
+  LOCKED
+  FILED
+}
+
+enum AlertSeverity {
+  INFO
+  AMBER
+  RED
+}
+
+enum DocumentStatus {
+  ACTIVE
+  EXPIRED
+  EXPIRING_SOON  // within 30 days
+  DELETED
+}
+
+enum IntegrationProvider {
+  ZOHO
+  XERO
+  QUICKBOOKS
+  MANUAL
+}
+
+enum FreeZone {
+  DMCC
+  JAFZA
+  IFZA
+  DIFC
+  ADGM
+  RAKEZ
+  DWC
+  SHAMS
+  MEYDAN
+  OTHER
+}
+
+enum SubscriptionTier {
+  STARTER
+  GROWTH
+  ENTERPRISE
+}
+
+enum SubscriptionStatus {
+  TRIALING      // within free trial, full access
+  ACTIVE        // paid and current
+  PAST_DUE      // payment failed, 7-day grace period
+  CANCELLED     // user cancelled, access until period end
+  EXPIRED       // grace period over, access blocked
+  PAUSED        // manually paused by admin
+}
+
+// ─── ORGANIZATIONS ───────────────────────────────────────────────────────────
+
+model Organization {
+  id                  String           @id @default(cuid())
+  name                String
+  tradeLicenseNo      String           @unique
+  freeZone            FreeZone
+  taxRegistrationNo   String?
+  primaryActivityCode String?
+  subscriptionTier     SubscriptionTier   @default(STARTER)
+  subscriptionStatus   SubscriptionStatus @default(TRIALING)
+  subscriptionInterval String?            // 'monthly' | 'yearly'
+  dodoCustomerId       String?            @unique
+  dodoSubscriptionId   String?            @unique
+  currentPeriodStart   DateTime?
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean            @default(false)
+  trialEndsAt          DateTime?
+  isActive             Boolean            @default(true)
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  // Relations
+  users                User[]
+  taxPeriods           TaxPeriod[]
+  revenueTransactions  RevenueTransaction[]
+  substanceDocuments   SubstanceDocument[]
+  riskSnapshots        RiskSnapshot[]
+  alerts               Alert[]
+  auditLogs            AuditLog[]
+  integrations         Integration[]
+  activityDeclarations ActivityDeclaration[]
+  billingEvents        BillingEvent[]
+
+  @@index([tradeLicenseNo])
+  @@index([freeZone])
+  @@map("organizations")
+}
+
+// ─── USERS ───────────────────────────────────────────────────────────────────
+
+model User {
+  id           String   @id @default(cuid())
+  orgId        String
+  clerkUserId  String   @unique
+  email        String
+  firstName    String?
+  lastName     String?
+  role         UserRole @default(VIEWER)
+  mfaEnabled   Boolean  @default(false)
+  isActive     Boolean  @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  organization   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  auditLogs      AuditLog[]
+  overrides      ClassificationOverride[]
+
+  @@unique([orgId, email])
+  @@index([orgId])
+  @@index([clerkUserId])
+  @@map("users")
+}
+
+// ─── TAX PERIODS ─────────────────────────────────────────────────────────────
+
+model TaxPeriod {
+  id                String          @id @default(cuid())
+  orgId             String
+  startDate         DateTime
+  endDate           DateTime
+  status            TaxPeriodStatus @default(OPEN)
+  deMinimisAbsLimit Decimal         @default(5000000) @db.Decimal(15, 2)
+  deMinimisRelLimit Decimal         @default(5)       @db.Decimal(5, 2)  // percentage
+  lockedAt          DateTime?
+  lockedByUserId    String?
+  filedAt           DateTime?
+  ruleVersionId     String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  // Relations
+  organization        Organization         @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  revenueTransactions RevenueTransaction[]
+
+  @@unique([orgId, startDate, endDate])
+  @@index([orgId, status])
+  @@map("tax_periods")
+}
+
+// ─── ACTIVITY CATALOG ────────────────────────────────────────────────────────
+
+model ActivityCatalog {
+  id                    String         @id @default(cuid())
+  code                  String         @unique
+  name                  String
+  description           String         @db.Text
+  defaultClassification Classification
+  ruleVersion           String
+  isActive              Boolean        @default(true)
+  requiresCounterpartyCheck Boolean   @default(false)
+  notes                 String?        @db.Text
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+
+  revenueTransactions  RevenueTransaction[]
+  classificationRules  ClassificationRule[]
+  activityDeclarations ActivityDeclaration[]
+
+  @@index([code])
+  @@map("activity_catalog")
+}
+
+// ─── ACTIVITY DECLARATIONS ───────────────────────────────────────────────────
+
+model ActivityDeclaration {
+  id             String   @id @default(cuid())
+  orgId          String
+  activityCode   String
+  declaredAt     DateTime @default(now())
+
+  organization     Organization    @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  activityCatalog  ActivityCatalog @relation(fields: [activityCode], references: [code])
+
+  @@unique([orgId, activityCode])
+  @@map("activity_declarations")
+}
+
+// ─── CLASSIFICATION RULES ────────────────────────────────────────────────────
+
+model ClassificationRule {
+  id                 String         @id @default(cuid())
+  ruleVersion        String
+  activityCode       String?
+  ifConditionsJson   Json
+  thenClassification Classification
+  priority           Int            @default(0)
+  effectiveFrom      DateTime
+  effectiveTo        DateTime?
+  description        String?
+  legalReference     String?
+  isActive           Boolean        @default(true)
+  createdAt          DateTime       @default(now())
+
+  activityCatalog    ActivityCatalog? @relation(fields: [activityCode], references: [code])
+
+  @@index([ruleVersion, isActive])
+  @@index([effectiveFrom, effectiveTo])
+  @@map("classification_rules")
+}
+
+// ─── REVENUE TRANSACTIONS ────────────────────────────────────────────────────
+
+model RevenueTransaction {
+  id               String             @id @default(cuid())
+  orgId            String
+  taxPeriodId      String
+  externalId       String?
+  date             DateTime
+  amountAed        Decimal            @db.Decimal(15, 2)
+  currency         String             @default("AED")
+  fxRateToAed      Decimal?           @db.Decimal(10, 6)
+  counterparty     String             @default("UNKNOWN")
+  counterpartyType CounterpartyType   @default(THIRD_PARTY)
+  activityCode     String?
+  classification   Classification     @default(UNCLASSIFIED)
+  confidence       Int                @default(0)  // 0-100
+  source           TransactionSource  @default(MANUAL)
+  description      String?
+  invoiceNo        String?
+  isCreditNote     Boolean            @default(false)
+  isDeferred       Boolean            @default(false)
+  linkedTransactionId String?         // for credit notes
+  requiresReview   Boolean            @default(false)
+  lockedPeriodId   String?
+  isDeleted        Boolean            @default(false)
+  deletedAt        DateTime?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  // Relations
+  organization      Organization        @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  taxPeriod         TaxPeriod           @relation(fields: [taxPeriodId], references: [id])
+  activityCatalog   ActivityCatalog?    @relation(fields: [activityCode], references: [code])
+  overrides         ClassificationOverride[]
+
+  @@unique([orgId, source, externalId], name: "idempotency_key")
+  @@index([orgId, taxPeriodId])
+  @@index([orgId, taxPeriodId, classification, isDeleted])
+  @@index([orgId, classification])
+  @@index([orgId, date])
+  @@index([counterpartyType])
+  @@map("revenue_transactions")
+}
+
+// ─── CLASSIFICATION OVERRIDES ────────────────────────────────────────────────
+
+model ClassificationOverride {
+  id                     String         @id @default(cuid())
+  transactionId          String
+  orgId                  String
+  previousClassification Classification
+  newClassification      Classification
+  reasonCode             String
+  reasonText             String         @db.Text
+  overriddenByUserId     String
+  requiresAcknowledgment Boolean        @default(false)
+  acknowledgedByUserId   String?
+  acknowledgedAt         DateTime?
+  afterPeriodLock        Boolean        @default(false)
+  createdAt              DateTime       @default(now())
+
+  transaction    RevenueTransaction @relation(fields: [transactionId], references: [id])
+  overriddenBy   User               @relation(fields: [overriddenByUserId], references: [id])
+
+  @@index([transactionId])
+  @@index([orgId])
+  @@map("classification_overrides")
+}
+
+// ─── SUBSTANCE DOCUMENTS ─────────────────────────────────────────────────────
+
+model SubstanceDocument {
+  id           String         @id @default(cuid())
+  orgId        String
+  docType      String
+  displayName  String
+  fileKey      String         @unique
+  fileName     String
+  fileSize     Int
+  mimeType     String
+  uploadedAt   DateTime       @default(now())
+  expiresAt    DateTime?
+  status       DocumentStatus @default(ACTIVE)
+  notes        String?
+  isDeleted    Boolean        @default(false)
+  deletedAt    DateTime?
+  deletedBy    String?
+  virusScanStatus String?     @default("PENDING")
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId, docType])
+  @@index([orgId, status])
+  @@index([expiresAt])
+  @@map("substance_documents")
+}
+
+// ─── RISK SNAPSHOTS ──────────────────────────────────────────────────────────
+
+model RiskSnapshot {
+  id                    String   @id @default(cuid())
+  orgId                 String
+  snapshotDate          DateTime
+  score                 Int
+  bandColor             String   // GREEN, AMBER, RED
+  deMinimisScore        Int
+  substanceScore        Int
+  auditReadinessScore   Int
+  relatedPartyScore     Int
+  classificationScore   Int
+  breakdownJson         Json
+  explanationText       String   @db.Text
+  deltaVsPrior          Int?
+  nqrAmount             Decimal  @db.Decimal(15, 2)
+  totalRevenue          Decimal  @db.Decimal(15, 2)
+  nqrPercentage         Decimal  @db.Decimal(5, 4)
+  projectedNqrAmount    Decimal? @db.Decimal(15, 2)
+  projectedNqrPct       Decimal? @db.Decimal(5, 4)
+  createdAt             DateTime @default(now())
+
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId, snapshotDate])
+  @@map("risk_snapshots")
+}
+
+// ─── ALERTS ──────────────────────────────────────────────────────────────────
+
+model Alert {
+  id              String        @id @default(cuid())
+  orgId           String
+  severity        AlertSeverity
+  code            String
+  title           String
+  message         String        @db.Text
+  payloadJson     Json?
+  triggeredAt     DateTime      @default(now())
+  acknowledgedAt  DateTime?
+  acknowledgedBy  String?
+  snoozedUntil    DateTime?
+  snoozeReason    String?
+  snoozedBy       String?
+  emailSentAt     DateTime?
+  whatsappSentAt  DateTime?
+  isResolved      Boolean       @default(false)
+  resolvedAt      DateTime?
+  dedupKey        String?
+
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId, severity, isResolved])
+  @@index([orgId, code, triggeredAt])
+  @@index([orgId, triggeredAt])
+  @@index([dedupKey])
+  @@map("alerts")
+}
+
+// ─── AUDIT LOG ───────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  orgId       String
+  actorId     String?
+  actorEmail  String?
+  action      String
+  entity      String
+  entityId    String
+  beforeJson  Json?
+  afterJson   Json?
+  ipAddress   String?
+  userAgent   String?
+  timestamp   DateTime @default(now())
+
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  actor        User?        @relation(fields: [actorId], references: [id])
+
+  @@index([orgId, entity, entityId])
+  @@index([orgId, timestamp])
+  @@index([actorId])
+  @@map("audit_log")
+}
+
+// ─── INTEGRATIONS ────────────────────────────────────────────────────────────
+
+model Integration {
+  id                   String              @id @default(cuid())
+  orgId                String
+  provider             IntegrationProvider
+  credentialsEncrypted String?             @db.Text
+  accessToken          String?             @db.Text
+  refreshToken         String?             @db.Text
+  tokenExpiresAt       DateTime?
+  lastSyncAt           DateTime?
+  lastSyncStatus       String?
+  lastSyncError        String?             @db.Text
+  isActive             Boolean             @default(true)
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@unique([orgId, provider])
+  @@map("integrations")
+}
+
+// ─── BILLING EVENTS ──────────────────────────────────────────────────────────
+
+model BillingEvent {
+  id          String   @id @default(cuid())
+  orgId       String?                        // null before subscription is linked
+  eventId     String   @unique               // Svix/Dodo event ID — idempotency key
+  eventType   String                         // e.g. "subscription.active"
+  payloadJson Json
+  processedAt DateTime @default(now())
+
+  organization Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
+
+  @@index([orgId])
+  @@index([eventType])
+  @@map("billing_events")
+}
