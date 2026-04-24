@@ -1,0 +1,88 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* ── Brand Navy ────────────────────────────────── */
+    --navy-950: 222 71% 8%;    /* #0c1829 — deepest */
+    --navy-900: 222 67% 13%;   /* #112240 — sidebar bg */
+    --navy-800: 222 62% 20%;   /* #1a3a6e — sidebar hover */
+    --navy-700: 221 56% 28%;   /* #244e8e */
+    --navy-100: 220 30% 94%;   /* #ebf0f9 — subtle tint */
+
+    /* ── Action Blue ───────────────────────────────── */
+    --blue-600: 221 83% 53%;   /* #1d4ed8 */
+    --blue-500: 217 91% 60%;   /* #3b82f6 */
+
+    /* ── Semantic Status ───────────────────────────── */
+    --status-green:  142 76% 28%;   /* #16a34a deep */
+    --status-amber:  35 92% 40%;    /* #b45309 dark amber */
+    --status-red:    0 73% 41%;     /* #b91c1c deep red */
+
+    /* ── Surface ───────────────────────────────────── */
+    --background:   214 22% 95%;   /* slightly cooler for authority */
+    --card:         0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --foreground:   222 47% 11%;
+    --muted:        210 20% 92%;
+    --muted-foreground: 215 16% 47%;
+    --border:       214 24% 88%;
+    --input:        214 24% 88%;
+
+    /* ── Primary (maps to blue-600) ────────────────── */
+    --primary:          221 83% 53%;
+    --primary-foreground: 210 40% 98%;
+
+    /* ── Misc ──────────────────────────────────────── */
+    --radius:  0.5rem;
+    --ring:    221 83% 53%;
+  }
+}
+
+@layer base {
+  * { @apply border-border; }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "cv11", "ss01";
+    -webkit-font-smoothing: antialiased;
+  }
+  /* Refined focus ring */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-primary/50 ring-offset-2 ring-offset-background;
+  }
+}
+
+@layer utilities {
+  /* Severity left-border accents — enterprise signature */
+  .alert-border-red   { @apply border-l-4 border-l-red-500; }
+  .alert-border-amber { @apply border-l-4 border-l-amber-400; }
+  .alert-border-info  { @apply border-l-4 border-l-blue-400; }
+
+  /* Data grid cell */
+  .data-cell          { @apply tabular-nums tracking-tight; }
+
+  /* Pulse dot for critical status */
+  .pulse-dot::before {
+    content: '';
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 9999px;
+    background: currentColor;
+    animation: pulse-ring 1.5s ease-in-out infinite;
+  }
+}
+
+@keyframes pulse-ring {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(0.75); }
+}
+
+/* Sidebar scroll helpers */
+.sidebar-nav { @apply overflow-y-auto; scrollbar-width: thin; scrollbar-color: #1a3a6e transparent; }
+
+/* Smooth transitions on interactive elements */
+button, a { transition: color 0.12s ease, background-color 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease; }
