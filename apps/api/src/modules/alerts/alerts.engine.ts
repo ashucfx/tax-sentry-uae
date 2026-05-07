@@ -169,7 +169,7 @@ export class AlertsEngine {
     return { fired: false, deduplicated: false };
   }
 
-  // ─── CORE FIRE METHOD — De-duplication + Persistence ─────────────────────
+  // ─── CORE FIRE METHOD — Atomic de-duplication via DB unique constraint ────────
 
   private async fire(
     orgId: string,
@@ -177,52 +177,46 @@ export class AlertsEngine {
     code: string,
     content: { title: string; message: string; payload?: Record<string, unknown> },
   ): Promise<AlertTriggerResult> {
-    // De-duplication: same code + org + today = suppress
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
     const dedupKey = `${orgId}:${code}:${today.toISOString().slice(0, 10)}`;
 
-    const existing = await this.prisma.alert.findFirst({
-      where: {
-        orgId,
-        code,
-        triggeredAt: { gte: today, lt: tomorrow },
-        isResolved: false,
-      },
-    });
-
-    if (existing) {
-      return { fired: false, deduplicated: true, alertId: existing.id, severity };
+    // Use DB-level unique constraint on dedupKey for atomic deduplication.
+    // A concurrent insert with the same key throws P2002 — no race condition possible.
+    let alert: { id: string };
+    let isNew = false;
+    try {
+      alert = await this.prisma.alert.create({
+        data: {
+          orgId,
+          severity,
+          code,
+          title: content.title,
+          message: content.message,
+          payloadJson: (content.payload ?? {}) as Prisma.InputJsonObject,
+          dedupKey,
+        },
+        select: { id: true },
+      });
+      isNew = true;
+      this.logger.log(`[${severity}] Alert fired: ${code} for org ${orgId}`);
+    } catch (err: any) {
+      if (err?.code === 'P2002') {
+        // Duplicate — already fired today, return existing id
+        const existing = await this.prisma.alert.findUnique({
+          where: { dedupKey },
+          select: { id: true },
+        });
+        return { fired: false, deduplicated: true, alertId: existing?.id, severity };
+      }
+      throw err;
     }
 
-    const alert = await this.prisma.alert.create({
-      data: {
-        orgId,
-        severity,
-        code,
-        title: content.title,
-        message: content.message,
-        payloadJson: (content.payload ?? {}) as Prisma.InputJsonObject,
-        dedupKey,
-      },
-    });
-
-    this.logger.log(`[${severity}] Alert fired: ${code} for org ${orgId}`);
-
-    // Fire-and-forget email — don't let email failure block the alert record
-    this.email
-      .sendAlertEmail({
-        alertId: alert.id,
-        orgId,
-        severity,
-        code,
-        title: content.title,
-        message: content.message,
-      })
-      .catch((err) => this.logger.error(`Email dispatch error: ${(err as Error).message}`));
+    if (isNew) {
+      this.email
+        .sendAlertEmail({ alertId: alert.id, orgId, severity, code, title: content.title, message: content.message })
+        .catch((err) => this.logger.error(`Email dispatch error: ${(err as Error).message}`));
+    }
 
     return { fired: true, alertId: alert.id, deduplicated: false, severity };
   }

@@ -64,6 +64,18 @@ export class AlertsScheduler {
     }
 
     this.logger.log(`Daily alerts: ${processed} orgs processed, ${errors} errors`);
+
+    // Expire trials that have passed their end date
+    const expiredTrials = await this.prisma.organization.updateMany({
+      where: {
+        subscriptionStatus: 'TRIALING',
+        trialEndsAt: { lt: new Date() },
+      },
+      data: { subscriptionStatus: 'EXPIRED' },
+    });
+    if (expiredTrials.count > 0) {
+      this.logger.log(`Expired ${expiredTrials.count} trial(s)`);
+    }
   }
 
   /**
@@ -134,6 +146,28 @@ export class AlertsScheduler {
       } catch (err) {
         this.logger.error(`Risk snapshot failed for org ${org.id}: ${(err as Error).message}`);
       }
+    }
+  }
+
+  /**
+   * Daily: purge expired and long-revoked sessions to keep the table lean.
+   * Runs at 1:00 AM UTC — before the alert checks at 2:00 AM.
+   */
+  @Cron('0 1 * * *', { timeZone: 'UTC' })
+  async cleanExpiredSessions() {
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+    const result = await this.prisma.session.deleteMany({
+      where: {
+        OR: [
+          { expiresAt: { lt: new Date() } },                           // token TTL elapsed
+          { isRevoked: true, revokedAt: { lt: thirtyDaysAgo } },       // revoked > 30 days ago
+        ],
+      },
+    });
+
+    if (result.count > 0) {
+      this.logger.log(`Session cleanup: removed ${result.count} expired/revoked sessions`);
     }
   }
 

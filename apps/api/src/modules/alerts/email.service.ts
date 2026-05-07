@@ -31,15 +31,16 @@ export class EmailService {
 
   /**
    * Send an alert email to all OWNER + FINANCE users in the org.
-   * Deduplication: RED always sends. AMBER/INFO capped at 1 per org per day.
+   * Deduplication: RED always sends. AMBER/INFO capped at 1 per (org, alert code) per day —
+   * scoped to code so escalations (e.g. 80%→90% de-minimis) always deliver.
    * Returns true if email was dispatched.
    */
   async sendAlertEmail(payload: AlertEmailPayload): Promise<boolean> {
-    // Enforce daily cap for non-RED alerts
+    // Enforce daily cap for non-RED alerts, keyed by org + alert code
     if (payload.severity !== AlertSeverity.RED) {
-      const alreadySentToday = await this.orgAlreadyEmailedToday(payload.orgId);
+      const alreadySentToday = await this.codeAlreadyEmailedToday(payload.orgId, payload.code);
       if (alreadySentToday) {
-        this.logger.debug(`Email cap hit for org ${payload.orgId} — skipping ${payload.code}`);
+        this.logger.debug(`Email cap hit for org ${payload.orgId} code ${payload.code} — skipping`);
         return false;
       }
     }
@@ -58,7 +59,7 @@ export class EmailService {
       return false;
     }
 
-    const to = recipients.map((u) => u.email);
+    const to = recipients.map((u) => u.email).filter((e): e is string => e !== null);
     const html = this.renderHtml(payload);
     const subject = this.buildSubject(payload.severity, payload.title);
 
@@ -78,7 +79,7 @@ export class EmailService {
     }
   }
 
-  private async orgAlreadyEmailedToday(orgId: string): Promise<boolean> {
+  private async codeAlreadyEmailedToday(orgId: string, code: string): Promise<boolean> {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
@@ -87,6 +88,7 @@ export class EmailService {
     const count = await this.prisma.alert.count({
       where: {
         orgId,
+        code,
         emailSentAt: { gte: today, lt: tomorrow },
       },
     });
