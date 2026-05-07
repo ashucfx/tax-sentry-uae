@@ -5,11 +5,10 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 
 interface JwtPayload {
-  sub: string;      // user ID
+  sub: string;
   orgId: string;
-  email: string;
+  email: string | null; // null for phone-only OTP users
   role: string;
-  clerkUserId: string;
   iat: number;
   exp: number;
 }
@@ -36,8 +35,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         orgId: true,
         email: true,
         role: true,
-        clerkUserId: true,
         isActive: true,
+        emailVerified: true,
       },
     });
 
