@@ -11,6 +11,7 @@ import { ClassificationEngine } from '../classification/classification.engine';
 import { AlertsEngine } from '../alerts/alerts.engine';
 import { CreateTransactionDto, OverrideClassificationDto } from './dto/create-transaction.dto';
 import Decimal from 'decimal.js';
+import { createHash } from 'crypto';
 
 interface PaginationParams {
   page: number;
@@ -99,10 +100,25 @@ export class RevenueService {
         })
       : null;
 
+    const source = dto.source ?? TransactionSource.MANUAL;
+
+    // Generate a deterministic externalId for MANUAL transactions so the unique
+    // (orgId, source, externalId) constraint prevents duplicates on retry.
+    // For CSV/integration sources, the caller supplies externalId from the upstream system.
+    const externalId =
+      dto.externalId ??
+      (source === TransactionSource.MANUAL
+        ? createHash('sha256')
+            .update(`${orgId}:${dto.date}:${dto.amountAed}:${dto.counterparty}:${dto.invoiceNo ?? ''}`)
+            .digest('hex')
+            .slice(0, 32)
+        : undefined);
+
     const transaction = await this.prisma.revenueTransaction.create({
       data: {
         orgId,
         taxPeriodId,
+        externalId,
         date: new Date(dto.date),
         amountAed: new Decimal(dto.amountAed),
         currency: dto.currency ?? 'AED',
@@ -112,7 +128,7 @@ export class RevenueService {
         activityCode: dto.activityCode,
         classification: classificationResult?.classification ?? Classification.UNCLASSIFIED,
         confidence: classificationResult?.confidence ?? 0,
-        source: dto.source ?? TransactionSource.MANUAL,
+        source,
         invoiceNo: dto.invoiceNo,
         description: dto.description,
         isCreditNote: dto.isCreditNote ?? false,
@@ -164,13 +180,11 @@ export class RevenueService {
 
     if (!transaction) throw new NotFoundException('Transaction not found');
 
-    // Cannot override a locked period without special reason
-    if (transaction.taxPeriod.status === 'LOCKED' || afterPeriodLock) {
-      if (!afterPeriodLock) {
-        throw new ForbiddenException(
-          'Cannot override classification in a locked period without period-lock override flag',
-        );
-      }
+    // LOCKED and FILED periods require the explicit afterPeriodLock flag
+    if (['LOCKED', 'FILED'].includes(transaction.taxPeriod.status) && !afterPeriodLock) {
+      throw new ForbiddenException(
+        'Cannot override classification in a locked or filed period without the afterPeriodLock flag',
+      );
     }
 
     const validation = this.classifier.validateOverride(
@@ -364,17 +378,64 @@ export class RevenueService {
       });
     }
 
-    let imported = 0;
-    for (const row of validRows) {
-      try {
-        await this.createTransaction(orgId, taxPeriodId, row, actorId);
-        imported++;
-      } catch (err) {
-        // Log but continue — don't fail entire batch on one bad row
-        this.logger.warn(`CSV import: skipped row — ${(err as Error).message}`);
-      }
-    }
+    // Classify all valid rows in-process (synchronous), then batch-insert into the DB.
+    // This avoids N sequential round-trips and keeps the import within the HTTP timeout.
+    const toInsert = validRows.map((row) => {
+      const source = TransactionSource.CSV;
+      const classificationResult = row.activityCode
+        ? this.classifier.classify({
+            activityCode: row.activityCode,
+            counterpartyType: row.counterpartyType ?? CounterpartyType.THIRD_PARTY,
+            amountAed: Math.abs(row.amountAed),
+            counterpartyName: row.counterparty,
+            isRelatedParty: row.isRelatedParty ?? false,
+          })
+        : null;
 
-    return { imported, errors };
+      // Deterministic externalId for idempotency on re-upload of same CSV
+      const externalId = createHash('sha256')
+        .update(`${orgId}:${row.date}:${row.amountAed}:${row.counterparty}:${row.invoiceNo ?? ''}`)
+        .digest('hex')
+        .slice(0, 32);
+
+      return {
+        orgId,
+        taxPeriodId,
+        externalId,
+        date: new Date(row.date),
+        amountAed: new Decimal(row.amountAed).toFixed(2),
+        currency: row.currency ?? 'AED',
+        counterparty: row.counterparty || 'UNKNOWN',
+        counterpartyType: row.counterpartyType ?? CounterpartyType.THIRD_PARTY,
+        activityCode: row.activityCode ?? null,
+        classification: classificationResult?.classification ?? Classification.UNCLASSIFIED,
+        confidence: classificationResult?.confidence ?? 0,
+        source,
+        invoiceNo: row.invoiceNo ?? null,
+        description: row.description ?? null,
+        isCreditNote: row.isCreditNote ?? false,
+        isDeferred: false,
+        requiresReview: classificationResult?.requiresReview ?? true,
+      };
+    });
+
+    // createMany skips duplicates via skipDuplicates — safe for re-uploads of the same CSV
+    const result = await this.prisma.revenueTransaction.createMany({
+      data: toInsert,
+      skipDuplicates: true,
+    });
+
+    await this.prisma.auditLog.create({
+      data: {
+        orgId,
+        actorId,
+        action: 'CSV_IMPORT',
+        entity: 'RevenueTransaction',
+        entityId: taxPeriodId,
+        afterJson: { imported: result.count, total: validRows.length, errors: errors.length },
+      },
+    });
+
+    return { imported: result.count, errors };
   }
 }

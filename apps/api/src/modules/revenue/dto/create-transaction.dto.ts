@@ -53,6 +53,12 @@ export class CreateTransactionDto {
   @IsEnum(TransactionSource)
   source?: TransactionSource = TransactionSource.MANUAL;
 
+  @ApiPropertyOptional({ description: 'Upstream system ID for idempotency (set by integrations; auto-generated for MANUAL)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(128)
+  externalId?: string;
+
   @ApiPropertyOptional({ example: 'INV-2024-0042' })
   @IsOptional()
   @IsString()

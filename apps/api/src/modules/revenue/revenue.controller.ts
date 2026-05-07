@@ -15,8 +15,10 @@ import {
   ParseFilePipe,
   MaxFileSizeValidator,
   FileTypeValidator,
+  ParseBoolPipe,
+  DefaultValuePipe,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor } from '../../common/interceptors/fastify-file.interceptor';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiConsumes } from '@nestjs/swagger';
 import { UserRole, Classification } from '@prisma/client';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -77,7 +79,7 @@ export class RevenueController {
     @CurrentUser('orgId') orgId: string,
     @CurrentUser('id') userId: string,
     @Body() dto: OverrideClassificationDto,
-    @Query('afterPeriodLock') afterPeriodLock?: boolean,
+    @Query('afterPeriodLock', new DefaultValuePipe(false), ParseBoolPipe) afterPeriodLock: boolean,
   ) {
     return this.revenueService.overrideClassification(
       id,
@@ -125,15 +127,62 @@ export class RevenueController {
   }
 
   private parseCsv(content: string): Array<Record<string, string>> {
-    // Handle BOM in UTF-8 files
-    const cleaned = content.replace(/^\uFEFF/, '');
-    const lines = cleaned.split('\n').filter((l) => l.trim());
-    if (lines.length < 2) return [];
+    const cleaned = content.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    const lines = cleaned.split('\n');
+    const nonEmpty = lines.filter((l) => l.trim());
+    if (nonEmpty.length < 2) return [];
 
-    const headers = lines[0].split(',').map((h) => h.trim().toLowerCase().replace(/"/g, ''));
-    return lines.slice(1).map((line) => {
-      const values = line.split(',').map((v) => v.trim().replace(/"/g, ''));
-      return Object.fromEntries(headers.map((h, i) => [h, values[i] ?? '']));
-    });
+    const headers = this.parseCsvLine(nonEmpty[0]).map((h) => h.toLowerCase());
+    const rows: Array<Record<string, string>> = [];
+
+    for (let i = 1; i < nonEmpty.length; i++) {
+      const values = this.parseCsvLine(nonEmpty[i]);
+      if (values.every((v) => v === '')) continue; // skip blank rows
+      rows.push(Object.fromEntries(headers.map((h, idx) => [h, values[idx] ?? ''])));
+    }
+
+    return rows;
+  }
+
+  // RFC 4180 compliant single-line parser \u2014 handles quoted fields with embedded commas and escaped quotes
+  private parseCsvLine(line: string): string[] {
+    const fields: string[] = [];
+    let field = '';
+    let inQuotes = false;
+    let i = 0;
+
+    while (i < line.length) {
+      const ch = line[i];
+      if (inQuotes) {
+        if (ch === '"') {
+          // Doubled quote inside quoted field = escaped quote character
+          if (i + 1 < line.length && line[i + 1] === '"') {
+            field += '"';
+            i += 2;
+          } else {
+            inQuotes = false;
+            i++;
+          }
+        } else {
+          field += ch;
+          i++;
+        }
+      } else {
+        if (ch === '"') {
+          inQuotes = true;
+          i++;
+        } else if (ch === ',') {
+          fields.push(field.trim());
+          field = '';
+          i++;
+        } else {
+          field += ch;
+          i++;
+        }
+      }
+    }
+
+    fields.push(field.trim());
+    return fields;
   }
 }
