@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
-import { ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { ScheduleModule } from '@nestjs/schedule';
 import { PrismaModule } from './modules/prisma/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -15,6 +16,8 @@ import { ReportsModule } from './modules/reports/reports.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { HealthModule } from './modules/health/health.module';
 import { BillingModule } from './modules/billing/billing.module';
+import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
+import { SubscriptionGuard } from './common/guards/subscription.guard';
 
 @Module({
   imports: [
@@ -46,6 +49,14 @@ import { BillingModule } from './modules/billing/billing.module';
     SubstanceModule,
     ReportsModule,
     BillingModule,
+  ],
+  providers: [
+    // Rate limiting — must be first so brute-force attacks are blocked before any auth work
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    // Apply JwtAuthGuard globally — individual controllers can opt out with @Public()
+    { provide: APP_GUARD, useClass: JwtAuthGuard },
+    // Apply SubscriptionGuard globally — runs after auth, checks subscription status
+    { provide: APP_GUARD, useClass: SubscriptionGuard },
   ],
 })
 export class AppModule {}

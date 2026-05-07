@@ -13,31 +13,16 @@ async function bootstrap() {
 
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
-    new FastifyAdapter({ logger: false }),
+    new FastifyAdapter({
+      logger: false,
+      bodyLimit: 1_048_576, // 1 MB — prevents DoS via oversized payloads
+    }),
     { bufferLogs: true },
   );
 
   const configService = app.get(ConfigService);
   const port = configService.get<number>('API_PORT', 3001);
   const nodeEnv = configService.get<string>('NODE_ENV', 'development');
-
-  // Raw body — required for Dodo/Svix webhook HMAC-SHA256 signature verification.
-  // We override Fastify's default JSON parser to also stash req.rawBody as a Buffer.
-  // All routes continue to receive a parsed req.body; only the webhook route reads rawBody.
-  const fastify = app.getHttpAdapter().getInstance();
-  fastify.addContentTypeParser(
-    'application/json',
-    { parseAs: 'buffer' },
-    (req: any, body: Buffer, done: (err: Error | null, body?: unknown) => void) => {
-      req.rawBody = body; // stash before parsing
-      try {
-        done(null, JSON.parse(body.toString('utf8')));
-      } catch (e: any) {
-        e.statusCode = 400;
-        done(e);
-      }
-    },
-  );
 
   // Security
   await app.register(require('@fastify/helmet'), {
@@ -49,6 +34,7 @@ async function bootstrap() {
     },
   });
   await app.register(require('@fastify/compress'));
+  await app.register(require('@fastify/cookie'));
 
   app.enableCors({
     origin: configService.get<string>('WEB_URL', 'http://localhost:3000'),
@@ -71,11 +57,12 @@ async function bootstrap() {
   // Global filters
   app.useGlobalFilters(new HttpExceptionFilter());
 
-  // Global interceptors
-  app.useGlobalInterceptors(new TransformInterceptor());
+  // Global interceptors — AuditInterceptor uses DI (requires PrismaService)
+  const auditInterceptor = app.get(AuditInterceptor);
+  app.useGlobalInterceptors(new TransformInterceptor(), auditInterceptor);
 
-  // Swagger (only in non-production)
-  if (nodeEnv !== 'production') {
+  // Swagger (only in local development — never in staging or production)
+  if (!['production', 'staging'].includes(nodeEnv)) {
     const config = new DocumentBuilder()
       .setTitle('QFZP Status Protection API')
       .setDescription('UAE Free Zone Corporate Tax Compliance Platform')
@@ -98,6 +85,26 @@ async function bootstrap() {
     });
     logger.log(`Swagger docs: http://localhost:${port}/api/docs`);
   }
+
+  // Init first so NestJS registers its content-type parsers, then override the JSON
+  // parser to also stash req.rawBody for Dodo/Svix webhook HMAC-SHA256 verification.
+  await app.init();
+
+  const fastify = app.getHttpAdapter().getInstance();
+  fastify.removeContentTypeParser('application/json');
+  fastify.addContentTypeParser(
+    'application/json',
+    { parseAs: 'buffer' },
+    (req: any, body: Buffer, done: (err: Error | null, body?: unknown) => void) => {
+      req.rawBody = body;
+      try {
+        done(null, JSON.parse(body.toString('utf8')));
+      } catch (e: any) {
+        e.statusCode = 400;
+        done(e);
+      }
+    },
+  );
 
   await app.listen(port, '0.0.0.0');
   logger.log(`QFZP API running on port ${port} [${nodeEnv}]`);
