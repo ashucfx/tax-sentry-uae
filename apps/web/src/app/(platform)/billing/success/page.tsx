@@ -1,34 +1,46 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api/client';
 import { ShieldCheck, Clock, ArrowRight, CheckCircle2 } from 'lucide-react';
 
+const MAX_POLL_ATTEMPTS = 12;
+
 export default function BillingSuccessPage() {
   const router = useRouter();
-  const [attempts, setAttempts] = useState(0);
+  // Use a ref for the raw count so refetchInterval closure reads current value without stale capture
+  const attemptsRef = useRef(0);
+  const [attempts, setAttempts] = useState(0); // mirrors ref for render
 
   // Poll subscription status until it's ACTIVE (webhook may take a few seconds)
-  const { data } = useQuery({
+  const { data, isError } = useQuery({
     queryKey: ['billing-status-poll'],
-    queryFn: () => api.get('/billing/status').then((r) => r.data.data),
+    queryFn: async () => {
+      const res = await api.get('/billing/status');
+      return res.data.data;
+    },
     refetchInterval: (query) => {
       const status = query.state.data?.subscriptionStatus;
-      // Stop polling once active; give up after 12 attempts (~60s)
-      if (status === 'ACTIVE' || attempts >= 12) return false;
+      // Stop polling once active or after max attempts (~60s total)
+      if (status === 'ACTIVE' || attemptsRef.current >= MAX_POLL_ATTEMPTS) {
+        return false;
+      }
       return 5000;
     },
     enabled: true,
+    retry: false,
   });
 
   useEffect(() => {
-    if (data) setAttempts((a) => a + 1);
+    attemptsRef.current += 1;
+    setAttempts(attemptsRef.current);
   }, [data]);
 
   const isActive = data?.subscriptionStatus === 'ACTIVE';
   const isPolling = !isActive && attempts < 12;
+  const hasTimedOut = !isActive && attempts >= 12;
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-6">
@@ -53,34 +65,48 @@ export default function BillingSuccessPage() {
         {/* Heading */}
         {isActive ? (
           <>
-            <h1 className="text-xl font-bold text-foreground">
-              You&apos;re protected.
-            </h1>
+            <h1 className="text-xl font-bold text-foreground">You&apos;re protected.</h1>
             <p className="text-sm text-muted-foreground mt-2">
               Your subscription is active. TaxSentry is now monitoring your QFZP status.
             </p>
           </>
         ) : isPolling ? (
           <>
-            <h1 className="text-xl font-bold text-foreground">
-              Confirming your payment…
-            </h1>
+            <h1 className="text-xl font-bold text-foreground">Confirming your payment…</h1>
             <p className="text-sm text-muted-foreground mt-2">
-              Your payment was received. We&apos;re activating your subscription — this takes a few seconds.
+              Your payment was received. We&apos;re activating your subscription — this takes a few
+              seconds.
+            </p>
+            <p className="text-xs text-muted-foreground mt-3 opacity-70">
+              Attempt {attempts}/12
+            </p>
+          </>
+        ) : hasTimedOut ? (
+          <>
+            <h1 className="text-xl font-bold text-amber-700">Payment received</h1>
+            <p className="text-sm text-amber-600 mt-2">
+              We're still processing your subscription. Usually this takes a few seconds, but can
+              take up to 2 minutes.
+            </p>
+            <p className="text-xs text-muted-foreground mt-3">
+              If your dashboard doesn&apos;t reflect the change soon, please contact{' '}
+              <a href="mailto:support@taxsentry.ae" className="text-primary hover:underline">
+                support@taxsentry.ae
+              </a>
             </p>
           </>
         ) : (
           <>
-            <h1 className="text-xl font-bold text-foreground">
-              Payment received
-            </h1>
-            <p className="text-sm text-muted-foreground mt-2">
-              We&apos;re processing your subscription. If your dashboard doesn&apos;t reflect the change
-              within 2 minutes, please contact{' '}
+            <h1 className="text-xl font-bold text-red-700">Error checking subscription</h1>
+            <p className="text-sm text-red-600 mt-2">
+              Unable to verify your subscription status. Your payment may still be processing.
+            </p>
+            <p className="text-xs text-muted-foreground mt-3">
+              Please contact{' '}
               <a href="mailto:support@taxsentry.ae" className="text-primary hover:underline">
                 support@taxsentry.ae
               </a>
-              .
+              {' '}and we'll activate your account manually.
             </p>
           </>
         )}
@@ -108,18 +134,46 @@ export default function BillingSuccessPage() {
 
         {/* CTA */}
         <div className="mt-6 space-y-2">
-          <button
-            onClick={() => router.push('/dashboard')}
-            className="w-full bg-primary text-primary-foreground py-2.5 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 hover:bg-primary/90"
-          >
-            Go to Dashboard <ArrowRight className="w-3.5 h-3.5" />
-          </button>
-          <button
-            onClick={() => router.push('/billing')}
-            className="w-full bg-muted text-foreground py-2.5 rounded-lg text-sm font-medium hover:bg-muted/80"
-          >
-            View billing details
-          </button>
+          {isActive && (
+            <>
+              <button
+                onClick={() => router.push('/dashboard')}
+                className="w-full bg-primary text-primary-foreground py-2.5 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 hover:bg-primary/90"
+              >
+                Go to Dashboard <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => router.push('/billing')}
+                className="w-full bg-muted text-foreground py-2.5 rounded-lg text-sm font-medium hover:bg-muted/80"
+              >
+                View billing details
+              </button>
+            </>
+          )}
+          {(isPolling || hasTimedOut) && (
+            <button
+              onClick={() => router.push('/dashboard')}
+              className="w-full bg-muted text-foreground py-2.5 rounded-lg text-sm font-medium hover:bg-muted/80"
+            >
+              Go to Dashboard
+            </button>
+          )}
+          {isError && !isActive && (
+            <>
+              <button
+                onClick={() => window.location.reload()}
+                className="w-full bg-primary text-primary-foreground py-2.5 rounded-lg text-sm font-semibold hover:bg-primary/90"
+              >
+                Retry
+              </button>
+              <button
+                onClick={() => router.push('/billing')}
+                className="w-full bg-muted text-foreground py-2.5 rounded-lg text-sm font-medium hover:bg-muted/80"
+              >
+                Go to Billing
+              </button>
+            </>
+          )}
         </div>
 
         <p className="mt-5 text-[11px] text-muted-foreground">

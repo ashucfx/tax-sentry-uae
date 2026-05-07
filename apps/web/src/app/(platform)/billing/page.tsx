@@ -179,7 +179,7 @@ export default function BillingPage() {
         </button>
 
         {/* Upgrade / choose plan */}
-        {(status === 'TRIALING' || status === 'STARTER' as any || status === 'EXPIRED') && (
+        {(status === 'TRIALING' || status === 'EXPIRED') && (
           <a
             href="/pricing"
             className="w-full flex items-center justify-between px-4 py-3 rounded-lg border border-primary/30 bg-blue-50 text-sm font-medium text-primary hover:bg-blue-100"
