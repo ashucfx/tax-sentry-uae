@@ -10,12 +10,10 @@ build/
 
 # Environment files — NEVER commit these
 .env
-.env.local
-.env.production
-.env.staging
-
-# Prisma
-apps/api/prisma/migrations/*.sql
+.env.*
+**/.env
+**/.env.*
+!**/.env.example
 
 # Logs
 *.log
@@ -37,5 +35,6 @@ Thumbs.db
 *.key
 credentials.json
 
-# Internal deployment docs
-DEPLOY.md
+# Markdown files — only README.md is published; all others are internal notes
+*.md
+!README.md
