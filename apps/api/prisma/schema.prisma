@@ -124,6 +124,7 @@ model Organization {
   integrations         Integration[]
   activityDeclarations ActivityDeclaration[]
   billingEvents        BillingEvent[]
+  invitations          Invitation[]
 
   @@index([tradeLicenseNo])
   @@index([freeZone])
@@ -133,28 +134,91 @@ model Organization {
 // ─── USERS ───────────────────────────────────────────────────────────────────
 
 model User {
-  id           String   @id @default(cuid())
-  orgId        String
-  clerkUserId  String   @unique
-  email        String
-  firstName    String?
-  lastName     String?
-  role         UserRole @default(VIEWER)
-  mfaEnabled   Boolean  @default(false)
-  isActive     Boolean  @default(true)
-  lastLoginAt  DateTime?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                  String    @id @default(cuid())
+  orgId               String
+  email               String?
+  phone               String?
+  passwordHash        String?
+  firstName           String?
+  lastName            String?
+  role                UserRole  @default(VIEWER)
+  emailVerified       Boolean   @default(false)
+  emailVerifiedAt     DateTime?
+  failedLoginAttempts Int       @default(0)
+  lockedUntil         DateTime?
+  mfaEnabled          Boolean   @default(false)
+  isActive            Boolean   @default(true)
+  lastLoginAt         DateTime?
+  lastLoginIp         String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
   // Relations
-  organization   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
-  auditLogs      AuditLog[]
-  overrides      ClassificationOverride[]
+  organization          Organization           @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  sessions              Session[]
+  passwordResetTokens   PasswordResetToken[]
+  emailVerifTokens      EmailVerificationToken[]
+  auditLogs             AuditLog[]
+  overrides             ClassificationOverride[]
 
   @@unique([orgId, email])
+  @@index([email])
+  @@index([phone])
   @@index([orgId])
-  @@index([clerkUserId])
   @@map("users")
+}
+
+// ─── SESSIONS (refresh tokens) ───────────────────────────────────────────────
+
+model Session {
+  id          String    @id @default(cuid())
+  userId      String
+  tokenHash   String    @unique
+  deviceInfo  String?
+  ipAddress   String?
+  userAgent   String?
+  expiresAt   DateTime
+  isRevoked   Boolean   @default(false)
+  revokedAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([tokenHash])
+  @@map("sessions")
+}
+
+// ─── PASSWORD RESET TOKENS ───────────────────────────────────────────────────
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("password_reset_tokens")
+}
+
+// ─── EMAIL VERIFICATION TOKENS ───────────────────────────────────────────────
+
+model EmailVerificationToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("email_verification_tokens")
 }
 
 // ─── TAX PERIODS ─────────────────────────────────────────────────────────────
@@ -282,6 +346,7 @@ model RevenueTransaction {
   @@unique([orgId, source, externalId], name: "idempotency_key")
   @@index([orgId, taxPeriodId])
   @@index([orgId, taxPeriodId, classification, isDeleted])
+  @@index([orgId, isDeleted])
   @@index([orgId, classification])
   @@index([orgId, date])
   @@index([counterpartyType])
@@ -361,9 +426,9 @@ model RiskSnapshot {
   deltaVsPrior          Int?
   nqrAmount             Decimal  @db.Decimal(15, 2)
   totalRevenue          Decimal  @db.Decimal(15, 2)
-  nqrPercentage         Decimal  @db.Decimal(5, 4)
+  nqrPercentage         Decimal  @db.Decimal(7, 4)
   projectedNqrAmount    Decimal? @db.Decimal(15, 2)
-  projectedNqrPct       Decimal? @db.Decimal(5, 4)
+  projectedNqrPct       Decimal? @db.Decimal(7, 4)
   createdAt             DateTime @default(now())
 
   organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
@@ -392,14 +457,13 @@ model Alert {
   whatsappSentAt  DateTime?
   isResolved      Boolean       @default(false)
   resolvedAt      DateTime?
-  dedupKey        String?
+  dedupKey        String?       @unique
 
   organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
 
   @@index([orgId, severity, isResolved])
   @@index([orgId, code, triggeredAt])
   @@index([orgId, triggeredAt])
-  @@index([dedupKey])
   @@map("alerts")
 }
 
@@ -466,4 +530,41 @@ model BillingEvent {
   @@index([orgId])
   @@index([eventType])
   @@map("billing_events")
+}
+
+// ─── INVITATIONS ─────────────────────────────────────────────────────────────
+
+model Invitation {
+  id          String    @id @default(cuid())
+  orgId       String
+  email       String
+  role        UserRole  @default(VIEWER)
+  tokenHash   String    @unique
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  invitedBy   String    // userId of the inviter
+  createdAt   DateTime  @default(now())
+
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@unique([orgId, email])
+  @@index([tokenHash])
+  @@map("invitations")
+}
+
+// ─── OTP CODES ───────────────────────────────────────────────────────────────
+
+model OtpCode {
+  id          String    @id @default(cuid())
+  email       String?
+  phone       String?
+  codeHash    String              // SHA-256 of the 6-digit code
+  expiresAt   DateTime
+  verifiedAt  DateTime?           // set when used or invalidated
+  attempts    Int       @default(0)
+  createdAt   DateTime  @default(now())
+
+  @@index([email])
+  @@index([phone])
+  @@map("otp_codes")
 }
