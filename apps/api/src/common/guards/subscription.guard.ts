@@ -19,6 +19,11 @@ const BLOCKED_STATUSES: SubscriptionStatus[] = [
   SubscriptionStatus.PAUSED,
 ];
 
+const ALLOWED_STATUSES: SubscriptionStatus[] = [
+  SubscriptionStatus.TRIALING,
+  SubscriptionStatus.ACTIVE,
+];
+
 @Injectable()
 export class SubscriptionGuard implements CanActivate {
   constructor(
@@ -38,6 +43,15 @@ export class SubscriptionGuard implements CanActivate {
     const user = request.user;
     if (!user?.orgId) return true; // Unauthenticated routes handled by JwtAuthGuard
 
+    // Block unverified users from all platform endpoints
+    if (user.emailVerified === false) {
+      throw new ForbiddenException({
+        code: 'EMAIL_NOT_VERIFIED',
+        message: 'Please verify your email address before continuing. Check your inbox for the verification link.',
+        resendUrl: '/api/v1/auth/resend-verification',
+      });
+    }
+
     const org = await this.prisma.organization.findUnique({
       where: { id: user.orgId },
       select: {
@@ -48,6 +62,18 @@ export class SubscriptionGuard implements CanActivate {
     });
 
     if (!org) return true;
+
+    // TRIALING orgs have full access during trial
+    if (org.subscriptionStatus === SubscriptionStatus.TRIALING) {
+      if (org.currentPeriodEnd && org.currentPeriodEnd > new Date()) {
+        return true; // Trial still active
+      }
+      throw new ForbiddenException({
+        code: 'TRIAL_ENDED',
+        message: 'Your free trial has ended. Please choose a plan to continue.',
+        billingUrl: '/billing',
+      });
+    }
 
     // CANCELLED orgs retain access until period end
     if (org.subscriptionStatus === SubscriptionStatus.CANCELLED) {
