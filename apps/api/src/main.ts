@@ -21,7 +21,8 @@ async function bootstrap() {
   );
 
   const configService = app.get(ConfigService);
-  const port = configService.get<number>('API_PORT', 3001);
+  // Railway/Render inject PORT — prefer it over API_PORT so the platform proxy can reach the app
+  const port = configService.get<number>('PORT') ?? configService.get<number>('API_PORT', 3001);
   const nodeEnv = configService.get<string>('NODE_ENV', 'development');
 
   // Security

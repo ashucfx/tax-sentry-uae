@@ -36,5 +36,6 @@ USER nestjs
 
 EXPOSE 3001
 
-# Render/Railway inject PORT env var — respect it
-CMD ["sh", "-c", "node dist/main"]
+# Run pending migrations then start the server.
+# Railway/Render inject $PORT — NestJS reads it via ConfigService('PORT').
+CMD ["sh", "-c", "./node_modules/.bin/prisma migrate deploy && node dist/main"]
