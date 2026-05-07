@@ -11,17 +11,26 @@ import {
   Zap,
   Building2,
   Minus,
+  Info,
 } from 'lucide-react';
 
+// AED/USD fixed peg (UAE Central Bank, unchanged since 1997)
+const AED_PER_USD = 3.6725;
+
 // ─── Plan definitions ─────────────────────────────────────────────────────────
+// priceMonthlyAed / priceYearlyAed → displayed to customer
+// priceMonthlyUsd / priceYearlyUsd → what Dodo charges (set when creating products)
+// Rule: USD = ceil(AED / AED_PER_USD) to avoid even 1 cent shortfall
 
 const PLANS = [
   {
     tier: 'STARTER' as const,
     name: 'Starter',
     tagline: 'For single Free Zone entities',
-    priceMonthly: 299,
-    priceYearly: 2990,
+    priceMonthlyAed: 299,
+    priceYearlyAed: 2990,
+    priceMonthlyUsd: 82,    // 299 / 3.6725 = 81.41 → ceil = 82
+    priceYearlyUsd: 815,    // 2990 / 3.6725 = 814.07 → ceil = 815
     highlight: false,
     features: [
       { text: '1 Free Zone organization', included: true },
@@ -42,8 +51,10 @@ const PLANS = [
     tier: 'GROWTH' as const,
     name: 'Growth',
     tagline: 'For CFOs managing multiple entities',
-    priceMonthly: 799,
-    priceYearly: 7990,
+    priceMonthlyAed: 799,
+    priceYearlyAed: 7990,
+    priceMonthlyUsd: 218,   // 799 / 3.6725 = 217.57 → ceil = 218
+    priceYearlyUsd: 2176,   // 7990 / 3.6725 = 2175.75 → ceil = 2176
     highlight: true,
     features: [
       { text: 'Up to 3 Free Zone organizations', included: true },
@@ -64,8 +75,10 @@ const PLANS = [
     tier: 'ENTERPRISE' as const,
     name: 'Enterprise',
     tagline: 'For groups with 4+ entities',
-    priceMonthly: null,
-    priceYearly: null,
+    priceMonthlyAed: null,
+    priceYearlyAed: null,
+    priceMonthlyUsd: null,
+    priceYearlyUsd: null,
     highlight: false,
     features: [
       { text: 'Unlimited organizations', included: true },
@@ -96,19 +109,28 @@ export default function PricingPage() {
       window.location.href = 'mailto:sales@taxsentry.ae?subject=Enterprise Enquiry';
       return;
     }
-
     setCheckoutError(null);
     setLoading(tier);
     try {
-      const { data } = await api.post('/billing/checkout', { tier, interval });
-      window.location.href = data.data.checkoutUrl;
+      const response = await api.post('/billing/checkout', { tier, interval });
+      const checkoutUrl = response.data?.data?.checkoutUrl;
+      if (!checkoutUrl) throw new Error('No checkout URL in response');
+      window.location.href = checkoutUrl;
     } catch (err: any) {
-      setCheckoutError(err?.response?.data?.message ?? 'Something went wrong. Please try again.');
+      setCheckoutError(
+        err?.response?.data?.message ?? err?.message ?? 'Something went wrong. Please try again.',
+      );
       setLoading(null);
     }
   }
 
-  const yearlySaving = Math.round(((299 * 12 - 2990) / (299 * 12)) * 100);
+  // Yearly saving vs monthly × 12 for the Starter plan (displayed in toggle)
+  const starter = PLANS[0];
+  const yearlySaving = Math.round(
+    ((starter.priceMonthlyAed! * 12 - starter.priceYearlyAed!) /
+      (starter.priceMonthlyAed! * 12)) *
+      100,
+  );
 
   return (
     <div className="min-h-screen bg-background">
@@ -153,6 +175,12 @@ export default function PricingPage() {
             </span>
           </button>
         </div>
+
+        {/* Currency note */}
+        <div className="mt-4 inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Info className="w-3 h-3 flex-shrink-0" />
+          Prices shown in AED · Charged in USD at the fixed AED/USD peg (1 USD = {AED_PER_USD} AED)
+        </div>
       </div>
 
       {/* Plan cards */}
@@ -168,14 +196,26 @@ export default function PricingPage() {
             />
           ))}
         </div>
+
         {checkoutError && (
           <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
             {checkoutError}
           </div>
         )}
 
+        {/* Currency explanation */}
+        <div className="mt-8 rounded-lg border border-blue-100 bg-blue-50/50 px-5 py-4 max-w-2xl mx-auto">
+          <p className="text-xs font-semibold text-blue-800 mb-1.5">Why USD?</p>
+          <p className="text-xs text-blue-700 leading-relaxed">
+            The UAE Dirham has been pegged to the US Dollar at exactly{' '}
+            <span className="font-semibold">1 USD = {AED_PER_USD} AED</span> since 1997 — fixed by
+            the UAE Central Bank. There is no currency risk and no conversion fee. Paying $82 USD is
+            identical to paying AED 299.
+          </p>
+        </div>
+
         {/* Trust row */}
-        <div className="mt-10 flex flex-wrap justify-center gap-6 text-xs text-muted-foreground">
+        <div className="mt-8 flex flex-wrap justify-center gap-6 text-xs text-muted-foreground">
           <span className="flex items-center gap-1.5">
             <Lock className="w-3.5 h-3.5" /> AES-256 encrypted
           </span>
@@ -186,7 +226,7 @@ export default function PricingPage() {
             <Zap className="w-3.5 h-3.5" /> Payments via Dodo Payments (MoR)
           </span>
           <span className="flex items-center gap-1.5">
-            <Building2 className="w-3.5 h-3.5" /> Invoiced in AED
+            <Building2 className="w-3.5 h-3.5" /> AED invoicing
           </span>
         </div>
 
@@ -222,12 +262,19 @@ function PlanCard({
   loading: boolean;
   onCheckout: () => void;
 }) {
-  const price =
-    plan.priceMonthly === null
+  const aedPrice =
+    plan.priceMonthlyAed === null
       ? null
       : interval === 'yearly'
-      ? plan.priceYearly
-      : plan.priceMonthly;
+      ? plan.priceYearlyAed
+      : plan.priceMonthlyAed;
+
+  const usdPrice =
+    plan.priceMonthlyUsd === null
+      ? null
+      : interval === 'yearly'
+      ? plan.priceYearlyUsd
+      : plan.priceMonthlyUsd;
 
   return (
     <div
@@ -258,26 +305,33 @@ function PlanCard({
 
         {/* Price */}
         <div className="mb-6">
-          {price === null ? (
+          {aedPrice === null ? (
             <div>
               <p className="text-3xl font-bold text-foreground">Custom</p>
               <p className="text-xs text-muted-foreground mt-1">Tailored to your group</p>
             </div>
           ) : (
-            <div className="flex items-end gap-1">
-              <span className="text-xs text-muted-foreground self-start mt-2">AED</span>
-              <span className="text-3xl font-bold text-foreground tabular-nums">
-                {price.toLocaleString()}
-              </span>
-              <span className="text-xs text-muted-foreground mb-1">
-                /{interval === 'yearly' ? 'yr' : 'mo'}
-              </span>
+            <div>
+              <div className="flex items-end gap-1">
+                <span className="text-xs text-muted-foreground self-start mt-2">AED</span>
+                <span className="text-3xl font-bold text-foreground tabular-nums">
+                  {aedPrice.toLocaleString()}
+                </span>
+                <span className="text-xs text-muted-foreground mb-1">
+                  /{interval === 'yearly' ? 'yr' : 'mo'}
+                </span>
+              </div>
+              {/* USD charge line */}
+              <p className="text-[11px] text-muted-foreground mt-1">
+                Charged as{' '}
+                <span className="font-semibold text-foreground">${usdPrice} USD</span>
+                {interval === 'yearly' && plan.priceMonthlyAed && (
+                  <span className="ml-1 text-emerald-600 font-medium">
+                    (AED {Math.round(plan.priceYearlyAed! / 12)}/mo equiv.)
+                  </span>
+                )}
+              </p>
             </div>
-          )}
-          {interval === 'yearly' && plan.priceMonthly && (
-            <p className="text-xs text-emerald-600 mt-1 font-medium">
-              Equivalent to AED {Math.round(plan.priceYearly! / 12)}/month
-            </p>
           )}
         </div>
 
