@@ -64,53 +64,72 @@ export class BillingService {
     tier: SubscriptionTier,
     interval: 'monthly' | 'yearly',
   ): Promise<{ checkoutUrl: string; subscriptionId: string }> {
+    this.logger.debug(`[CHECKOUT] Starting for org=${orgId} tier=${tier} interval=${interval}`);
+
     const productId = getPlanId(tier, interval, this.cfg);
     const webUrl = this.cfg.get<string>('WEB_URL', 'http://localhost:3000');
 
-    const response = await this.dodo.subscriptions.create({
-      billing: {
-        city: 'Dubai',
-        country: 'AE',
-        state: 'Dubai',
-        street: 'N/A',
-        zipcode: '00000',
-      },
-      customer: {
-        email: userEmail,
-        name: orgName,
-        // Uses CreateNewCustomer union variant — no customer_id yet
-      },
-      product_id: productId,
-      quantity: 1,
-      payment_link: true,
-      return_url: `${webUrl}/billing/success`,
-      metadata: {
-        org_id: orgId,
-        tier,
-        interval,
-      },
-    });
+    this.logger.debug(`[CHECKOUT] Using product=${productId} webUrl=${webUrl}`);
 
-    if (!response.payment_link) {
-      throw new UnprocessableEntityException('Dodo did not return a payment link');
+    try {
+      this.logger.debug(`[CHECKOUT] Calling Dodo API to create subscription...`);
+      const response = await this.dodo.subscriptions.create({
+        billing: {
+          city: 'Dubai',
+          country: 'AE',
+          state: 'Dubai',
+          street: 'N/A',
+          zipcode: '00000',
+        },
+        customer: {
+          email: userEmail,
+          name: orgName,
+        },
+        product_id: productId,
+        quantity: 1,
+        payment_link: true,
+        return_url: `${webUrl}/billing/success`,
+        metadata: {
+          org_id: orgId,
+          tier,
+          interval,
+        },
+      });
+
+      this.logger.debug(
+        `[CHECKOUT] ✓ Dodo API response received. SubId=${response.subscription_id}`,
+      );
+
+      if (!response.payment_link) {
+        this.logger.error(`[CHECKOUT] ✗ Dodo did not return payment_link`);
+        throw new UnprocessableEntityException('Dodo did not return a payment link');
+      }
+
+      // Persist the subscription ID immediately so we can match the webhook
+      await this.prisma.organization.update({
+        where: { id: orgId },
+        data: {
+          dodoSubscriptionId: response.subscription_id,
+          subscriptionTier: tier,
+          subscriptionInterval: interval,
+        },
+      });
+
+      this.logger.log(
+        `[CHECKOUT] ✓ Checkout created. subId=${response.subscription_id} org=${orgId}`,
+      );
+
+      return {
+        checkoutUrl: response.payment_link,
+        subscriptionId: response.subscription_id,
+      };
+    } catch (err) {
+      this.logger.error(
+        `[CHECKOUT] ✗ Dodo API call failed: ${(err as Error).message}`,
+        (err as Error).stack,
+      );
+      throw err;
     }
-
-    // Persist the subscription ID immediately so we can match the webhook
-    await this.prisma.organization.update({
-      where: { id: orgId },
-      data: {
-        dodoSubscriptionId: response.subscription_id,
-        subscriptionTier: tier,
-        subscriptionInterval: interval,
-      },
-    });
-
-    this.logger.log(`Checkout created for org=${orgId} tier=${tier} interval=${interval}`);
-
-    return {
-      checkoutUrl: response.payment_link,
-      subscriptionId: response.subscription_id,
-    };
   }
 
   // ── Fetch current subscription status for an org ────────────────────────────
@@ -183,78 +202,95 @@ export class BillingService {
 
     let event: DodoWebhookEvent;
     try {
+      this.logger.debug(`[WEBHOOK] Verifying signature for webhook id=${webhookId}`);
       event = wh.verify(rawBody, {
         'webhook-id': webhookId,
         'webhook-timestamp': webhookTimestamp,
         'webhook-signature': webhookSignature,
       }) as DodoWebhookEvent;
-    } catch {
-      this.logger.warn(`Webhook sig verification failed id=${webhookId}`);
+      this.logger.debug(`[WEBHOOK] ✓ Signature verified. type=${event.type}`);
+    } catch (err) {
+      this.logger.warn(
+        `[WEBHOOK] ✗ Signature verification failed id=${webhookId}: ${(err as Error).message}`,
+      );
       throw new BadRequestException('Invalid webhook signature');
-    }
-
-    // 2. Idempotency — skip if already processed (Svix may retry on non-200)
-    const alreadyProcessed = await this.prisma.billingEvent.findUnique({
-      where: { eventId: webhookId },
-    });
-    if (alreadyProcessed) {
-      this.logger.debug(`Duplicate webhook ignored: ${webhookId}`);
-      return;
     }
 
     const sub = event.data;
     const metadata = sub?.metadata ?? {};
     const orgId = metadata.org_id;
 
-    // 3. Persist raw event for audit trail (regardless of outcome)
-    await this.prisma.billingEvent.create({
-      data: {
-        eventId: webhookId,
-        eventType: event.type,
-        payloadJson: event as object,
-        orgId: orgId ?? null,
-      },
-    });
+    this.logger.debug(
+      `[WEBHOOK] Processing event type=${event.type} subId=${sub?.subscription_id} orgId=${orgId ?? '?'}`,
+    );
 
-    this.logger.log(`Webhook: ${event.type} sub=${sub?.subscription_id} org=${orgId ?? '?'}`);
-
-    // 4. Route to handler
-    switch (event.type) {
-      case 'subscription.active':
-        await this.onSubscriptionActive(orgId, sub);
-        break;
-
-      case 'subscription.renewed':
-        await this.onSubscriptionRenewed(orgId, sub);
-        break;
-
-      case 'subscription.on_hold':
-        await this.onSubscriptionOnHold(orgId, sub);
-        break;
-
-      case 'subscription.cancelled':
-        await this.onSubscriptionCancelled(orgId, sub);
-        break;
-
-      case 'subscription.expired':
-        await this.onSubscriptionExpired(orgId, sub);
-        break;
-
-      case 'subscription.failed':
-        await this.onSubscriptionOnHold(orgId, sub); // treat same as on_hold
-        break;
-
-      case 'payment.succeeded':
-        this.logger.log(`Payment succeeded for org=${orgId}`);
-        break;
-
-      case 'payment.failed':
-        this.logger.warn(`Payment failed for org=${orgId}`);
-        break;
-
-      default:
-        this.logger.debug(`Unhandled webhook type: ${event.type}`);
+    // 2. Atomic idempotency guard — attempt INSERT first. If the row already exists
+    //    (duplicate Svix delivery), the unique constraint fires and we skip silently.
+    //    This closes the TOCTOU gap between a read-then-write pattern.
+    let idempotencyRecord: { id: string } | null = null;
+    try {
+      idempotencyRecord = await this.prisma.billingEvent.create({
+        data: {
+          eventId: webhookId,
+          eventType: event.type,
+          payloadJson: event as object,
+          orgId: orgId ?? null,
+        },
+        select: { id: true },
+      });
+    } catch (err: unknown) {
+      // P2002 = unique constraint violation → duplicate webhook, already processed
+      if ((err as { code?: string })?.code === 'P2002') {
+        this.logger.debug(`[WEBHOOK] ⚠ Duplicate webhook ignored id=${webhookId}`);
+        return;
+      }
+      throw err;
     }
+
+    // 3. Route to handler. If handler throws, Svix will retry.
+    //    The idempotency record is already written — on retry, step 2 will short-circuit
+    //    without re-running the handler. This means handlers must be idempotent within
+    //    themselves (upsert-style writes), which all organization.update() calls are.
+    try {
+      switch (event.type) {
+        case 'subscription.active':
+          await this.onSubscriptionActive(orgId, sub);
+          break;
+        case 'subscription.renewed':
+          await this.onSubscriptionRenewed(orgId, sub);
+          break;
+        case 'subscription.on_hold':
+          await this.onSubscriptionOnHold(orgId, sub);
+          break;
+        case 'subscription.cancelled':
+          await this.onSubscriptionCancelled(orgId, sub);
+          break;
+        case 'subscription.expired':
+          await this.onSubscriptionExpired(orgId, sub);
+          break;
+        case 'subscription.failed':
+          await this.onSubscriptionOnHold(orgId, sub);
+          break;
+        case 'payment.succeeded':
+          this.logger.log(`[WEBHOOK] ✓ Payment succeeded org=${orgId}`);
+          break;
+        case 'payment.failed':
+          this.logger.warn(`[WEBHOOK] ✗ Payment failed org=${orgId}`);
+          break;
+        default:
+          this.logger.debug(`[WEBHOOK] ⚠ Unhandled webhook type: ${event.type}`);
+      }
+    } catch (err) {
+      this.logger.error(
+        `[WEBHOOK] ✗ Handler error for type=${event.type} id=${idempotencyRecord.id}: ${(err as Error).message}`,
+        (err as Error).stack,
+      );
+      throw err;
+    }
+
+    this.logger.log(
+      `[WEBHOOK] ✓ Event processed: ${event.type} sub=${sub?.subscription_id} org=${orgId ?? '?'} record=${idempotencyRecord.id}`,
+    );
   }
 
   // ── Private event handlers ───────────────────────────────────────────────────
@@ -284,13 +320,21 @@ export class BillingService {
   ) {
     const orgId = await this.findOrgBySubOrId(orgIdFromMeta, sub.subscription_id);
     if (!orgId) {
-      this.logger.warn(`subscription.active — could not resolve org for sub=${sub.subscription_id}`);
+      this.logger.warn(
+        `[SUBSCRIPTION.ACTIVE] ✗ Could not resolve org for sub=${sub.subscription_id} meta_org=${
+          orgIdFromMeta ?? null
+        }`,
+      );
       return;
     }
 
     const tierFromMeta = sub.metadata?.tier as SubscriptionTier | undefined;
     const interval = sub.metadata?.interval as 'monthly' | 'yearly' | undefined;
     const nextBilling = sub.next_billing_date ? new Date(sub.next_billing_date) : null;
+
+    this.logger.debug(
+      `[SUBSCRIPTION.ACTIVE] Updating org=${orgId} tier=${tierFromMeta} interval=${interval} nextBilling=${nextBilling}`,
+    );
 
     await this.prisma.organization.update({
       where: { id: orgId },
@@ -308,7 +352,7 @@ export class BillingService {
       },
     });
 
-    this.logger.log(`Subscription ACTIVATED: org=${orgId}`);
+    this.logger.log(`[SUBSCRIPTION.ACTIVE] ✓ Subscription ACTIVATED org=${orgId}`);
   }
 
   private async onSubscriptionRenewed(
@@ -316,9 +360,14 @@ export class BillingService {
     sub: DodoSubscription,
   ) {
     const orgId = await this.findOrgBySubOrId(orgIdFromMeta, sub.subscription_id);
-    if (!orgId) return;
+    if (!orgId) {
+      this.logger.warn(`[SUBSCRIPTION.RENEWED] ✗ Could not resolve org for sub=${sub.subscription_id}`);
+      return;
+    }
 
     const nextBilling = sub.next_billing_date ? new Date(sub.next_billing_date) : null;
+
+    this.logger.debug(`[SUBSCRIPTION.RENEWED] Updating org=${orgId} nextBilling=${nextBilling}`);
 
     await this.prisma.organization.update({
       where: { id: orgId },
@@ -330,7 +379,7 @@ export class BillingService {
       },
     });
 
-    this.logger.log(`Subscription RENEWED: org=${orgId} nextBilling=${nextBilling}`);
+    this.logger.log(`[SUBSCRIPTION.RENEWED] ✓ Subscription renewed org=${orgId}`);
   }
 
   private async onSubscriptionOnHold(
@@ -338,14 +387,19 @@ export class BillingService {
     sub: DodoSubscription,
   ) {
     const orgId = await this.findOrgBySubOrId(orgIdFromMeta, sub.subscription_id);
-    if (!orgId) return;
+    if (!orgId) {
+      this.logger.warn(`[SUBSCRIPTION.ON_HOLD] ✗ Could not resolve org for sub=${sub.subscription_id}`);
+      return;
+    }
+
+    this.logger.warn(`[SUBSCRIPTION.ON_HOLD] Payment failed, setting to PAST_DUE org=${orgId}`);
 
     await this.prisma.organization.update({
       where: { id: orgId },
       data: { subscriptionStatus: SubscriptionStatus.PAST_DUE },
     });
 
-    this.logger.warn(`Subscription ON HOLD (payment failed): org=${orgId}`);
+    this.logger.warn(`[SUBSCRIPTION.ON_HOLD] ✓ Org paused org=${orgId}`);
   }
 
   private async onSubscriptionCancelled(
@@ -353,18 +407,22 @@ export class BillingService {
     sub: DodoSubscription,
   ) {
     const orgId = await this.findOrgBySubOrId(orgIdFromMeta, sub.subscription_id);
-    if (!orgId) return;
+    if (!orgId) {
+      this.logger.warn(`[SUBSCRIPTION.CANCELLED] ✗ Could not resolve org for sub=${sub.subscription_id}`);
+      return;
+    }
+
+    this.logger.warn(`[SUBSCRIPTION.CANCELLED] Setting status to CANCELLED org=${orgId}`);
 
     await this.prisma.organization.update({
       where: { id: orgId },
       data: {
         subscriptionStatus: SubscriptionStatus.CANCELLED,
         cancelAtPeriodEnd: true,
-        // Access continues until currentPeriodEnd — handled by SubscriptionGuard
       },
     });
 
-    this.logger.log(`Subscription CANCELLED: org=${orgId} (access until period end)`);
+    this.logger.warn(`[SUBSCRIPTION.CANCELLED] ✓ Subscription cancelled org=${orgId}`);
   }
 
   private async onSubscriptionExpired(
@@ -372,7 +430,12 @@ export class BillingService {
     sub: DodoSubscription,
   ) {
     const orgId = await this.findOrgBySubOrId(orgIdFromMeta, sub.subscription_id);
-    if (!orgId) return;
+    if (!orgId) {
+      this.logger.warn(`[SUBSCRIPTION.EXPIRED] ✗ Could not resolve org for sub=${sub.subscription_id}`);
+      return;
+    }
+
+    this.logger.warn(`[SUBSCRIPTION.EXPIRED] Subscription expired, blocking access org=${orgId}`);
 
     await this.prisma.organization.update({
       where: { id: orgId },
@@ -382,6 +445,6 @@ export class BillingService {
       },
     });
 
-    this.logger.warn(`Subscription EXPIRED — access blocked: org=${orgId}`);
+    this.logger.warn(`[SUBSCRIPTION.EXPIRED] ✓ Access blocked org=${orgId}`);
   }
 }

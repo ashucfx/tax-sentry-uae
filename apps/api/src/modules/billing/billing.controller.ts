@@ -10,12 +10,16 @@ import {
   UseGuards,
   Headers,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { BillingService } from './billing.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { CreateCheckoutDto } from './dto/create-checkout.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { Public } from '../../common/decorators/public.decorator';
+import { SkipSubscriptionCheck } from '../../common/guards/subscription.guard';
 import { FastifyRequest, FastifyReply } from 'fastify';
 
 interface JwtUser {
@@ -28,7 +32,12 @@ interface JwtUser {
 @ApiTags('billing')
 @Controller('billing')
 export class BillingController {
-  constructor(private readonly billingService: BillingService) {}
+  private readonly logger = new Logger(BillingController.name);
+
+  constructor(
+    private readonly billingService: BillingService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   // ── POST /billing/checkout ─────────────────────────────────────────────────
   // Returns a Dodo-hosted checkout URL. Frontend redirects the user to it.
@@ -41,22 +50,37 @@ export class BillingController {
     @CurrentUser() user: JwtUser,
     @Req() req: FastifyRequest,
   ) {
+    this.logger.debug(
+      `[CHECKOUT] Initiating checkout for org=${user.orgId} tier=${dto.tier} interval=${dto.interval}`,
+    );
+
     // Fetch org name for Dodo customer record
-    const prisma = (this.billingService as any).prisma;
-    const org = await prisma.organization.findUniqueOrThrow({
+    const org = await this.prisma.organization.findUniqueOrThrow({
       where: { id: user.orgId },
       select: { name: true },
     });
 
-    const result = await this.billingService.createCheckoutSession(
-      user.orgId,
-      user.email,
-      org.name,
-      dto.tier,
-      dto.interval,
-    );
+    try {
+      const result = await this.billingService.createCheckoutSession(
+        user.orgId,
+        user.email,
+        org.name,
+        dto.tier,
+        dto.interval,
+      );
 
-    return { data: result };
+      this.logger.log(
+        `[CHECKOUT] ✓ Checkout created. SubId=${result.subscriptionId} user=${user.email}`,
+      );
+
+      return { data: result };
+    } catch (err) {
+      this.logger.error(
+        `[CHECKOUT] ✗ Failed to create checkout: ${(err as Error).message}`,
+        (err as Error).stack,
+      );
+      throw err;
+    }
   }
 
   // ── GET /billing/status ────────────────────────────────────────────────────
@@ -84,6 +108,8 @@ export class BillingController {
   // Dodo/Svix webhook receiver. NO auth guard — verified by HMAC signature.
   // Fastify rawbody plugin must be registered in main.ts for this to work.
   @Post('webhook')
+  @Public()
+  @SkipSubscriptionCheck()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Dodo Payments webhook receiver (internal)' })
   async handleWebhook(
@@ -95,20 +121,33 @@ export class BillingController {
   ) {
     const rawBody: Buffer | undefined = (req as any).rawBody;
 
+    this.logger.debug(`[WEBHOOK] Received webhook id=${webhookId}`);
+
     if (!rawBody) {
+      this.logger.error('[WEBHOOK] Raw body unavailable — @fastify/rawbody not registered');
       throw new BadRequestException('Raw body unavailable — ensure @fastify/rawbody is registered');
     }
     if (!webhookId || !webhookTimestamp || !webhookSignature) {
+      this.logger.error(
+        `[WEBHOOK] Missing headers. id=${!!webhookId} ts=${!!webhookTimestamp} sig=${!!webhookSignature}`,
+      );
       throw new BadRequestException('Missing Svix webhook headers');
     }
 
-    await this.billingService.handleWebhook(
-      rawBody,
-      webhookId,
-      webhookTimestamp,
-      webhookSignature,
-    );
-
-    return { received: true };
+    try {
+      await this.billingService.handleWebhook(
+        rawBody,
+        webhookId,
+        webhookTimestamp,
+        webhookSignature,
+      );
+      this.logger.log(`[WEBHOOK] ✓ Processed webhook id=${webhookId}`);
+      return { received: true };
+    } catch (err) {
+      this.logger.error(
+        `[WEBHOOK] ✗ Failed to process webhook id=${webhookId}: ${(err as Error).message}`,
+      );
+      throw err;
+    }
   }
 }
