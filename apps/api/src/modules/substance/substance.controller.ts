@@ -14,7 +14,7 @@ import {
   HttpStatus,
   Body,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor } from '../../common/interceptors/fastify-file.interceptor';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiConsumes } from '@nestjs/swagger';
 import { UserRole } from '@prisma/client';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -36,6 +36,12 @@ export class SubstanceController {
     return this.substanceService.getChecklist(orgId);
   }
 
+  @Get('health')
+  @ApiOperation({ summary: 'Alias for /substance/checklist' })
+  async getHealth(@CurrentUser('orgId') orgId: string) {
+    return this.substanceService.getChecklist(orgId);
+  }
+
   @Post('documents')
   @ApiOperation({ summary: 'Upload a substance document' })
   @ApiConsumes('multipart/form-data')
@@ -54,13 +60,16 @@ export class SubstanceController {
     file?: Express.Multer.File,
   ) {
     if (!file) throw new Error('File is required');
-    return this.substanceService.uploadDocument(
-      orgId,
-      userId,
-      docType,
-      file,
-      expiresAt ? new Date(expiresAt) : undefined,
-    );
+
+    let parsedExpiresAt: Date | undefined;
+    if (expiresAt) {
+      parsedExpiresAt = new Date(expiresAt);
+      if (isNaN(parsedExpiresAt.getTime())) {
+        throw new Error('Invalid expiresAt date format');
+      }
+    }
+
+    return this.substanceService.uploadDocument(orgId, userId, docType, file, parsedExpiresAt);
   }
 
   @Get('documents/:id/download')

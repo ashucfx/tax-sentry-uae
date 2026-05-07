@@ -75,23 +75,19 @@ export class SubstanceService {
       throw new BadRequestException(`Invalid document type: ${docType}`);
     }
 
-    // Validate MIME type (defense-in-depth: don't trust client headers)
-    if (!ALLOWED_MIME_TYPES.has(file.mimetype)) {
-      throw new BadRequestException(
-        `File type not allowed: ${file.mimetype}. Allowed: PDF, images, Word, Excel`,
-      );
-    }
-
     if (file.size > MAX_FILE_SIZE_BYTES) {
       throw new BadRequestException('File size exceeds 50MB limit');
     }
 
-    // Block executables — additional check beyond MIME
-    if (this.isExecutable(file.buffer)) {
-      throw new BadRequestException('Executable files are not permitted');
+    // Detect actual MIME type from magic bytes — never trust client Content-Type header
+    const detectedMime = this.detectMimeFromBuffer(file.buffer);
+    if (!detectedMime || !ALLOWED_MIME_TYPES.has(detectedMime)) {
+      throw new BadRequestException(
+        `File type not allowed. Allowed: PDF, JPEG, PNG, WebP, Word (.doc/.docx), Excel (.xls/.xlsx)`,
+      );
     }
 
-    // Sanitise filename to prevent path traversal
+    // Sanitise filename to prevent path traversal; use detected mime for storage
     const safeName = file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_');
     const fileKey = `${orgId}/${docType}/${randomUUID()}-${safeName}`;
 
@@ -99,9 +95,8 @@ export class SubstanceService {
     const { error: uploadError } = await this.supabase.storage
       .from(this.bucket)
       .upload(fileKey, file.buffer, {
-        contentType: file.mimetype,
+        contentType: detectedMime, // Use magic-byte-detected type, not client header
         upsert: false,
-        // Supabase Storage encrypts all files at rest with AES-256
       });
 
     if (uploadError) {
@@ -126,7 +121,7 @@ export class SubstanceService {
         fileKey,
         fileName: file.originalname,
         fileSize: file.size,
-        mimeType: file.mimetype,
+        mimeType: detectedMime, // verified type, not client-supplied
         expiresAt,
         status: (expiryStatus ?? DocumentStatus.ACTIVE) as DocumentStatus,
         virusScanStatus: 'PENDING',
@@ -259,16 +254,58 @@ export class SubstanceService {
     return 'ACTIVE';
   }
 
-  private isExecutable(buffer: Buffer): boolean {
-    // Check common executable magic bytes
-    const header = buffer.slice(0, 4).toString('hex');
-    const executableHeaders = [
-      '4d5a9000', // PE executable (MZ)
-      '7f454c46', // ELF
-      'cafebabe', // Java class / Mach-O
-      '504b0304', // ZIP (but allow PDFs and Office formats through MIME check)
-    ];
-    // Only block true executables; ZIP-like containers handled by MIME check
-    return header === '4d5a9000' || header === '7f454c46';
+  /**
+   * Derive the actual MIME type from the file's magic bytes.
+   * Returns null for unknown or explicitly blocked types (executables, scripts).
+   * Never trusts the client-supplied Content-Type header.
+   */
+  private detectMimeFromBuffer(buffer: Buffer): string | null {
+    if (buffer.length < 4) return null;
+
+    const b = buffer;
+    const hex4 = b.slice(0, 4).toString('hex');
+    const hex8 = b.slice(0, 8).toString('hex');
+
+    // Executables and scripts — always reject
+    if (hex4 === '4d5a9000' || hex4.startsWith('4d5a')) return null; // PE (.exe, .dll)
+    if (hex4 === '7f454c46') return null;                             // ELF
+    if (hex4 === 'cafebabe') return null;                             // Java class / Mach-O
+
+    // Block common script signatures
+    const textStart = b.slice(0, 20).toString('utf8').toLowerCase();
+    if (textStart.startsWith('<?php') || textStart.startsWith('#!')) return null;
+    if (textStart.startsWith('<html') || textStart.startsWith('<!doctype')) return null;
+    if (textStart.startsWith('<svg')) return null; // SVG can contain embedded JS
+
+    // PDF: %PDF
+    if (hex4 === '25504446') return 'application/pdf';
+
+    // JPEG: FF D8 FF
+    if (b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return 'image/jpeg';
+
+    // PNG: 89 50 4E 47 0D 0A 1A 0A
+    if (hex8 === '89504e470d0a1a0a') return 'image/png';
+
+    // WebP: RIFF....WEBP
+    if (hex4 === '52494646' && b.slice(8, 12).toString('ascii') === 'WEBP') return 'image/webp';
+
+    // Old Office formats (OLE2): D0 CF 11 E0
+    if (hex4 === 'd0cf11e0') return 'application/msword'; // .doc or .xls — both allowed
+
+    // ZIP-based formats (Office Open XML: .docx, .xlsx, .pptx)
+    if (hex4 === '504b0304') {
+      // Peek into the ZIP central directory to distinguish Office types
+      const content = b.slice(0, Math.min(buffer.length, 512)).toString('utf8', 0, 512);
+      if (content.includes('word/')) {
+        return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      }
+      if (content.includes('xl/') || content.includes('worksheets/')) {
+        return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      }
+      // ZIP with unknown interior — reject (could be arbitrary archive)
+      return null;
+    }
+
+    return null; // Unknown type — reject
   }
 }
