@@ -50,12 +50,9 @@ graph TB
         FE["Next.js 14<br/>App Router"]
     end
 
-    subgraph Auth ["Auth Layer"]
-        CL["Clerk<br/>(Email + MFA)"]
-    end
-
     subgraph API ["Backend — Render"]
         NE["NestJS + Fastify"]
+        AU["Auth<br/>(argon2id + JWT)"]
         CE["Classification<br/>Engine"]
         DE["De-Minimis<br/>Engine"]
         RE["Risk Engine"]
@@ -72,9 +69,9 @@ graph TB
         DP["DodoPayments<br/>(billing)"]
     end
 
-    FE -->|"JWT"| NE
-    FE <-->|"auth"| CL
-    CL -->|"webhook"| NE
+    FE -->|"Bearer JWT"| NE
+    FE <-->|"httpOnly cookie<br/>(refresh token)"| AU
+    AU <--> PG
     NE --> CE
     NE --> DE
     NE --> RE
@@ -85,6 +82,30 @@ graph TB
     FE --> DP
     DP -->|"webhook"| NE
 ```
+
+---
+
+## Auth Architecture
+
+TaxSentry uses a fully custom, zero-dependency authentication system — no Clerk, no Auth0.
+
+| Token | Type | TTL | Storage |
+|---|---|---|---|
+| Access token | Signed JWT | 15 minutes | In-memory (Zustand) |
+| Refresh token | Opaque (64 bytes) | 30 days | httpOnly cookie, SHA-256 hashed in DB |
+
+**Flow:**
+1. `POST /auth/signup` — argon2id password hash, creates org + OWNER user, 14-day trial
+2. `POST /auth/login` — verifies password, issues JWT + sets httpOnly `refreshToken` cookie
+3. Every platform page load — `AuthProvider` calls `POST /auth/refresh`, rotates token, updates Zustand store
+4. API calls — axios interceptor injects `Authorization: Bearer <token>`; silent refresh on 401
+5. `POST /auth/logout` — revokes session in DB, clears cookie
+
+**Security:**
+- Account lockout after 5 failed attempts (15-minute cooldown)
+- Refresh token rotation — each use issues a new token and revokes the old one
+- Password reset via time-limited (1h) signed email link
+- httpOnly + Secure + SameSite=Lax cookies
 
 ---
 
@@ -120,13 +141,13 @@ flowchart TD
 | Layer | Technology |
 |---|---|
 | Frontend | Next.js 14 (App Router), React 18, Tailwind CSS |
-| State / data fetching | Zustand, TanStack Query |
+| State / data fetching | Zustand, TanStack Query v5 |
 | Forms | React Hook Form + Zod |
-| Auth | Clerk (email, OTP, MFA) |
+| Auth | Custom — argon2id passwords, JWT (15m), httpOnly refresh cookies (30d) |
 | Backend | NestJS 10, Fastify adapter |
 | Database | PostgreSQL (Supabase), Prisma ORM |
 | File storage | Supabase Object Storage (private, signed URLs) |
-| Email | Resend |
+| Email | Resend (password reset, alerts) |
 | Billing | DodoPayments (Merchant of Record) |
 | Deployment | Vercel (frontend), Render (API, Docker) |
 | CI | GitHub Actions (test, lint, secret scan, Docker build) |
@@ -142,8 +163,7 @@ Financial amounts use `Decimal(15,2)` throughout — no floating-point rounding 
 - Node.js >= 20
 - npm >= 10
 - A [Supabase](https://supabase.com) project (free tier works)
-- A [Clerk](https://clerk.com) application
-- A [Resend](https://resend.com) API key
+- A [Resend](https://resend.com) API key (free tier: 3,000 emails/month)
 
 ### Install
 
@@ -157,17 +177,22 @@ npm install
 
 ```bash
 cp .env.example .env.local
-# Fill in DATABASE_URL, CLERK_*, SUPABASE_*, RESEND_API_KEY, JWT_SECRET
+# Fill in: DATABASE_URL, DATABASE_URL_UNPOOLED, SUPABASE_*, RESEND_API_KEY, JWT_SECRET, WEB_URL
 ```
 
-The `.env.example` file documents every variable with comments.
+The `.env.example` file documents every variable with inline comments.  
+Generate a secure `JWT_SECRET` with:
+
+```bash
+openssl rand -hex 32
+```
 
 ### Database
 
 ```bash
 cd apps/api
 
-# Run migrations (uses DATABASE_URL_UNPOOLED — session mode)
+# Run migrations (uses DATABASE_URL_UNPOOLED — direct session mode)
 npx prisma migrate dev --name init
 
 # Seed the 19 activity codes from Cabinet Decision 100/2023
@@ -183,7 +208,7 @@ npm run dev
 
 - Frontend: http://localhost:3000  
 - API: http://localhost:3001/api/v1  
-- Swagger docs: http://localhost:3001/api/docs
+- Swagger docs: http://localhost:3001/api/docs (development only)
 
 ---
 
@@ -195,31 +220,33 @@ tax-sentry-uae/
 │   ├── api/                    # NestJS backend
 │   │   ├── src/
 │   │   │   ├── modules/
-│   │   │   │   ├── auth/       # Clerk webhook sync, JWT issuance
+│   │   │   │   ├── auth/       # Custom JWT auth (signup, login, refresh, reset)
+│   │   │   │   │   └── dto/    # Request validation DTOs
 │   │   │   │   ├── revenue/    # Transaction CRUD + classification overrides
-│   │   │   │   ├── classification/  # Rules engine
-│   │   │   │   ├── deminimis/  # 5% threshold calculation
+│   │   │   │   ├── classification/  # Rules engine (Cabinet Decision 100/2023)
+│   │   │   │   ├── deminimis/  # 5% NQI threshold calculation
 │   │   │   │   ├── risk/       # Multi-factor risk scoring
 │   │   │   │   ├── alerts/     # Trigger, notify, snooze
 │   │   │   │   ├── substance/  # Document vault (Supabase Storage)
 │   │   │   │   ├── reports/    # PDF + CSV export
 │   │   │   │   ├── billing/    # DodoPayments webhooks
 │   │   │   │   └── audit/      # Immutable action log
-│   │   │   └── common/         # Guards, interceptors, decorators
+│   │   │   └── common/         # Guards (JWT, RBAC, Subscription), interceptors, decorators
 │   │   └── prisma/
-│   │       ├── schema.prisma   # Data model
+│   │       ├── schema.prisma   # Data model (User, Session, Org, TaxPeriod, ...)
 │   │       └── seed.ts         # Activity catalog seed
 │   │
 │   └── web/                    # Next.js frontend
 │       └── src/
 │           ├── app/
-│           │   ├── (marketing)/  # Landing, pricing, demo, legal
+│           │   ├── (marketing)/  # Landing, pricing, sign-in, sign-up, forgot/reset password
 │           │   └── (platform)/   # Dashboard, transactions, alerts,
 │           │                     # reports, billing, settings, audit log
 │           ├── components/
+│           │   └── layout/      # AuthProvider, Sidebar, TopRibbon
 │           └── lib/
-│               ├── api/         # Axios client
-│               └── hooks/       # React Query hooks
+│               ├── auth/        # Zustand store + auth actions (login, refresh, logout)
+│               └── api/         # Axios client (token injection, silent refresh)
 │
 └── packages/
     └── shared/                  # Shared types (monorepo)
@@ -242,46 +269,45 @@ DMCC · JAFZA · IFZA · DIFC · ADGM · RAKEZ · DWC · SHAMS · MEYDAN
 | VIEWER | Read-only dashboard |
 | AUDITOR | Audit log + read-only compliance data |
 
-MFA is enforced for OWNER and FINANCE roles.
-
 ---
 
 ## Useful Commands
 
 ```bash
-# Database
-npm run db:migrate          # Apply pending migrations
+# API
+cd apps/api
+
+npm run db:migrate          # Apply pending migrations (production)
+npm run db:migrate:dev      # Apply + generate migration (development)
+npm run db:seed             # Seed activity catalog
 npm run db:studio           # Prisma Studio GUI
 
-# Testing
+# Tests
 npm run test:unit           # Unit tests
 npm run test:integration    # Integration tests (needs running DB)
-npm run test:cov            # Coverage
+npm run test:cov            # Coverage report
 
-# Lint
-npm run lint
-
-# Production build
-npm run build
+# Build
+npm run build               # Compile TypeScript
+npm run lint                # ESLint
 ```
 
 ---
 
 ## Deployment
 
-The stack deploys for free during development:
-
-| Service | Provider | Cost |
+| Service | Provider | Notes |
 |---|---|---|
-| Frontend | Vercel | Free |
-| API | Render (Docker) | Free (spin-down) / $7/mo (always-on) |
-| Database | Supabase | Free up to 500MB |
-| Auth | Clerk | Free up to 10k MAU |
+| Frontend | Vercel | Auto-deploy from main branch |
+| API | Render (Docker) | `apps/api/Dockerfile`, context = repo root |
+| Database | Supabase | Free up to 500 MB |
 | Email | Resend | Free up to 3k/month |
-
-The Render service uses the multi-stage `Dockerfile` at `apps/api/Dockerfile`. Docker context is the repo root (Prisma schema lives under `apps/api/prisma/`).
+| Billing | DodoPayments | AED prices, USD charges (fixed peg 3.6725) |
 
 Health check endpoint: `GET /api/v1/health`
+
+Set `NEXT_PUBLIC_API_URL` on Vercel to point to your Render API URL.  
+Set `WEB_URL` on Render to your Vercel frontend URL (used in password reset emails).
 
 ---
 
