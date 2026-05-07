@@ -8,18 +8,11 @@ import {
   XAxis,
   YAxis,
   Tooltip,
-  Legend,
   ResponsiveContainer,
   CartesianGrid,
 } from 'recharts';
 import { ArrowUpRight, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
-
-const CLASSIFICATION_COLORS = {
-  QI:       '#16a34a',  /* emerald — qualifying, safe */
-  NQI:      '#dc2626',  /* red — non-qualifying, risk */
-  EXCLUDED: '#94a3b8',  /* slate — excluded, neutral */
-};
 
 const LEGEND_LABELS: Record<string, string> = {
   QI: 'Qualifying Income',
@@ -29,22 +22,34 @@ const LEGEND_LABELS: Record<string, string> = {
 
 function formatAedK(value: number) {
   if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
-  if (value >= 1_000)     return `${(value / 1_000).toFixed(0)}K`;
+  if (value >= 1_000) return `${(value / 1_000).toFixed(0)}K`;
   return `${value}`;
 }
 
 function CustomTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-card border rounded-lg shadow-card-md px-3 py-2.5 text-xs space-y-1 min-w-[160px]">
-      <p className="font-semibold text-foreground mb-1.5">{label}</p>
+    <div
+      className="rounded-lg px-3 py-2.5"
+      style={{
+        background: 'var(--ts-bg-elevated)',
+        border: '1px solid var(--ts-border)',
+        fontSize: 12,
+        fontFamily: 'var(--font-sans)',
+        minWidth: 160,
+      }}
+    >
+      <p style={{ fontWeight: 600, color: 'var(--ts-fg-primary)', marginBottom: 6 }}>{label}</p>
       {payload.map((entry: any) => (
-        <div key={entry.dataKey} className="flex justify-between gap-4 items-center">
-          <span className="flex items-center gap-1.5 text-muted-foreground">
-            <span className="w-2 h-2 rounded-sm inline-block flex-shrink-0" style={{ background: entry.fill }} />
+        <div key={entry.dataKey} className="flex justify-between gap-4 items-center mb-1">
+          <span className="flex items-center gap-1.5" style={{ color: 'var(--ts-fg-muted)' }}>
+            <span
+              className="inline-block rounded-sm"
+              style={{ width: 8, height: 8, background: entry.fill, flexShrink: 0 }}
+            />
             {LEGEND_LABELS[entry.dataKey] ?? entry.dataKey}
           </span>
-          <span className="font-medium text-foreground tabular-nums">
+          <span className="ts-mono" style={{ fontWeight: 600, color: 'var(--ts-fg-primary)' }}>
             AED {formatAedK(entry.value)}
           </span>
         </div>
@@ -63,9 +68,15 @@ export function RevenueMixRow() {
     return (
       <section>
         <SectionHeader />
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 bg-card rounded-lg border shadow-card p-6 h-72 animate-pulse" />
-          <div className="bg-card rounded-lg border shadow-card p-6 h-72 animate-pulse" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <div
+            className="lg:col-span-2 animate-pulse rounded-xl"
+            style={{ height: 288, background: 'var(--ts-bg-card)', border: '1px solid var(--ts-border)' }}
+          />
+          <div
+            className="animate-pulse rounded-xl"
+            style={{ height: 288, background: 'var(--ts-bg-card)', border: '1px solid var(--ts-border)' }}
+          />
         </div>
       </section>
     );
@@ -79,12 +90,14 @@ export function RevenueMixRow() {
     },
   );
 
-  const chartData = Object.entries(monthlyMap).map(([month, vals]) => ({
-    month,
-    QI:       vals.QI       ?? 0,
-    NQI:      vals.NQI      ?? 0,
-    EXCLUDED: vals.EXCLUDED ?? 0,
-  }));
+  const chartData = Object.entries(monthlyMap)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([month, vals]) => ({
+      month,
+      QI: vals.QI ?? 0,
+      NQI: vals.NQI ?? 0,
+      EXCLUDED: vals.EXCLUDED ?? 0,
+    }));
 
   const topNqi: Array<{ counterparty: string; _sum: { amountAed: string } }> =
     data?.topNqiCounterparties ?? [];
@@ -95,8 +108,17 @@ export function RevenueMixRow() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {/* Stacked bar chart */}
-        <div className="lg:col-span-2 bg-card rounded-lg border shadow-card p-5">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-4">
+        <div className="lg:col-span-2 premium-card" style={{ padding: 20 }}>
+          <p
+            style={{
+              fontSize: 11,
+              fontWeight: 600,
+              textTransform: 'uppercase',
+              letterSpacing: '0.12em',
+              color: 'var(--ts-fg-muted)',
+              marginBottom: 16,
+            }}
+          >
             Monthly QI / NQI / Excluded Breakdown
           </p>
           {chartData.length === 0 ? (
@@ -104,44 +126,66 @@ export function RevenueMixRow() {
           ) : (
             <ResponsiveContainer width="100%" height={240}>
               <BarChart data={chartData} margin={{ top: 0, right: 8, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="2 4" vertical={false} stroke="hsl(var(--border))" />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--ts-border-subtle)" vertical={false} />
                 <XAxis
                   dataKey="month"
-                  tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                  tick={{ fontSize: 11, fill: 'oklch(0.45 0 0)', fontFamily: 'var(--font-sans)' }}
                   axisLine={false}
                   tickLine={false}
                 />
                 <YAxis
                   tickFormatter={formatAedK}
-                  tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                  tick={{ fontSize: 11, fill: 'oklch(0.45 0 0)', fontFamily: 'var(--font-mono)' }}
                   axisLine={false}
                   tickLine={false}
                   width={44}
                 />
-                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'hsl(var(--muted))', radius: 4 }} />
-                <Legend
-                  wrapperStyle={{ fontSize: 11, paddingTop: 12 }}
-                  formatter={(value) => LEGEND_LABELS[value] ?? value}
-                />
-                <Bar dataKey="QI"       stackId="a" fill={CLASSIFICATION_COLORS.QI}       name="QI"       radius={[0, 0, 0, 0]} />
-                <Bar dataKey="NQI"      stackId="a" fill={CLASSIFICATION_COLORS.NQI}      name="NQI"      radius={[3, 3, 0, 0]} />
-                <Bar dataKey="EXCLUDED" stackId="a" fill={CLASSIFICATION_COLORS.EXCLUDED} name="EXCLUDED" radius={[3, 3, 0, 0]} />
+                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'oklch(0.98 0 0 / 0.03)', radius: 4 }} />
+                <Bar dataKey="QI" stackId="a" fill="var(--ts-green-500)" name="QI" radius={[0, 0, 0, 0]} />
+                <Bar dataKey="NQI" stackId="a" fill="var(--ts-amber-500)" name="NQI" radius={[0, 0, 0, 0]} />
+                <Bar dataKey="EXCLUDED" stackId="a" fill="oklch(0.35 0.02 255)" name="EXCLUDED" radius={[3, 3, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           )}
+
+          {/* Legend */}
+          <div className="flex items-center gap-5 mt-3">
+            {[
+              { color: 'var(--ts-green-500)', label: 'Qualifying Income' },
+              { color: 'var(--ts-amber-500)', label: 'Non-Qualifying' },
+              { color: 'oklch(0.35 0.02 255)', label: 'Excluded' },
+            ].map(({ color, label }) => (
+              <div key={label} className="flex items-center gap-1.5" style={{ fontSize: 11, color: 'var(--ts-fg-muted)' }}>
+                <span className="inline-block rounded-sm" style={{ width: 10, height: 10, background: color, flexShrink: 0 }} />
+                {label}
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Top 5 NQI counterparties */}
-        <div className="bg-card rounded-lg border shadow-card p-5 flex flex-col">
+        <div className="premium-card flex flex-col" style={{ padding: 20 }}>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            <h3
+              style={{
+                fontSize: 11,
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: '0.12em',
+                color: 'var(--ts-fg-muted)',
+                margin: 0,
+              }}
+            >
               Top NQI Sources
             </h3>
-            <span className="text-xs text-muted-foreground">by AED amount</span>
+            <span style={{ fontSize: 11, color: 'oklch(0.40 0 0)' }}>by AED amount</span>
           </div>
 
           {topNqi.length === 0 ? (
-            <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground text-center py-8">
+            <div
+              className="flex-1 flex items-center justify-center py-8 text-center"
+              style={{ fontSize: 13, color: 'var(--ts-fg-muted)' }}
+            >
               No NQI transactions yet.
             </div>
           ) : (
@@ -152,21 +196,33 @@ export function RevenueMixRow() {
                 const barWidth = maxAmount > 0 ? Math.round((amount / maxAmount) * 100) : 0;
                 return (
                   <div key={idx}>
-                    <div className="flex justify-between items-center mb-0.5">
-                      <span className="flex items-center gap-1.5 text-xs text-foreground min-w-0">
-                        <span className="text-xs font-bold text-muted-foreground w-4 shrink-0 tabular-nums">
+                    <div className="flex justify-between items-center mb-1">
+                      <span
+                        className="flex items-center gap-1.5 min-w-0"
+                        style={{ fontSize: 12, color: 'var(--ts-fg-primary)' }}
+                      >
+                        <span
+                          className="shrink-0 tabular-nums"
+                          style={{ fontSize: 11, fontWeight: 700, color: 'var(--ts-fg-muted)', width: 16 }}
+                        >
                           {idx + 1}
                         </span>
-                        <span className="truncate max-w-[220px] lg:max-w-[190px]">{item.counterparty}</span>
+                        <span className="truncate">{item.counterparty}</span>
                       </span>
-                      <span className="text-xs font-semibold text-red-600 tabular-nums shrink-0">
+                      <span
+                        className="ts-mono shrink-0"
+                        style={{ fontSize: 12, fontWeight: 600, color: 'var(--ts-red-500)' }}
+                      >
                         AED {formatAedK(amount)}
                       </span>
                     </div>
-                    <div className="w-full bg-muted rounded-full h-1">
+                    <div
+                      className="w-full rounded-full overflow-hidden"
+                      style={{ height: 3, background: 'var(--ts-bg-muted)' }}
+                    >
                       <div
-                        className="bg-red-400/60 h-1 rounded-full"
-                        style={{ width: `${barWidth}%` }}
+                        className="h-full rounded-full"
+                        style={{ width: `${barWidth}%`, background: 'oklch(0.62 0.24 25 / 0.5)' }}
                       />
                     </div>
                   </div>
@@ -175,12 +231,16 @@ export function RevenueMixRow() {
             </div>
           )}
 
-          <div className="mt-4 pt-3 border-t">
+          <div
+            className="mt-4 pt-3"
+            style={{ borderTop: '1px solid var(--ts-border-subtle)' }}
+          >
             <Link
-              href="/transactions?filter=NQI"
-              className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 font-medium"
+              href="/revenue"
+              className="flex items-center gap-1 transition-colors hover:text-white"
+              style={{ fontSize: 12, fontWeight: 500, color: 'var(--ts-blue-400)' }}
             >
-              View all NQI transactions <ArrowUpRight className="w-3 h-3" />
+              View all NQI transactions <ArrowUpRight size={12} />
             </Link>
           </div>
         </div>
@@ -191,9 +251,11 @@ export function RevenueMixRow() {
 
 function SectionHeader() {
   return (
-    <div className="mb-4">
-      <h2 className="text-base font-semibold text-foreground">Revenue Mix</h2>
-      <p className="text-xs text-muted-foreground mt-0.5">
+    <div style={{ marginBottom: 16 }}>
+      <h2 style={{ fontSize: 15, fontWeight: 600, color: 'var(--ts-fg-primary)', margin: 0, marginBottom: 3 }}>
+        Revenue Mix
+      </h2>
+      <p style={{ fontSize: 12, color: 'var(--ts-fg-muted)', margin: 0 }}>
         Income classification by month — NQI must stay below de-minimis thresholds
       </p>
     </div>
@@ -202,10 +264,15 @@ function SectionHeader() {
 
 function EmptyChart() {
   return (
-    <div className="h-48 flex flex-col items-center justify-center gap-2 text-center">
-      <TrendingUp className="w-8 h-8 text-muted-foreground/40" />
-      <p className="text-sm text-muted-foreground">No revenue data yet</p>
-      <p className="text-xs text-muted-foreground/70 max-w-xs">
+    <div
+      className="h-48 flex flex-col items-center justify-center gap-2 text-center rounded-lg"
+      style={{ background: 'var(--ts-bg-elevated)' }}
+    >
+      <TrendingUp size={32} color="oklch(0.48 0 0)" />
+      <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--ts-fg-muted)', margin: 0 }}>
+        No revenue data yet
+      </p>
+      <p style={{ fontSize: 12, color: 'oklch(0.40 0 0)', maxWidth: 260, lineHeight: 1.5, margin: 0 }}>
         Upload transactions or connect your accounting software to see the revenue mix chart.
       </p>
     </div>

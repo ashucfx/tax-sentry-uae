@@ -2,203 +2,278 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api/client';
-import { cn } from '@/lib/utils';
-import { ShieldCheck, AlertTriangle, AlertOctagon, Clock, Building2, RefreshCw } from 'lucide-react';
-import { useOrganization } from '@clerk/nextjs';
+import { useAuthStore } from '@/lib/auth/store';
+import { Bell } from 'lucide-react';
 
 type StatusBadge = 'SAFE' | 'AT_RISK' | 'BREACH_IMMINENT' | 'BREACHED';
 
 const STATUS_CONFIG: Record<
   StatusBadge,
-  {
-    label: string;
-    sub: string;
-    outerBg: string;
-    badgeBg: string;
-    badgeText: string;
-    badgeBorder: string;
-    dotColor: string;
-    icon: React.ElementType;
-    pulse: boolean;
-  }
+  { label: string; color: string; bg: string; border: string; glow: string }
 > = {
   SAFE: {
-    label: 'QFZP Protected',
-    sub: '0% corporate tax status is active',
-    outerBg: 'bg-white border-b border-border',
-    badgeBg: 'bg-emerald-50',
-    badgeText: 'text-emerald-700',
-    badgeBorder: 'border-emerald-200',
-    dotColor: 'text-emerald-500',
-    icon: ShieldCheck,
-    pulse: false,
+    label: 'QFZP PROTECTED',
+    color: 'oklch(0.70 0.20 155)',
+    bg: 'oklch(0.70 0.20 155 / 0.15)',
+    border: 'oklch(0.70 0.20 155 / 0.3)',
+    glow: '0 0 20px oklch(0.70 0.20 155 / 0.25)',
   },
   AT_RISK: {
-    label: 'QFZP At Risk',
-    sub: 'De-minimis threshold above 60% — review NQI transactions',
-    outerBg: 'bg-amber-50 border-b border-amber-200',
-    badgeBg: 'bg-amber-100',
-    badgeText: 'text-amber-800',
-    badgeBorder: 'border-amber-300',
-    dotColor: 'text-amber-500',
-    icon: AlertTriangle,
-    pulse: false,
+    label: 'AT RISK',
+    color: 'oklch(0.80 0.18 85)',
+    bg: 'oklch(0.80 0.18 85 / 0.15)',
+    border: 'oklch(0.80 0.18 85 / 0.3)',
+    glow: '0 0 20px oklch(0.80 0.18 85 / 0.25)',
   },
   BREACH_IMMINENT: {
-    label: 'Breach Imminent',
-    sub: 'NQI threshold above 90% — immediate remediation required',
-    outerBg: 'bg-red-50 border-b border-red-300',
-    badgeBg: 'bg-red-100',
-    badgeText: 'text-red-800',
-    badgeBorder: 'border-red-300',
-    dotColor: 'text-red-500',
-    icon: AlertOctagon,
-    pulse: true,
+    label: 'BREACH IMMINENT',
+    color: 'oklch(0.62 0.24 25)',
+    bg: 'oklch(0.62 0.24 25 / 0.15)',
+    border: 'oklch(0.62 0.24 25 / 0.3)',
+    glow: '0 0 20px oklch(0.62 0.24 25 / 0.25)',
   },
   BREACHED: {
-    label: 'QFZP STATUS BREACHED',
-    sub: 'QFZP status lost — contact your tax advisor immediately',
-    outerBg: 'bg-red-700 border-b border-red-800',
-    badgeBg: 'bg-red-600',
-    badgeText: 'text-white',
-    badgeBorder: 'border-red-500',
-    dotColor: 'text-red-200',
-    icon: AlertOctagon,
-    pulse: true,
+    label: 'QFZP BREACHED',
+    color: 'oklch(0.62 0.24 25)',
+    bg: 'oklch(0.62 0.24 25 / 0.2)',
+    border: 'oklch(0.62 0.24 25 / 0.5)',
+    glow: '0 0 30px oklch(0.62 0.24 25 / 0.4)',
   },
 };
 
-const BAND_STYLES = {
-  GREEN: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  AMBER: 'bg-amber-50  text-amber-700  border-amber-200',
-  RED:   'bg-red-50    text-red-700    border-red-200',
+const RISK_BAND_CONFIG = {
+  GREEN: {
+    color: 'oklch(0.70 0.20 155)',
+    bg: 'oklch(0.70 0.20 155 / 0.1)',
+    border: 'oklch(0.70 0.20 155 / 0.3)',
+    label: 'Low Risk',
+  },
+  AMBER: {
+    color: 'oklch(0.80 0.18 85)',
+    bg: 'oklch(0.80 0.18 85 / 0.1)',
+    border: 'oklch(0.80 0.18 85 / 0.3)',
+    label: 'Monitor',
+  },
+  RED: {
+    color: 'oklch(0.62 0.24 25)',
+    bg: 'oklch(0.62 0.24 25 / 0.1)',
+    border: 'oklch(0.62 0.24 25 / 0.3)',
+    label: 'High Risk',
+  },
 };
 
 export function TopRibbon() {
-  const { organization } = useOrganization();
+  const { user } = useAuthStore();
 
-  const { data: dmData, dataUpdatedAt: dmUpdated } = useQuery({
+  const { data: dmData } = useQuery({
     queryKey: ['deminimis-status'],
-    queryFn: () => api.get('/deminimis/status').then((r) => r.data),
+    queryFn: () => api.get('/deminimis/status').then((r) => r.data.data),
     refetchInterval: 5 * 60 * 1000,
   });
 
   const { data: riskData } = useQuery({
     queryKey: ['risk-score'],
-    queryFn: () => api.get('/risk/score').then((r) => r.data),
+    queryFn: () => api.get('/risk/score').then((r) => r.data.data),
     refetchInterval: 5 * 60 * 1000,
   });
 
-  const statusBadge: StatusBadge = dmData?.data?.deMinimis?.statusBadge ?? 'SAFE';
-  const config = STATUS_CONFIG[statusBadge];
-  const Icon = config.icon;
+  const { data: alertsData } = useQuery({
+    queryKey: ['alerts-count'],
+    queryFn: () => api.get('/alerts?limit=1').then((r) => r.data.data),
+    refetchInterval: 60 * 1000,
+  });
 
-  const score: number | null = riskData?.data?.total ?? null;
-  const band: 'GREEN' | 'AMBER' | 'RED' = riskData?.data?.band ?? 'GREEN';
-  const daysRemaining: number | null = dmData?.data?.period?.daysRemaining ?? null;
-  const isBreached = statusBadge === 'BREACHED';
+  const statusBadge: StatusBadge =
+    dmData?.deMinimis?.statusBadge ?? 'SAFE';
+  const sc = STATUS_CONFIG[statusBadge];
 
-  const lastSynced = dmUpdated
-    ? new Date(dmUpdated).toLocaleTimeString('en-AE', { hour: '2-digit', minute: '2-digit', hour12: false })
-    : null;
+  const score: number | null = riskData?.total ?? null;
+  const band: 'GREEN' | 'AMBER' | 'RED' = riskData?.band ?? 'GREEN';
+  const daysRemaining: number | null = dmData?.period?.daysRemaining ?? null;
+  const freeZone: string = user?.org?.freeZone ?? 'DMCC';
+  const licenseNo: string = user?.org?.tradeLicenseNo ?? '';
+  const companyName = user?.org?.name ?? 'Your Company';
+  const pendingCount: number = alertsData?.unreadCount ?? 0;
+
+  const riskBand = RISK_BAND_CONFIG[band];
 
   return (
-    <header className={cn('sticky top-0 z-30', config.outerBg)}>
-      <div className="max-w-full px-6 py-2.5">
-        <div className="flex items-center justify-between gap-4">
+    <header
+      className="sticky top-0 z-30 flex items-center justify-between"
+      style={{
+        padding: '0 24px',
+        height: 72,
+        flexShrink: 0,
+        background: 'oklch(0.18 0.035 255 / 0.9)',
+        borderBottom: '1px solid var(--ts-border)',
+        backdropFilter: 'blur(16px)',
+        fontFamily: 'var(--font-sans)',
+      }}
+    >
+      {/* Left: Status badge + company info */}
+      <div className="flex items-center gap-4">
+        <div
+          className="flex items-center gap-2 rounded-full text-[12px] font-bold tracking-[0.06em]"
+          style={{
+            padding: '8px 16px',
+            background: sc.bg,
+            color: sc.color,
+            border: `1px solid ${sc.border}`,
+            boxShadow: sc.glow,
+          }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 2L3 7v7c0 5.25 3.75 10.15 9 11.5C17.25 24.15 21 19.25 21 14V7L12 2z" />
+            <path d="M9 12l2 2 4-4" />
+          </svg>
+          {sc.label}
+        </div>
 
-          {/* Left: Org + Status badge */}
-          <div className="flex items-center gap-3 min-w-0">
-            {organization?.name && (
-              <div className={cn(
-                'flex items-center gap-1.5 text-sm border-r pr-3 mr-0 shrink-0',
-                isBreached ? 'text-red-200 border-red-600' : 'text-muted-foreground border-border',
-              )}>
-                <Building2 className="w-3.5 h-3.5" />
-                <span className="font-medium truncate max-w-[160px]">{organization.name}</span>
-              </div>
-            )}
-
-            {/* Status badge with pulsing dot */}
-            <div
-              className={cn(
-                'inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-semibold tracking-wide uppercase',
-                config.badgeBg,
-                config.badgeText,
-                config.badgeBorder,
-              )}
-            >
-              {config.pulse ? (
-                <span className="relative flex h-2 w-2 flex-shrink-0">
-                  <span className={cn(
-                    'animate-ping absolute inline-flex h-full w-full rounded-full opacity-75',
-                    isBreached ? 'bg-red-300' : 'bg-red-400',
-                  )} />
-                  <span className={cn(
-                    'relative inline-flex rounded-full h-2 w-2',
-                    isBreached ? 'bg-red-200' : 'bg-red-500',
-                  )} />
-                </span>
-              ) : (
-                <Icon className="w-3.5 h-3.5 flex-shrink-0" />
-              )}
-              <span>{config.label}</span>
-            </div>
-
-            <span className={cn(
-              'text-xs hidden lg:block',
-              isBreached ? 'text-red-200' : 'text-muted-foreground',
-            )}>
-              {config.sub}
-            </span>
+        <div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--ts-fg-primary)' }}>
+            {companyName}
           </div>
-
-          {/* Right: Metrics row */}
-          <div className="flex items-center gap-4 shrink-0">
-
-            {/* Days remaining */}
-            {daysRemaining !== null && (
-              <div className={cn(
-                'flex items-center gap-1.5 text-xs',
-                isBreached ? 'text-red-200' : 'text-muted-foreground',
-              )}>
-                <Clock className="w-3.5 h-3.5 flex-shrink-0" />
-                <span>
-                  <strong className={isBreached ? 'text-red-100' : 'text-foreground'}>
-                    {daysRemaining}
-                  </strong>
-                  {' '}days to period end
-                </span>
-              </div>
-            )}
-
-            {/* Risk score chip */}
-            {score !== null && (
-              <div
-                className={cn(
-                  'flex items-center gap-1 px-3 py-1 rounded-full border text-xs font-bold',
-                  BAND_STYLES[band],
-                )}
-                title="Risk score: 85–100 = Protected · 60–84 = At Risk · <60 = Critical"
-              >
-                <span className="font-normal opacity-70">Risk&nbsp;</span>
-                <span className="tabular-nums">{score}</span>
-                <span className="font-normal opacity-70">/100</span>
-              </div>
-            )}
-
-            {/* Last synced */}
-            {lastSynced && (
-              <span className={cn(
-                'text-xs hidden xl:flex items-center gap-1',
-                isBreached ? 'text-red-300' : 'text-muted-foreground',
-              )}>
-                <RefreshCw className="w-3 h-3" />
-                Synced {lastSynced}
+          <div className="flex items-center gap-2 mt-0.5">
+            <span
+              className="rounded"
+              style={{
+                background: 'var(--ts-bg-elevated)',
+                color: 'var(--ts-fg-muted)',
+                fontSize: 10,
+                padding: '1px 7px',
+              }}
+            >
+              {freeZone}
+            </span>
+            {licenseNo && (
+              <span style={{ fontSize: 10, color: 'oklch(0.45 0 0)' }}>
+                License: {licenseNo}
               </span>
             )}
           </div>
         </div>
+      </div>
+
+      {/* Right: Risk score, days remaining, actions */}
+      <div className="flex items-center gap-3">
+        {/* Risk score */}
+        {score !== null && (
+          <div
+            className="flex items-center gap-2.5 rounded-[10px]"
+            style={{
+              border: `1px solid ${riskBand.border}`,
+              background: riskBand.bg,
+              padding: '8px 14px',
+            }}
+          >
+            <div>
+              <div
+                style={{
+                  fontSize: 22,
+                  fontWeight: 700,
+                  fontVariantNumeric: 'tabular-nums',
+                  color: riskBand.color,
+                  lineHeight: 1,
+                  fontFamily: 'var(--font-mono)',
+                }}
+              >
+                {score}
+              </div>
+              <div style={{ fontSize: 8, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'oklch(0.45 0 0)' }}>
+                Risk
+              </div>
+            </div>
+            <div
+              style={{ width: 1, height: 28, background: 'var(--ts-border)' }}
+            />
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 600, color: riskBand.color }}>
+                {riskBand.label}
+              </div>
+              <div style={{ fontSize: 8, color: 'oklch(0.45 0 0)' }}>of 100</div>
+            </div>
+          </div>
+        )}
+
+        {/* Days remaining */}
+        {daysRemaining !== null && (
+          <div
+            className="flex items-center gap-2 rounded-[10px]"
+            style={{
+              border: '1px solid var(--ts-border)',
+              background: 'var(--ts-bg-elevated)',
+              padding: '8px 14px',
+            }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="oklch(0.55 0 0)" strokeWidth="1.5" strokeLinecap="round">
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
+            <div>
+              <div
+                style={{
+                  fontSize: 20,
+                  fontWeight: 700,
+                  fontVariantNumeric: 'tabular-nums',
+                  color: 'var(--ts-fg-primary)',
+                  lineHeight: 1,
+                  fontFamily: 'var(--font-mono)',
+                }}
+              >
+                {daysRemaining}
+              </div>
+              <div style={{ fontSize: 8, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'oklch(0.45 0 0)' }}>
+                Period Ends
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div style={{ width: 1, height: 32, background: 'var(--ts-border)' }} />
+
+        {/* Bell */}
+        <button
+          className="relative flex items-center justify-center rounded-full"
+          style={{
+            width: 36,
+            height: 36,
+            background: 'var(--ts-bg-elevated)',
+            border: 'none',
+            cursor: 'pointer',
+          }}
+        >
+          <Bell size={16} color="var(--ts-blue-500)" strokeWidth={1.5} />
+          {pendingCount > 0 && (
+            <span
+              className="absolute -top-0.5 -right-0.5 flex items-center justify-center rounded-full text-[8px] font-bold"
+              style={{
+                width: 16,
+                height: 16,
+                background: 'var(--ts-amber-500)',
+                color: 'oklch(0.20 0.05 85)',
+              }}
+            >
+              {pendingCount}
+            </span>
+          )}
+        </button>
+
+        {/* User avatar */}
+        <button
+          className="flex items-center justify-center rounded-full"
+          style={{
+            width: 36,
+            height: 36,
+            background: 'oklch(0.55 0.22 260 / 0.15)',
+            border: '1px solid oklch(0.55 0.22 260 / 0.3)',
+            cursor: 'pointer',
+          }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--ts-blue-500)" strokeWidth="1.5" strokeLinecap="round">
+            <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
+            <circle cx="12" cy="7" r="4" />
+          </svg>
+        </button>
       </div>
     </header>
   );
