@@ -8,6 +8,7 @@ RUN npm ci --workspace=apps/api --ignore-scripts
 
 # ── Stage 2: Build ───────────────────────────────────────────
 FROM node:20-alpine AS builder
+RUN apk add --no-cache openssl
 WORKDIR /app
 
 COPY --from=deps /app/node_modules ./node_modules
@@ -20,6 +21,7 @@ RUN npm run build --workspace=apps/api
 
 # ── Stage 3: Production ──────────────────────────────────────
 FROM node:20-alpine AS runner
+RUN apk add --no-cache openssl
 WORKDIR /app
 
 ENV NODE_ENV=production
