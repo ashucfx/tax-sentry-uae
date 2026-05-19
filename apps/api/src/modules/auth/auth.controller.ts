@@ -16,10 +16,6 @@ import { FastifyRequest, FastifyReply } from 'fastify';
 import { ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
 import { OtpService } from './otp.service';
-import { SignupDto } from './dto/signup.dto';
-import { LoginDto } from './dto/login.dto';
-import { ForgotPasswordDto } from './dto/forgot-password.dto';
-import { ResetPasswordDto } from './dto/reset-password.dto';
 import { SendOtpDto } from './dto/send-otp.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { Public } from '../../common/decorators/public.decorator';
@@ -65,40 +61,7 @@ export class AuthController {
     };
   }
 
-  // ── Sign up ──────────────────────────────────────────────────────────────────
 
-  @Post('signup')
-  @Public()
-  @SkipSubscriptionCheck()
-  @HttpCode(HttpStatus.CREATED)
-  @Throttle({ short: { limit: 5, ttl: 60000 }, medium: { limit: 20, ttl: 3600000 } })
-  @ApiOperation({ summary: 'Create new user account and organization' })
-  async signup(@Body() dto: SignupDto) {
-    return this.authService.signup(dto);
-  }
-
-  // ── Login ────────────────────────────────────────────────────────────────────
-
-  @Post('login')
-  @Public()
-  @SkipSubscriptionCheck()
-  @HttpCode(HttpStatus.OK)
-  @Throttle({ short: { limit: 10, ttl: 60000 }, medium: { limit: 30, ttl: 900000 } })
-  @ApiOperation({ summary: 'Login and receive access + refresh tokens' })
-  async login(
-    @Body() dto: LoginDto,
-    @Req() req: FastifyRequest,
-    @Res({ passthrough: true }) res: FastifyReply,
-  ) {
-    const meta = {
-      ipAddress: req.ip,
-      userAgent: req.headers['user-agent'],
-    };
-
-    const result = await this.authService.login(dto.email, dto.password, meta);
-    res.setCookie(REFRESH_COOKIE, result.refreshToken, this.cookieOpts());
-    return { accessToken: result.accessToken, user: result.user };
-  }
 
   // ── Refresh ──────────────────────────────────────────────────────────────────
 
@@ -153,53 +116,7 @@ export class AuthController {
     res.clearCookie(REFRESH_COOKIE, this.clearCookieOpts());
   }
 
-  // ── Forgot password ──────────────────────────────────────────────────────────
 
-  @Post('forgot-password')
-  @Public()
-  @SkipSubscriptionCheck()
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @Throttle({ short: { limit: 3, ttl: 300000 }, medium: { limit: 10, ttl: 3600000 } })
-  @ApiOperation({ summary: 'Send password reset email' })
-  async forgotPassword(@Body() dto: ForgotPasswordDto) {
-    await this.authService.forgotPassword(dto.email);
-  }
-
-  // ── Reset password ───────────────────────────────────────────────────────────
-
-  @Post('reset-password')
-  @Public()
-  @SkipSubscriptionCheck()
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @Throttle({ short: { limit: 5, ttl: 300000 } })
-  @ApiOperation({ summary: 'Reset password using token from email' })
-  async resetPassword(@Body() dto: ResetPasswordDto) {
-    await this.authService.resetPassword(dto.token, dto.password);
-  }
-
-  // ── Verify email ─────────────────────────────────────────────────────────────
-
-  @Post('verify-email')
-  @Public()
-  @SkipSubscriptionCheck()
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @Throttle({ short: { limit: 10, ttl: 300000 } })
-  @ApiOperation({ summary: 'Verify email address using token from signup email' })
-  async verifyEmail(@Body('token') token: string) {
-    await this.authService.verifyEmail(token);
-  }
-
-  // ── Resend verification email ─────────────────────────────────────────────────
-
-  @Post('resend-verification')
-  @SkipSubscriptionCheck()
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @Throttle({ short: { limit: 2, ttl: 300000 } })
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Resend email verification link' })
-  async resendVerification(@CurrentUser('id') userId: string) {
-    await this.authService.resendVerificationEmail(userId);
-  }
 
   // ── Accept invitation ─────────────────────────────────────────────────────────
 
@@ -210,7 +127,7 @@ export class AuthController {
   @Throttle({ short: { limit: 5, ttl: 300000 } })
   @ApiOperation({ summary: 'Accept an org invitation and create account' })
   async acceptInvite(
-    @Body() dto: { token: string; password: string; firstName?: string; lastName?: string },
+    @Body() dto: { token: string; firstName?: string; lastName?: string },
     @Req() req: FastifyRequest,
     @Res({ passthrough: true }) res: FastifyReply,
   ) {

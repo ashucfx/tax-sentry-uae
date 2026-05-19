@@ -15,22 +15,7 @@ function extract(res: { data: Record<string, unknown> }) {
   return (res.data?.data ?? res.data) as Record<string, unknown>;
 }
 
-export async function loginAction(email: string, password: string) {
-  const res = await authAxios.post('/auth/login', { email, password });
-  const data = extract(res);
-  useAuthStore.getState().setAuth(data.accessToken as string, data.user as AuthUser);
-  return data;
-}
 
-export async function signupAction(
-  email: string,
-  password: string,
-  firstName?: string,
-  lastName?: string,
-) {
-  const res = await authAxios.post('/auth/signup', { email, password, firstName, lastName });
-  return extract(res);
-}
 
 export async function refreshAction(): Promise<string | null> {
   try {
@@ -64,26 +49,7 @@ export async function logoutAllAction() {
   useAuthStore.getState().clearAuth();
 }
 
-export async function forgotPasswordAction(email: string) {
-  await authAxios.post('/auth/forgot-password', { email });
-}
 
-export async function resetPasswordAction(token: string, password: string) {
-  await authAxios.post('/auth/reset-password', { token, password });
-}
-
-export async function verifyEmailAction(token: string) {
-  await authAxios.post('/auth/verify-email', { token });
-}
-
-export async function resendVerificationAction() {
-  const { accessToken } = useAuthStore.getState();
-  await authAxios.post(
-    '/auth/resend-verification',
-    {},
-    { headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {} },
-  );
-}
 
 export async function sendOtpAction(identifier: { email?: string; phone?: string }) {
   const res = await authAxios.post('/auth/send-otp', identifier);
@@ -102,11 +68,10 @@ export async function verifyOtpAction(
 
 export async function acceptInviteAction(
   token: string,
-  password: string,
   firstName?: string,
   lastName?: string,
 ) {
-  const res = await authAxios.post('/auth/accept-invite', { token, password, firstName, lastName });
+  const res = await authAxios.post('/auth/accept-invite', { token, firstName, lastName });
   const data = extract(res);
   useAuthStore.getState().setAuth(data.accessToken as string, data.user as AuthUser);
   return data;

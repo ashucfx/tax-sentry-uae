@@ -272,12 +272,6 @@ export default function LoginPage() {
               </button>
             </form>
 
-            <p className="mt-6 text-center text-sm" style={{ color: 'var(--ts-fg-muted)' }}>
-              Prefer password?{' '}
-              <Link href="/sign-in" style={{ color: 'var(--ts-blue-400)' }}>
-                Sign in with password
-              </Link>
-            </p>
           </>
         )}
 

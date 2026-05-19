@@ -16,7 +16,7 @@ const PROTECTED_PREFIXES = [
 ];
 
 // Routes that should redirect to /redirect when already signed in
-const AUTH_ROUTES = ['/sign-in', '/sign-up'];
+const AUTH_ROUTES = ['/sign-in'];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;

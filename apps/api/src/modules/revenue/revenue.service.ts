@@ -345,7 +345,7 @@ export class RevenueService {
     if (!period) throw new BadRequestException('Tax period not found or locked');
 
     const errors: Array<{ row: number; error: string }> = [];
-    const validRows: CreateTransactionDto[] = [];
+    const validRows: Array<Omit<CreateTransactionDto, 'amountAed'> & { amountAed: string }> = [];
 
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
@@ -356,16 +356,20 @@ export class RevenueService {
       if (!row.amount_aed) { errors.push({ row: rowNum, error: 'Missing amount_aed' }); continue; }
       if (!row.counterparty) { errors.push({ row: rowNum, error: 'Missing counterparty' }); continue; }
 
-      const amount = parseFloat(row.amount_aed);
-      if (isNaN(amount)) { errors.push({ row: rowNum, error: 'Invalid amount_aed' }); continue; }
-      if (amount === 0) { errors.push({ row: rowNum, error: 'Amount cannot be zero' }); continue; }
+      let decimalAmount: Decimal;
+      try {
+        decimalAmount = new Decimal(row.amount_aed);
+      } catch {
+        errors.push({ row: rowNum, error: 'Invalid amount_aed' }); continue;
+      }
+      if (decimalAmount.isZero()) { errors.push({ row: rowNum, error: 'Amount cannot be zero' }); continue; }
 
       const dateVal = new Date(row.date);
       if (isNaN(dateVal.getTime())) { errors.push({ row: rowNum, error: 'Invalid date format' }); continue; }
 
       validRows.push({
         date: row.date,
-        amountAed: amount,
+        amountAed: row.amount_aed,
         counterparty: row.counterparty,
         counterpartyType: (row.counterparty_type as CounterpartyType) || CounterpartyType.THIRD_PARTY,
         activityCode: row.activity_code || undefined,
@@ -386,7 +390,7 @@ export class RevenueService {
         ? this.classifier.classify({
             activityCode: row.activityCode,
             counterpartyType: row.counterpartyType ?? CounterpartyType.THIRD_PARTY,
-            amountAed: Math.abs(row.amountAed),
+          amountAed: new Decimal(row.amountAed).abs().toNumber(),
             counterpartyName: row.counterparty,
             isRelatedParty: row.isRelatedParty ?? false,
           })

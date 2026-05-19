@@ -119,7 +119,7 @@ describe('ClassificationEngine', () => {
         isRelatedParty: true,
       });
       expect(result.classification).toBe(Classification.QI);
-      expect(result.warnings).toContain(expect.stringContaining('arm\'s length'));
+      expect(result.warnings).toEqual(expect.arrayContaining([expect.stringContaining('arm\'s length')]));
     });
   });
 
@@ -135,7 +135,7 @@ describe('ClassificationEngine', () => {
       });
       expect(result.classification).toBe(Classification.NQI);
       expect(result.requiresReview).toBe(true);
-      expect(result.warnings).toContain(expect.stringContaining('Designated Zone'));
+      expect(result.warnings).toEqual(expect.arrayContaining([expect.stringContaining('Designated Zone')]));
     });
 
     it('should classify DISTRIBUTION_DESIGNATED as QI when DZ is confirmed', () => {
@@ -170,7 +170,7 @@ describe('ClassificationEngine', () => {
         isRelatedParty: true,
       });
       expect(result.classification).toBe(Classification.QI);
-      expect(result.warnings).toContain(expect.stringContaining('arm\'s length'));
+      expect(result.warnings).toEqual(expect.arrayContaining([expect.stringContaining('arm\'s length')]));
     });
   });
 
@@ -218,7 +218,7 @@ describe('ClassificationEngine', () => {
         amountAed: 100000,
         counterpartyName: 'UNKNOWN',
       });
-      expect(result.warnings).toContain(expect.stringContaining('Missing counterparty'));
+      expect(result.warnings).toEqual(expect.arrayContaining([expect.stringContaining('Missing counterparty')]));
       expect(result.classification).not.toBeUndefined();
     });
   });
@@ -254,7 +254,7 @@ describe('ClassificationEngine', () => {
         'Transfer pricing documentation confirms arm\'s length pricing for this transaction.',
       );
       expect(result.valid).toBe(true);
-      expect(result.warnings).toContain(expect.stringContaining('CRITICAL'));
+      expect(result.warnings).toEqual(expect.arrayContaining([expect.stringContaining('CRITICAL')]));
     });
 
     it('should accept valid override with sufficient reason', () => {

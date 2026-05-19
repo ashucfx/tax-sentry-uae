@@ -98,15 +98,15 @@ export class DeMinimisController {
       }>
     >`
       SELECT
-        TO_CHAR(date, 'YYYY-MM') as month,
+        TO_CHAR("date", 'YYYY-MM') as month,
         classification,
-        SUM(amount_aed) as total
+        SUM("amountAed") as total
       FROM revenue_transactions
-      WHERE org_id = ${orgId}
-        AND tax_period_id = ${period.id}
-        AND is_deleted = false
+      WHERE "orgId" = ${orgId}
+        AND "taxPeriodId" = ${period.id}
+        AND "isDeleted" = false
         AND classification != 'UNCLASSIFIED'
-      GROUP BY TO_CHAR(date, 'YYYY-MM'), classification
+      GROUP BY TO_CHAR("date", 'YYYY-MM'), classification
       ORDER BY month ASC, classification ASC
     `;
 

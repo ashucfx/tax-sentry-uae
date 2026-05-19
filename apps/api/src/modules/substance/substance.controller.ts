@@ -10,6 +10,7 @@ import {
   UploadedFile,
   ParseFilePipe,
   MaxFileSizeValidator,
+  FileTypeValidator,
   HttpCode,
   HttpStatus,
   Body,
@@ -54,7 +55,10 @@ export class SubstanceController {
     @Query('expiresAt') expiresAt?: string,
     @UploadedFile(
       new ParseFilePipe({
-        validators: [new MaxFileSizeValidator({ maxSize: 50 * 1024 * 1024 })],
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 50 * 1024 * 1024 }),
+          new FileTypeValidator({ fileType: /^(application\/pdf|image\/jpeg|image\/png)$/ }),
+        ],
       }),
     )
     file?: Express.Multer.File,

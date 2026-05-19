@@ -12,16 +12,6 @@ const schema = z
   .object({
     firstName: z.string().min(1, 'First name is required').max(80),
     lastName: z.string().min(1, 'Last name is required').max(80),
-    password: z
-      .string()
-      .min(10, 'Password must be at least 10 characters')
-      .max(128)
-      .regex(/^(?=.*[\d\W])/, 'Password must contain at least one number or symbol'),
-    confirmPassword: z.string(),
-  })
-  .refine((d) => d.password === d.confirmPassword, {
-    message: 'Passwords do not match',
-    path: ['confirmPassword'],
   });
 
 type FormData = z.infer<typeof schema>;
@@ -54,7 +44,7 @@ function AcceptInviteForm() {
   const onSubmit = async (data: FormData) => {
     setServerError(null);
     try {
-      await acceptInviteAction(token, data.password, data.firstName, data.lastName);
+      await acceptInviteAction(token, data.firstName, data.lastName);
       router.push('/redirect');
     } catch (err: unknown) {
       const msg =
@@ -119,47 +109,7 @@ function AcceptInviteForm() {
           </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--ts-fg-secondary)' }}>
-            Password
-          </label>
-          <input
-            {...register('password')}
-            type="password"
-            autoComplete="new-password"
-            placeholder="At least 10 characters, 1 number or symbol"
-            className="w-full px-3.5 py-2.5 rounded-lg text-sm outline-none"
-            style={{
-              background: 'var(--ts-bg-input)',
-              border: `1px solid ${errors.password ? 'var(--ts-red-500)' : 'var(--ts-border-default)'}`,
-              color: 'var(--ts-fg-primary)',
-            }}
-          />
-          {errors.password && (
-            <p className="mt-1 text-xs" style={{ color: 'var(--ts-red-400)' }}>{errors.password.message}</p>
-          )}
-        </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--ts-fg-secondary)' }}>
-            Confirm password
-          </label>
-          <input
-            {...register('confirmPassword')}
-            type="password"
-            autoComplete="new-password"
-            placeholder="••••••••"
-            className="w-full px-3.5 py-2.5 rounded-lg text-sm outline-none"
-            style={{
-              background: 'var(--ts-bg-input)',
-              border: `1px solid ${errors.confirmPassword ? 'var(--ts-red-500)' : 'var(--ts-border-default)'}`,
-              color: 'var(--ts-fg-primary)',
-            }}
-          />
-          {errors.confirmPassword && (
-            <p className="mt-1 text-xs" style={{ color: 'var(--ts-red-400)' }}>{errors.confirmPassword.message}</p>
-          )}
-        </div>
 
         {serverError && (
           <div

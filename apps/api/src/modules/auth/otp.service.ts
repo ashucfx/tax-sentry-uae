@@ -65,8 +65,6 @@ export class OtpService {
     const recent = await this.prisma.otpCode.findFirst({
       where: {
         ...identifier,
-        verifiedAt: null,
-        expiresAt: { gt: new Date() },
         createdAt: { gt: new Date(Date.now() - OTP_COOLDOWN_MS) },
       },
     });
