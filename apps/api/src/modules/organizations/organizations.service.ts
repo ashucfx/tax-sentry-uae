@@ -169,7 +169,7 @@ export class OrganizationsService {
     }
 
     // Block inviting an already-active user in this org
-    const existing = await this.prisma.user.findUnique({ where: { email } });
+    const existing = await this.prisma.user.findFirst({ where: { email } });
     if (existing?.orgId === orgId) {
       throw new ConflictException('This user is already a member of your organization');
     }
