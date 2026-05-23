@@ -16,7 +16,7 @@ describe('AppController (e2e)', () => {
     app = moduleFixture.createNestApplication<NestFastifyApplication>(
       new FastifyAdapter()
     );
-    
+    app.setGlobalPrefix('api/v1');
     app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
     const fastifyInstance = app.getHttpAdapter().getInstance();
     await fastifyInstance.register(helmet);
