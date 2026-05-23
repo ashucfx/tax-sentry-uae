@@ -54,6 +54,13 @@ const nextConfig = {
       headers: securityHeaders,
     },
   ],
+  redirects: async () => [
+    {
+      source: '/sign-up',
+      destination: '/sign-in',
+      permanent: true,
+    },
+  ],
 };
 
 module.exports = nextConfig;

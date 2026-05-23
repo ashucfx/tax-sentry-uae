@@ -90,7 +90,7 @@ export function LandingPage() {
 
               <div className="fade-in-up stagger-2 flex flex-wrap gap-3 mb-12">
                 <Link
-                  href="/sign-up"
+                  href="/sign-in"
                   className="flex items-center gap-2 rounded-xl font-bold transition-all hover:-translate-y-px"
                   style={{ fontSize: 16, padding: '15px 30px', background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', color: '#fff', boxShadow: '0 4px 20px rgba(37,99,235,0.4)', textDecoration: 'none' }}
                 >
@@ -227,7 +227,7 @@ export function LandingPage() {
               The 9% corporate tax trap isn't complex — it's invisible. A few misclassified invoices, a single mainland contract, or one expired document can silently revoke your QFZP status. By then, the damage is done.
             </p>
             <Link
-              href="/sign-up"
+              href="/sign-in"
               className="inline-flex items-center gap-2 rounded-xl font-bold transition-all hover:opacity-90"
               style={{ fontSize: 14, padding: '11px 22px', background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', color: '#fff', boxShadow: '0 4px 16px rgba(37,99,235,0.3)', textDecoration: 'none' }}
             >
@@ -561,7 +561,7 @@ export function LandingPage() {
                     boxShadow: ctaStyle === 'primary' ? '0 4px 16px rgba(37,99,235,0.35)' : 'none',
                     border: ctaStyle === 'outline' ? '1px solid oklch(0.40 0.025 255)' : 'none',
                   } as React.CSSProperties}
-                  onClick={() => { window.location.href = name === 'Enterprise' ? '/contact' : '/sign-up'; }}
+                  onClick={() => { window.location.href = name === 'Enterprise' ? '/contact' : '/sign-in'; }}
                 >
                   {cta}
                 </button>
@@ -591,7 +591,7 @@ export function LandingPage() {
           </p>
           <div className="flex flex-wrap gap-4 justify-center">
             <Link
-              href="/sign-up"
+              href="/sign-in"
               className="flex items-center gap-2 rounded-xl font-bold transition-all hover:-translate-y-px hover:opacity-95"
               style={{ fontSize: 16, padding: '15px 30px', background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', color: '#fff', boxShadow: '0 4px 20px rgba(37,99,235,0.4)', textDecoration: 'none' }}
             >
