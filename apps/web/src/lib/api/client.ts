@@ -29,7 +29,7 @@ async function doRefresh(): Promise<string | null> {
         clearStoredAuth();
       }
       if (process.env.NODE_ENV !== 'production') {
-        console.warn('[auth] token refresh failed', status ?? 'network error');
+        // Log stripped for release
       }
       return null;
     } finally {

@@ -48,7 +48,8 @@ export function CsvImportDialog({ onClose, taxPeriodId }: CsvImportDialogProps) 
       queryClient.invalidateQueries({ queryKey: ['deminimis-status'] });
       queryClient.invalidateQueries({ queryKey: ['risk-score'] });
     } catch (err) {
-      console.error('File upload failed', err);
+      // Intentionally suppressing console error as per release requirements
+      setResult({ imported: 0, errors: [{ row: 0, error: 'Network error or invalid file.' }] });
     } finally {
       setIsUploading(false);
     }
