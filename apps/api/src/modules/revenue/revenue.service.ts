@@ -39,6 +39,10 @@ export class RevenueService {
     dto: CreateTransactionDto,
     actorId: string,
   ) {
+    if (!taxPeriodId) {
+      throw new BadRequestException('taxPeriodId is required');
+    }
+
     // Validate tax period belongs to org and is OPEN
     const period = await this.prisma.taxPeriod.findFirst({
       where: { id: taxPeriodId, orgId, status: 'OPEN' },
@@ -247,6 +251,10 @@ export class RevenueService {
     taxPeriodId: string,
     params: PaginationParams,
   ) {
+    if (!taxPeriodId) {
+      throw new BadRequestException('taxPeriodId is required to scope transactions');
+    }
+
     const { page = 1, limit = 50, classification, startDate, endDate, search, requiresReview } = params;
     const skip = (page - 1) * limit;
 
@@ -338,6 +346,10 @@ export class RevenueService {
     rows: Array<Record<string, string>>,
     actorId: string,
   ): Promise<{ imported: number; errors: Array<{ row: number; error: string }> }> {
+    if (!taxPeriodId) {
+      throw new BadRequestException('taxPeriodId is required for CSV import');
+    }
+
     const period = await this.prisma.taxPeriod.findFirst({
       where: { id: taxPeriodId, orgId, status: 'OPEN' },
     });

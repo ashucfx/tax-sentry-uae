@@ -14,6 +14,7 @@ import {
   HttpCode,
   HttpStatus,
   Body,
+  BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '../../common/interceptors/fastify-file.interceptor';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiConsumes } from '@nestjs/swagger';
@@ -63,13 +64,13 @@ export class SubstanceController {
     )
     file?: Express.Multer.File,
   ) {
-    if (!file) throw new Error('File is required');
+    if (!file) throw new BadRequestException('File is required');
 
     let parsedExpiresAt: Date | undefined;
     if (expiresAt) {
       parsedExpiresAt = new Date(expiresAt);
       if (isNaN(parsedExpiresAt.getTime())) {
-        throw new Error('Invalid expiresAt date format');
+        throw new BadRequestException('Invalid expiresAt date format');
       }
     }
 
