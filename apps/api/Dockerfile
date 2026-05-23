@@ -40,4 +40,4 @@ EXPOSE 3001
 
 # Run pending migrations then start the server.
 # Railway/Render inject $PORT — NestJS reads it via ConfigService('PORT').
-CMD ["sh", "-c", "npx --yes prisma@5.22.0 migrate deploy && node dist/main"]
+CMD ["sh", "-c", "npx --yes prisma@5.22.0 migrate deploy && node dist/src/main"]
