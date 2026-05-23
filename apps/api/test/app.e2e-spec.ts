@@ -18,7 +18,8 @@ describe('AppController (e2e)', () => {
     );
     
     app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
-    await app.register(helmet);
+    const fastifyInstance = app.getHttpAdapter().getInstance();
+    await fastifyInstance.register(helmet);
     
     await app.init();
     await app.getHttpAdapter().getInstance().ready();
@@ -32,7 +33,7 @@ describe('AppController (e2e)', () => {
     return request(app.getHttpServer())
       .get('/api/v1/health')
       .expect(200)
-      .expect((res) => {
+      .expect((res: request.Response) => {
         expect(res.body).toHaveProperty('status', 'ok');
       });
   });
