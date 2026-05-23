@@ -16,7 +16,7 @@ interface JwtPayload {
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  private readonly userCache = new LRUCache<string, any>({
+  private readonly userCache = new LRUCache({
     max: 1000,
     ttl: 60 * 1000, // 60 seconds
   });
