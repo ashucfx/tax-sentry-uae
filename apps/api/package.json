@@ -12,7 +12,6 @@
     "test:integration": "jest --testPathPattern=integration",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "test:cov": "jest --coverage",
-    "lint": "eslint \"{src,apps,libs,test}/**/*.ts\"",
     "db:migrate": "prisma migrate deploy",
     "db:migrate:dev": "prisma migrate dev",
     "db:seed": "ts-node prisma/seed.ts",
