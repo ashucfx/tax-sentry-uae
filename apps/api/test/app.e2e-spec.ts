@@ -33,7 +33,7 @@ describe('AppController (e2e)', () => {
     return request(app.getHttpServer())
       .get('/api/v1/health')
       .expect(200)
-      .expect((res: request.Response) => {
+      .expect((res: any) => {
         expect(res.body).toHaveProperty('status', 'ok');
       });
   });
