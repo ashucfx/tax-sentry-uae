@@ -16,6 +16,7 @@ async function bootstrap() {
     new FastifyAdapter({
       logger: false,
       bodyLimit: 1_048_576, // 1 MB — prevents DoS via oversized payloads
+      trustProxy: true, // MUST be true behind Render/Vercel/Railway for rate limiting to work
     }),
     { bufferLogs: true },
   );
