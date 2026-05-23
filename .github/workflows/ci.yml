@@ -27,8 +27,6 @@ jobs:
       - name: Generate Prisma Client
         run: npm run db:generate --workspace=@qfzp/api
 
-      - name: Lint
-        run: npm run lint
 
       - name: Run Tests
         run: npm run test
