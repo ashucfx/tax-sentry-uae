@@ -7,6 +7,14 @@ export const metadata: Metadata = {
   description:
     'Protect your 0% corporate tax status. Monitor NQI de-minimis thresholds and substance requirements in real time.',
   keywords: ['UAE', 'QFZP', 'free zone', 'corporate tax', 'de-minimis', 'TaxSentry'],
+  icons: {
+    icon: '/icon.svg',
+    apple: '/icon.svg',
+  },
+};
+
+export const viewport = {
+  themeColor: '#0F172A',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
