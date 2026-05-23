@@ -16,7 +16,8 @@ import { JwtStrategy } from './jwt.strategy';
         secret: configService.get<string>('JWT_SECRET'),
         signOptions: {
           expiresIn: configService.get<string>('JWT_EXPIRY', '15m'),
-          issuer: 'qfzp-api',
+          issuer: 'taxsentry-api',
+          audience: 'taxsentry-client',
         },
       }),
       inject: [ConfigService],

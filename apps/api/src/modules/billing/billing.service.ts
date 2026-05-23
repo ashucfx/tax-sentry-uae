@@ -295,11 +295,27 @@ export class BillingService {
 
   // ── Private event handlers ───────────────────────────────────────────────────
 
-  private resolveOrgId(orgId: string | undefined, sub: DodoSubscription): string | null {
-    // Primary: metadata org_id (set at checkout)
-    if (orgId) return orgId;
-    // Fallback: look up by Dodo subscription_id if metadata was not set
-    return null;
+  private async sendBillingEmail(orgId: string, subject: string, html: string): Promise<void> {
+    try {
+      const owner = await this.prisma.user.findFirst({
+        where: { orgId, role: 'OWNER' },
+        select: { email: true },
+      });
+
+      if (!owner?.email) return;
+
+      const { Resend } = await import('resend');
+      const resend = new Resend(this.cfg.get<string>('RESEND_API_KEY'));
+      
+      await resend.emails.send({
+        from: this.cfg.get<string>('EMAIL_FROM', 'alerts@taxsentry.ae'),
+        to: owner.email,
+        subject,
+        html,
+      });
+    } catch (err) {
+      this.logger.error(`Failed to send billing email to org ${orgId}: ${(err as Error).message}`);
+    }
   }
 
   private async findOrgBySubOrId(
@@ -353,6 +369,12 @@ export class BillingService {
     });
 
     this.logger.log(`[SUBSCRIPTION.ACTIVE] ✓ Subscription ACTIVATED org=${orgId}`);
+    
+    await this.sendBillingEmail(
+      orgId,
+      'Your TaxSentry subscription is active',
+      '<p>Thank you for subscribing to TaxSentry. Your account is now fully active.</p>'
+    );
   }
 
   private async onSubscriptionRenewed(
@@ -400,6 +422,12 @@ export class BillingService {
     });
 
     this.logger.warn(`[SUBSCRIPTION.ON_HOLD] ✓ Org paused org=${orgId}`);
+
+    await this.sendBillingEmail(
+      orgId,
+      'Action Required: TaxSentry payment failed',
+      '<p>Your latest subscription payment failed. You have a 7-day grace period to update your payment method before access is blocked.</p>'
+    );
   }
 
   private async onSubscriptionCancelled(
@@ -423,6 +451,12 @@ export class BillingService {
     });
 
     this.logger.warn(`[SUBSCRIPTION.CANCELLED] ✓ Subscription cancelled org=${orgId}`);
+
+    await this.sendBillingEmail(
+      orgId,
+      'Your TaxSentry subscription has been cancelled',
+      '<p>Your subscription has been cancelled. You will retain access until the end of your current billing period.</p>'
+    );
   }
 
   private async onSubscriptionExpired(

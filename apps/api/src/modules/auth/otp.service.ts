@@ -103,7 +103,16 @@ export class OtpService {
       await this.deliverSms(phone!, code);
     }
 
-    this.logger.log(`OTP dispatched via ${channel} → ${email ?? phone}`);
+    // Mask PII in logs
+    let masked = '';
+    if (email) {
+      const parts = email.split('@');
+      masked = `${parts[0][0]}***@${parts[1]}`;
+    } else if (phone) {
+      masked = phone.slice(0, -4).replace(/./g, '*') + phone.slice(-4);
+    }
+
+    this.logger.log(`OTP dispatched via ${channel} → ${masked}`);
     return { channel };
   }
 
@@ -324,6 +333,11 @@ export class OtpService {
     if (provider === 'twilio') {
       await this.deliverTwilioSms(to, code);
       return;
+    }
+
+    if (this.config.get<string>('NODE_ENV') === 'production') {
+      this.logger.error('SMS_PROVIDER not configured for production');
+      throw new HttpException('SMS delivery not configured', HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     // Mock provider (dev / staging) — log OTP so developers can test without Twilio
