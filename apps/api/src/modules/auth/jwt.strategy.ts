@@ -3,7 +3,8 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
-import { LRUCache } from 'lru-cache';
+import * as lruCacheModule from 'lru-cache';
+const LRUCache = (lruCacheModule as any).LRUCache || (lruCacheModule as any).default || lruCacheModule;
 
 interface JwtPayload {
   sub: string;
@@ -16,7 +17,7 @@ interface JwtPayload {
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  private readonly userCache = new LRUCache({
+  private readonly userCache = new (LRUCache as any)({
     max: 1000,
     ttl: 60 * 1000, // 60 seconds
   });
