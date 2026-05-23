@@ -160,7 +160,12 @@ export class DeMinimisEngine {
     const pctMargin = DE_MINIMIS_PCT_THRESHOLD.minus(nqrPercentage);
     const absMargin = DE_MINIMIS_ABS_THRESHOLD.minus(nqrAmount);
     // Effective margin = whichever limit is closer to being breached
-    const marginToBreachAed = Decimal.max(absMargin, new Decimal(0));
+    // Formula: effectiveThreshold = min(5,000,000, totalRevenue * 5%)
+    const effectiveThreshold = Decimal.min(
+      DE_MINIMIS_ABS_THRESHOLD,
+      totalRevenue.mul(DE_MINIMIS_PCT_THRESHOLD).div(100),
+    );
+    const marginToBreachAed = Decimal.max(effectiveThreshold.minus(nqrAmount), new Decimal(0));
     const marginToBreachPct = Decimal.max(pctMargin, new Decimal(0));
 
     // Alert threshold: percentage of the lower limit consumed
@@ -204,10 +209,7 @@ export class DeMinimisEngine {
       nqrPercentage,
       absThreshold: DE_MINIMIS_ABS_THRESHOLD,
       pctThreshold: DE_MINIMIS_PCT_THRESHOLD,
-      effectiveThreshold: Decimal.min(
-        DE_MINIMIS_ABS_THRESHOLD,
-        totalRevenue.mul(DE_MINIMIS_PCT_THRESHOLD).div(100),
-      ),
+      effectiveThreshold,
       marginToBreachAed,
       marginToBreachPct,
       projectedNqrAmount,

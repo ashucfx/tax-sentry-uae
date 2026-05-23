@@ -128,61 +128,59 @@ export class RevenueController {
 
   private parseCsv(content: string): Array<Record<string, string>> {
     const cleaned = content.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-    const lines = cleaned.split('\n');
-    const nonEmpty = lines.filter((l) => l.trim());
-    if (nonEmpty.length < 2) return [];
-
-    const headers = this.parseCsvLine(nonEmpty[0]).map((h) => h.toLowerCase());
-    const rows: Array<Record<string, string>> = [];
-
-    for (let i = 1; i < nonEmpty.length; i++) {
-      const values = this.parseCsvLine(nonEmpty[i]);
-      if (values.every((v) => v === '')) continue; // skip blank rows
-      rows.push(Object.fromEntries(headers.map((h, idx) => [h, values[idx] ?? ''])));
-    }
-
-    return rows;
-  }
-
-  // RFC 4180 compliant single-line parser \u2014 handles quoted fields with embedded commas and escaped quotes
-  private parseCsvLine(line: string): string[] {
-    const fields: string[] = [];
+    
+    const rows: string[][] = [];
     let field = '';
+    let row: string[] = [];
     let inQuotes = false;
-    let i = 0;
-
-    while (i < line.length) {
-      const ch = line[i];
+    
+    for (let i = 0; i < cleaned.length; i++) {
+      const ch = cleaned[i];
+      
       if (inQuotes) {
         if (ch === '"') {
-          // Doubled quote inside quoted field = escaped quote character
-          if (i + 1 < line.length && line[i + 1] === '"') {
+          if (i + 1 < cleaned.length && cleaned[i + 1] === '"') {
             field += '"';
-            i += 2;
+            i++; // skip escaped quote
           } else {
             inQuotes = false;
-            i++;
           }
         } else {
           field += ch;
-          i++;
         }
       } else {
         if (ch === '"') {
           inQuotes = true;
-          i++;
         } else if (ch === ',') {
-          fields.push(field.trim());
+          row.push(field.trim());
           field = '';
-          i++;
+        } else if (ch === '\n') {
+          row.push(field.trim());
+          rows.push(row);
+          row = [];
+          field = '';
         } else {
           field += ch;
-          i++;
         }
       }
     }
+    
+    if (field !== '' || row.length > 0) {
+      row.push(field.trim());
+      rows.push(row);
+    }
+    
+    const nonEmptyRows = rows.filter(r => !r.every(v => v === ''));
+    if (nonEmptyRows.length < 2) return [];
 
-    fields.push(field.trim());
-    return fields;
+    const headers = nonEmptyRows[0].map(h => h.toLowerCase());
+    const dataRows: Array<Record<string, string>> = [];
+
+    for (let i = 1; i < nonEmptyRows.length; i++) {
+      const values = nonEmptyRows[i];
+      dataRows.push(Object.fromEntries(headers.map((h, idx) => [h, values[idx] ?? ''])));
+    }
+
+    return dataRows;
   }
 }
