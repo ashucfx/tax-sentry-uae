@@ -25,7 +25,7 @@ jobs:
         run: npm ci
 
       - name: Generate Prisma Client
-        run: npm run db:generate --workspace=@qfzp/api
+        run: npm run db:generate --workspace=@taxsentry/api
 
 
       - name: Run Tests
