@@ -20,6 +20,8 @@ import { LeadsModule } from './modules/leads/leads.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { SubscriptionGuard } from './common/guards/subscription.guard';
 import { RolesGuard } from './common/guards/roles.guard';
+import { QueuesModule } from './common/queues/queues.module';
+import { IntegrationsModule } from './modules/integrations/integrations.module';
 
 @Module({
   imports: [
@@ -38,8 +40,10 @@ import { RolesGuard } from './common/guards/roles.guard';
       }),
     }),
     ScheduleModule.forRoot(),
+    QueuesModule,
     PrismaModule,
     HealthModule,
+    IntegrationsModule,
     AuditModule,
     AuthModule,
     OrganizationsModule,
