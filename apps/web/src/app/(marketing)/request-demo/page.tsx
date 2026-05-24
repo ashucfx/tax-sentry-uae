@@ -183,15 +183,52 @@ export default function RequestDemoPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.firstName || !form.email || !form.company) {
-      setError('Please fill in the required fields.');
+      setError('Please fill in the required fields: First Name, Work Email, and Company Name.');
+      return;
+    }
+    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRe.test(form.email)) {
+      setError('Please enter a valid work email address.');
       return;
     }
     setError('');
     setSubmitting(true);
-    // Simulate API call — replace with your actual endpoint
-    await new Promise(r => setTimeout(r, 1800));
-    setSubmitting(false);
-    setSubmitted(true);
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api/v1';
+      const res = await fetch(`${apiBase}/leads/demo-request`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          firstName: form.firstName,
+          lastName: form.lastName || undefined,
+          email: form.email,
+          phone: form.phone || undefined,
+          jobTitle: form.jobTitle || undefined,
+          company: form.company,
+          freeZone: form.freeZone || undefined,
+          companySize: form.companySize || undefined,
+          revenueRange: form.revenueRange || undefined,
+          demoSlot: form.demoSlot || undefined,
+          message: form.message || undefined,
+          website: '', // honeypot — always empty from real users
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        const msg = (data as { message?: string }).message ?? 'Something went wrong. Please try again.';
+        throw new Error(Array.isArray(msg) ? (msg as string[]).join(', ') : msg);
+      }
+      setSubmitted(true);
+    } catch (err) {
+      const msg = (err as Error).message;
+      if (msg.toLowerCase().includes('fetch') || msg.toLowerCase().includes('network')) {
+        setError('Network error — please check your connection and try again.');
+      } else {
+        setError(msg);
+      }
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
