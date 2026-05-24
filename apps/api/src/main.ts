@@ -39,7 +39,20 @@ async function bootstrap() {
   await app.register(require('@fastify/cookie'));
 
   app.enableCors({
-    origin: configService.get<string>('WEB_URL', 'http://localhost:3000'),
+    origin: (origin, callback) => {
+      const allowedOrigins = configService
+        .get<string>('WEB_URL', 'http://localhost:3000')
+        .split(',')
+        .map((url) => url.trim());
+      
+      // Allow requests with no origin (like mobile apps or curl requests)
+      // or if the origin is explicitly listed in the WEB_URL env variable
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(null, false);
+      }
+    },
     credentials: true,
   });
 
