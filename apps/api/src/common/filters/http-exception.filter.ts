@@ -7,6 +7,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { FastifyReply, FastifyRequest } from 'fastify';
+import * as Sentry from '@sentry/node';
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
@@ -32,6 +33,13 @@ export class HttpExceptionFilter implements ExceptionFilter {
       }
     } else if (exception instanceof Error) {
       this.logger.error(exception.message, exception.stack);
+      // Capture unhandled errors in Sentry
+      if (process.env.SENTRY_DSN) {
+        Sentry.captureException(exception, {
+          tags: { path: request.url },
+          extra: { body: request.body, query: request.query }
+        });
+      }
     }
 
     reply.status(status).send({

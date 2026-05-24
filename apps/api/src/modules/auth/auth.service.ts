@@ -208,6 +208,32 @@ export class AuthService {
   ) {
     const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
 
+    // ── Device Fingerprinting & IP Tracking (Security Alert) ──
+    const lastSession = await this.prisma.session.findFirst({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (lastSession) {
+      const isNewIp = meta.ipAddress && lastSession.ipAddress !== meta.ipAddress;
+      const isNewDevice = meta.userAgent && lastSession.userAgent !== meta.userAgent;
+      
+      if (isNewIp || isNewDevice) {
+        this.logger.warn(`Security Alert: User ${userId} signed in from a new context. IP: ${meta.ipAddress}, Device: ${meta.userAgent}`);
+        await this.prisma.auditLog.create({
+          data: {
+            orgId: user.orgId,
+            actorId: user.id,
+            action: 'SECURITY_NEW_DEVICE_LOGIN',
+            entity: 'User',
+            entityId: user.id,
+            beforeJson: { ip: lastSession.ipAddress, agent: lastSession.userAgent },
+            afterJson: { ip: meta.ipAddress, agent: meta.userAgent },
+          }
+        });
+      }
+    }
+
     const accessToken = this.issueAccessToken({
       id: user.id,
       orgId: user.orgId,
