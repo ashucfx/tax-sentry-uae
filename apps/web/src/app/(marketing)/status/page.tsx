@@ -1,27 +1,34 @@
+import { PageLayout } from '@/components/marketing/PageLayout';
+
+const config = {
+  "hero": {
+    "badge": "Resources",
+    "title": "System",
+    "titleHighlight": "Status",
+    "description": "Real-time uptime monitoring and incident reports for the TaxSentry infrastructure."
+  },
+  "features": {
+    "heading": "100% Operational",
+    "items": [
+      {
+        "icon": "CheckCircle2",
+        "title": "API Gateway",
+        "description": "Operational. Latency: 45ms."
+      },
+      {
+        "icon": "Zap",
+        "title": "Classification Engine",
+        "description": "Operational. Processing queue empty."
+      },
+      {
+        "icon": "Building2",
+        "title": "Xero/QBO Sync",
+        "description": "Operational. Webhooks processing normally."
+      }
+    ]
+  }
+};
+
 export default function Page() {
-  return (
-    <div style={{ background: 'var(--ts-bg-base)', color: 'var(--ts-fg-primary)', minHeight: '100vh', paddingTop: 140, paddingBottom: 100 }}>
-      <div style={{ maxWidth: 800, margin: '0 auto', padding: '0 32px' }}>
-        <h1 style={{ fontSize: 'clamp(2.5rem, 4vw, 3.5rem)', fontWeight: 900, letterSpacing: '-0.04em', marginBottom: 24 }}>
-          System Status
-        </h1>
-        <p style={{ fontSize: 16, color: 'var(--ts-fg-muted)', marginBottom: 60 }}>Last updated: May 2026</p>
-        
-        <div style={{ fontSize: 16, color: 'var(--ts-fg-secondary)', lineHeight: 1.8 }}>
-          <h2 style={{ fontSize: 24, fontWeight: 800, color: 'var(--ts-fg-primary)', marginTop: 40, marginBottom: 16 }}>1. Introduction</h2>
-          <p style={{ marginBottom: 24 }}>
-            Welcome to the TaxSentry System Status. This section outlines the structural foundations, compliance parameters, and operational frameworks governing our enterprise platform in the United Arab Emirates.
-          </p>
-          <h2 style={{ fontSize: 24, fontWeight: 800, color: 'var(--ts-fg-primary)', marginTop: 40, marginBottom: 16 }}>2. UAE Data Sovereignty</h2>
-          <p style={{ marginBottom: 24 }}>
-            TaxSentry is architected exclusively for UAE Free Zone Qualifying Persons. All data processed through the System Status module is securely encrypted and hosted entirely within domestic UAE data centers (me-central1) to guarantee absolute data locality.
-          </p>
-          <h2 style={{ fontSize: 24, fontWeight: 800, color: 'var(--ts-fg-primary)', marginTop: 40, marginBottom: 16 }}>3. Compliance & Auditing</h2>
-          <p style={{ marginBottom: 24 }}>
-            We adhere to the strictest enterprise standards. By leveraging the System Status, users agree to standard monitoring terms designed to prevent the breach of the AED 5M / 5% Non-Qualifying Income thresholds.
-          </p>
-        </div>
-      </div>
-    </div>
-  );
+  return <PageLayout config={config} />;
 }
