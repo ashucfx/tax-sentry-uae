@@ -64,7 +64,7 @@ export default function OnboardingPage() {
       <div style={{ width: '100%', maxWidth: 520 }}>
         {/* Header */}
         <div className="flex flex-col items-center mb-8">
-          <TaxSentryLogo size={40} gradId="ob-sg" filterId="ob-sf" />
+          <TaxSentryLogo size={40} />
           <h1 style={{ fontSize: 22, fontWeight: 800, color: 'var(--ts-fg-primary)', marginTop: 16, marginBottom: 6 }}>
             Set up your organization
           </h1>
