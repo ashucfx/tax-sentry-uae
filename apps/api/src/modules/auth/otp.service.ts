@@ -164,12 +164,61 @@ export class OtpService {
     const inputHash = Buffer.from(sha256(otp), 'hex');
     const storedHash = Buffer.from(record.codeHash, 'hex');
     const codeMatches = inputHash.length === storedHash.length && timingSafeEqual(inputHash, storedHash);
+    
     if (!codeMatches) {
+      // Find associated user to apply strict account lockout
+      const lockoutUserCheck = await this.prisma.user.findFirst({
+        where: email ? { email } : { phone: phone! },
+      });
+
+      if (lockoutUserCheck) {
+        const failedAttempts = lockoutUserCheck.failedLoginAttempts + 1;
+        const updates: any = { failedLoginAttempts: failedAttempts };
+        
+        if (failedAttempts >= 5) {
+          // Lock account for 15 minutes after 5 failed attempts across ANY OTPs
+          updates.lockedUntil = new Date(Date.now() + 15 * 60 * 1000);
+          this.logger.warn(`User ${lockoutUserCheck.id} locked out due to excessive failed OTP attempts.`);
+        }
+        
+        await this.prisma.user.update({
+          where: { id: lockoutUserCheck.id },
+          data: updates,
+        });
+        
+        if (failedAttempts >= 5) {
+           throw new HttpException(
+             { message: 'Account locked due to too many failed attempts. Try again in 15 minutes.', code: 'ACCOUNT_LOCKED' },
+             HttpStatus.TOO_MANY_REQUESTS,
+           );
+        }
+      }
+
       const remaining = OTP_MAX_ATTEMPTS - updated.attempts;
       throw new BadRequestException({
         message: `Invalid code — ${remaining} attempt${remaining !== 1 ? 's' : ''} remaining`,
         code: 'OTP_INVALID',
         attemptsRemaining: remaining,
+      });
+    }
+
+    // ── Check if Account is Locked ───────────────────────────────────────────
+    const lockoutUserCheck2 = await this.prisma.user.findFirst({
+        where: email ? { email } : { phone: phone! },
+    });
+    if (lockoutUserCheck2 && lockoutUserCheck2.lockedUntil && lockoutUserCheck2.lockedUntil > new Date()) {
+        const waitMin = Math.ceil((lockoutUserCheck2.lockedUntil.getTime() - Date.now()) / 60000);
+        throw new HttpException(
+          { message: `Account is temporarily locked. Try again in ${waitMin} minutes.`, code: 'ACCOUNT_LOCKED' },
+          HttpStatus.TOO_MANY_REQUESTS,
+        );
+    }
+
+    // Reset failed login attempts on success
+    if (lockoutUserCheck2 && lockoutUserCheck2.failedLoginAttempts > 0) {
+      await this.prisma.user.update({
+        where: { id: lockoutUserCheck2.id },
+        data: { failedLoginAttempts: 0, lockedUntil: null },
       });
     }
 
