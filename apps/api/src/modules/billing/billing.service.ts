@@ -308,7 +308,7 @@ export class BillingService {
       const resend = new Resend(this.cfg.get<string>('RESEND_API_KEY'));
       
       await resend.emails.send({
-        from: this.cfg.get<string>('EMAIL_FROM', 'alerts@taxsentry.ae'),
+        from: this.cfg.get<string>('EMAIL_FROM', 'hello@gettaxsentry.com'),
         to: owner.email,
         subject,
         html,

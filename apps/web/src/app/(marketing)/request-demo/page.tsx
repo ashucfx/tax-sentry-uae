@@ -313,12 +313,12 @@ export default function RequestDemoPage() {
               <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ts-fg-secondary)', marginBottom: 12 }}>Prefer a different channel?</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 <a
-                  href="mailto:hello@taxsentry.com"
+                  href="mailto:hello@gettaxsentry.com"
                   className="flex items-center gap-3 text-[var(--ts-fg-secondary)] hover:text-[var(--ts-fg-primary)] transition-colors"
                   style={{ fontSize: 13, textDecoration: 'none' }}
                 >
                   <Mail size={14} color="var(--ts-blue-400)" />
-                  hello@taxsentry.com
+                  hello@gettaxsentry.com
                 </a>
                 <div className="flex items-center gap-3" style={{ fontSize: 13, color: 'var(--ts-fg-muted)' }}>
                   <Building2 size={14} color="var(--ts-fg-muted)" />

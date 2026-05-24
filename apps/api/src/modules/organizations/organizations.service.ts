@@ -201,7 +201,7 @@ export class OrganizationsService {
       const Resend = (await import('resend')).Resend;
       const resend = new Resend(this.config.get<string>('RESEND_API_KEY'));
       await resend.emails.send({
-        from: this.config.get<string>('EMAIL_FROM', 'alerts@taxsentry.ae'),
+        from: this.config.get<string>('EMAIL_FROM', 'hello@gettaxsentry.com'),
         to: email,
         subject: `You've been invited to join ${org?.name ?? 'TaxSentry'}`,
         html: `<p>You have been invited to join <strong>${org?.name ?? 'an organization'}</strong> on TaxSentry as <strong>${role}</strong>.</p>

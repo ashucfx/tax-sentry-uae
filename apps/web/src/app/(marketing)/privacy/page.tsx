@@ -15,7 +15,7 @@ const SECTIONS = [
 
 By accessing or using TaxSentry, you acknowledge you have read and understood this Policy. If you do not agree, you must discontinue use of the Service immediately.
 
-Our contact for data matters: hello@taxsentry.com`,
+Our contact for data matters: hello@gettaxsentry.com`,
   },
   {
     id: 's2',
@@ -47,7 +47,7 @@ Legitimate Interests: Analytics, fraud prevention, system security, and product 
 
 Legal Obligation: Where we are required to retain data under UAE law, including Federal Tax Authority (FTA) record-keeping requirements.
 
-Consent: Where you have explicitly opted in, such as marketing communications. You may withdraw consent at any time by contacting hello@taxsentry.com.`,
+Consent: Where you have explicitly opted in, such as marketing communications. You may withdraw consent at any time by contacting hello@gettaxsentry.com.`,
   },
   {
     id: 's4',
@@ -141,7 +141,7 @@ Right to Data Portability: Receive your data in a structured, machine-readable f
 Right to Object: Object to processing based on legitimate interests.
 Right to Withdraw Consent: Where processing is based on consent, you may withdraw at any time.
 
-To exercise any of these rights, email our data team at hello@taxsentry.com with subject line "Data Rights Request". We will respond within 30 days. We may require identity verification before processing the request.`,
+To exercise any of these rights, email our data team at hello@gettaxsentry.com with subject line "Data Rights Request". We will respond within 30 days. We may require identity verification before processing the request.`,
   },
   {
     id: 's11',
@@ -231,8 +231,8 @@ export default function PrivacyPage() {
             For data rights requests, legal notices, or privacy queries, please contact us at:
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <a href="mailto:hello@taxsentry.com" style={{ fontSize: 14, fontWeight: 600, color: 'var(--ts-blue-400)', textDecoration: 'none' }}>
-              hello@taxsentry.com
+            <a href="mailto:hello@gettaxsentry.com" style={{ fontSize: 14, fontWeight: 600, color: 'var(--ts-blue-400)', textDecoration: 'none' }}>
+              hello@gettaxsentry.com
             </a>
             <span style={{ fontSize: 13, color: 'var(--ts-fg-muted)' }}>
               Ripple Nexus · Dubai International Financial Centre · United Arab Emirates

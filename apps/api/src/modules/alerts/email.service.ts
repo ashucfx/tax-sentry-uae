@@ -25,7 +25,7 @@ export class EmailService {
     private readonly prisma: PrismaService,
   ) {
     this.resend = new Resend(this.config.getOrThrow('RESEND_API_KEY'));
-    this.from = this.config.get('EMAIL_FROM', 'alerts@taxsentry.ae');
+    this.from = this.config.get('EMAIL_FROM', 'hello@gettaxsentry.com');
     this.webUrl = this.config.get('WEB_URL', 'https://www.gettaxsentry.com');
   }
 

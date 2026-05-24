@@ -90,8 +90,8 @@ export default function BillingSuccessPage() {
             </p>
             <p className="text-xs text-muted-foreground mt-3">
               If your dashboard doesn&apos;t reflect the change soon, please contact{' '}
-              <a href="mailto:support@taxsentry.ae" className="text-primary hover:underline">
-                support@taxsentry.ae
+              <a href="mailto:hello@gettaxsentry.com" className="text-primary hover:underline">
+                hello@gettaxsentry.com
               </a>
             </p>
           </>
@@ -103,8 +103,8 @@ export default function BillingSuccessPage() {
             </p>
             <p className="text-xs text-muted-foreground mt-3">
               Please contact{' '}
-              <a href="mailto:support@taxsentry.ae" className="text-primary hover:underline">
-                support@taxsentry.ae
+              <a href="mailto:hello@gettaxsentry.com" className="text-primary hover:underline">
+                hello@gettaxsentry.com
               </a>
               {' '}and we'll activate your account manually.
             </p>

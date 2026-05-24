@@ -13,7 +13,7 @@ const config = {
       {
         "icon": "Mail",
         "title": "Email",
-        "description": "hello@taxsentry.com"
+        "description": "hello@gettaxsentry.com"
       },
       {
         "icon": "Globe",

@@ -108,7 +108,7 @@ export function MarketingFooter() {
               </p>
               <div className="flex gap-3">
                 {[
-                  { icon: Mail, href: 'mailto:hello@taxsentry.com' },
+                  { icon: Mail, href: 'mailto:hello@gettaxsentry.com' },
                 ].map(({ icon: Icon, href }, i) => (
                   <Link
                     key={i}

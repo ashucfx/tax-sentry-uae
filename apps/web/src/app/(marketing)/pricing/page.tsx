@@ -106,7 +106,7 @@ export default function PricingPage() {
 
   async function handleCheckout(tier: Tier) {
     if (tier === 'ENTERPRISE') {
-      window.location.href = 'mailto:sales@taxsentry.ae?subject=Enterprise Enquiry';
+      window.location.href = 'mailto:hello@gettaxsentry.com?subject=Enterprise Enquiry';
       return;
     }
     setCheckoutError(null);
@@ -238,7 +238,7 @@ export default function PricingPage() {
             Free Zone scenario.
           </p>
           <a
-            href="mailto:demo@taxsentry.ae"
+            href="mailto:hello@gettaxsentry.com"
             className="inline-flex items-center gap-1 mt-3 text-primary font-medium hover:underline"
           >
             Book a demo <ArrowRight className="w-3.5 h-3.5" />

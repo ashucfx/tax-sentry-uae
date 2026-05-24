@@ -149,7 +149,7 @@ export default function CookiesPage() {
         <div style={{ marginTop: 72, padding: '32px 36px', background: 'var(--ts-bg-card)', borderRadius: 16, border: '1px solid var(--ts-border)' }}>
           <h3 style={{ fontSize: 18, fontWeight: 800, color: 'var(--ts-fg-primary)', marginBottom: 12 }}>Questions About Cookies?</h3>
           <p style={{ fontSize: 14, color: 'var(--ts-fg-muted)', marginBottom: 16, lineHeight: 1.7 }}>
-            Contact our data team at <a href="mailto:hello@taxsentry.com" style={{ color: 'var(--ts-blue-400)', textDecoration: 'none' }}>hello@taxsentry.com</a>
+            Contact our data team at <a href="mailto:hello@gettaxsentry.com" style={{ color: 'var(--ts-blue-400)', textDecoration: 'none' }}>hello@gettaxsentry.com</a>
           </p>
           <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', paddingTop: 16, borderTop: '1px solid var(--ts-border)' }}>
             <Link href="/privacy" style={{ fontSize: 13, color: 'var(--ts-fg-secondary)', textDecoration: 'none' }}>Privacy Policy →</Link>

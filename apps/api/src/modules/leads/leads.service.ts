@@ -85,8 +85,8 @@ export class LeadsService {
 
     const { Resend } = await import('resend');
     const resend = new Resend(apiKey);
-    const from = this.cfg.get<string>('EMAIL_FROM', 'alerts@taxsentry.ae');
-    const notifyTo = this.cfg.get<string>('LEAD_NOTIFY_EMAIL', 'hello@taxsentry.com');
+    const from = this.cfg.get<string>('EMAIL_FROM', 'hello@gettaxsentry.com');
+    const notifyTo = this.cfg.get<string>('LEAD_NOTIFY_EMAIL', 'hello@gettaxsentry.com');
 
     const humanDate = lead.createdAt.toLocaleString('en-AE', { timeZone: 'Asia/Dubai' });
 
@@ -169,7 +169,7 @@ export class LeadsService {
           </div>
           <p style="margin:0 0 8px;color:#64748b;font-size:13px">
             If you have any urgent questions, email us directly at 
-            <a href="mailto:hello@taxsentry.com" style="color:#2563eb">hello@taxsentry.com</a>
+            <a href="mailto:hello@gettaxsentry.com" style="color:#2563eb">hello@gettaxsentry.com</a>
           </p>
           <p style="margin:0;color:#94a3b8;font-size:12px">
             TaxSentry — A product of Ripple Nexus. Dubai International Financial Centre.

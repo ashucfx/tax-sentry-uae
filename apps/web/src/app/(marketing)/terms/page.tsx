@@ -43,7 +43,7 @@ The Service is expressly not a licensed tax advisory, legal, or accounting servi
 
 3.4 Cancellation: You may cancel your subscription at any time. Cancellation takes effect at the end of the current billing period; you retain platform access until then.
 
-3.5 Refunds: We offer a 30-day money-back guarantee on new paid subscriptions. Refund requests must be submitted by email to hello@taxsentry.com within 30 days of the first charge. Refunds are not available for renewal charges.
+3.5 Refunds: We offer a 30-day money-back guarantee on new paid subscriptions. Refund requests must be submitted by email to hello@gettaxsentry.com within 30 days of the first charge. Refunds are not available for renewal charges.
 
 3.6 Suspension: We may suspend or terminate your access if: (a) you breach these Terms; (b) payment is overdue and remains unpaid after a 7-day grace period; or (c) we suspect fraudulent, abusive, or illegal activity.`,
   },
@@ -219,8 +219,8 @@ export default function TermsPage() {
             For contractual queries, notices, or legal requests, contact us at:
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <a href="mailto:hello@taxsentry.com" style={{ fontSize: 14, fontWeight: 600, color: 'var(--ts-blue-400)', textDecoration: 'none' }}>
-              hello@taxsentry.com
+            <a href="mailto:hello@gettaxsentry.com" style={{ fontSize: 14, fontWeight: 600, color: 'var(--ts-blue-400)', textDecoration: 'none' }}>
+              hello@gettaxsentry.com
             </a>
             <span style={{ fontSize: 13, color: 'var(--ts-fg-muted)' }}>
               Ripple Nexus · Dubai International Financial Centre · United Arab Emirates

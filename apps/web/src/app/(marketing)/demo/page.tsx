@@ -224,7 +224,7 @@ export default function DemoPage() {
             Start Free Trial <ArrowRight size={14} />
           </Link>
           <a
-            href="mailto:demo@taxsentry.ae?subject=TaxSentry guided demo request"
+            href="mailto:hello@gettaxsentry.com?subject=TaxSentry guided demo request"
             style={{ fontSize: 14, padding: '12px 24px', borderRadius: 12, border: '1px solid oklch(0.40 0.025 255)', color: 'oklch(0.78 0 0)', textDecoration: 'none', fontWeight: 600, background: 'transparent' }}
           >
             Book a guided demo

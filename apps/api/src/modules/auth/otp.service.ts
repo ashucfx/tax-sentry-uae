@@ -350,7 +350,7 @@ export class OtpService {
       const { Resend } = await import('resend');
       const resend = new Resend(this.config.get<string>('RESEND_API_KEY'));
       await resend.emails.send({
-        from: this.config.get<string>('EMAIL_FROM', 'alerts@taxsentry.ae'),
+        from: this.config.get<string>('EMAIL_FROM', 'hello@gettaxsentry.com'),
         to,
         subject: `${code} — your TaxSentry sign-in code`,
         html: `
