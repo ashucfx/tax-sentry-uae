@@ -18,6 +18,7 @@ import {
   ParseBoolPipe,
   DefaultValuePipe,
   BadRequestException,
+  Res,
 } from '@nestjs/common';
 import { FileInterceptor } from '../../common/interceptors/fastify-file.interceptor';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiConsumes } from '@nestjs/swagger';
@@ -70,6 +71,25 @@ export class RevenueController {
       search,
       requiresReview,
     });
+  }
+  @Get('transactions/export')
+  @ApiOperation({ summary: 'Export revenue transactions to CSV' })
+  async export(
+    @CurrentUser('orgId') orgId: string,
+    @Query('taxPeriodId') taxPeriodId: string,
+    @Res() reply: any,
+  ) {
+    const transactions = await this.revenueService.getTransactions(orgId, taxPeriodId, {
+      page: 1, limit: 10000 
+    });
+
+    const { stringify } = require('csv-stringify/sync');
+    const csv = stringify(transactions.transactions, { header: true });
+
+    reply
+      .header('Content-Type', 'text/csv')
+      .header('Content-Disposition', `attachment; filename="transactions-export.csv"`)
+      .send(csv);
   }
 
   @Patch('transactions/:id/classification')

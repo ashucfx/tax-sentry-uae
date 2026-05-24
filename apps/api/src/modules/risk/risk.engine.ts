@@ -78,14 +78,19 @@ const REQUIRED_SUBSTANCE_DOCS = [
   { type: 'BOARD_MINUTES', label: 'Board Minutes (UAE Decision-Making)' },
 ];
 
+import { Resend } from 'resend';
+
 @Injectable()
 export class RiskEngine {
   private readonly logger = new Logger(RiskEngine.name);
+  private readonly resend: Resend;
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly deMinimisEngine: DeMinimisEngine,
-  ) {}
+  ) {
+    this.resend = new Resend(process.env.RESEND_API_KEY || 're_dummy');
+  }
 
   async calculate(input: RiskScoreInput): Promise<RiskScoreBreakdown> {
     const [deMinimisData, substanceData, auditData, relatedPartyData, classificationData] =
@@ -207,13 +212,33 @@ export class RiskEngine {
     let reason: string;
     if (dm.isBreached) {
       reason = `BREACHED: NQI at ${pct}% of total revenue. Entity has lost QFZP status for this period.`;
+      await this.sendAlertEmail(input.orgId, 'CRITICAL: De-Minimis Breach', reason);
     } else if (threshold >= 80) {
       reason = `AT RISK: NQI at ${pct}% of threshold (${dm.alertThresholdPct}% consumed). Projected breach likely.`;
+      await this.sendAlertEmail(input.orgId, 'WARNING: De-Minimis Threshold Approaching 80%', reason);
     } else {
       reason = `De-minimis at ${pct}% NQI ratio. ${dm.alertThresholdPct}% of threshold consumed.`;
     }
 
     return { penalty, reason };
+  }
+
+  private async sendAlertEmail(orgId: string, subject: string, message: string) {
+    if (!process.env.RESEND_API_KEY) {
+      this.logger.warn(`Resend API key missing. Mocking alert to org ${orgId}: ${subject}`);
+      return;
+    }
+    try {
+      await this.resend.emails.send({
+        from: 'hello@gettaxsentry.com',
+        to: ['finance@organization.com'], // In production, fetch org members
+        subject,
+        text: message,
+      });
+      this.logger.log(`Alert email sent to org ${orgId}`);
+    } catch (e) {
+      this.logger.error(`Failed to send alert email: ${(e as Error).message}`);
+    }
   }
 
   // ─── COMPONENT: SUBSTANCE (0–25 pts penalty) ───────────────────────────────
