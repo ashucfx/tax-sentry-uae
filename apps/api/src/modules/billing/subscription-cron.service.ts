@@ -57,4 +57,54 @@ export class SubscriptionCronService {
       }
     }
   }
+
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  async handleDunningSweep() {
+    this.logger.log('Running daily dunning sweep for PAST_DUE subscriptions...');
+
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    // Any org PAST_DUE where the currentPeriodEnd was more than 7 days ago
+    const overdueOrgs = await this.prisma.organization.findMany({
+      where: {
+        subscriptionStatus: SubscriptionStatus.PAST_DUE,
+        currentPeriodEnd: { lt: sevenDaysAgo },
+      },
+      select: { id: true, subscriptionStatus: true },
+    });
+
+    if (overdueOrgs.length === 0) {
+      this.logger.log('No subscriptions past 7-day grace period.');
+      return;
+    }
+
+    this.logger.log(`Found ${overdueOrgs.length} orgs exceeding grace period. Suspending...`);
+
+    for (const org of overdueOrgs) {
+      try {
+        await this.prisma.$transaction(async (tx) => {
+          await tx.organization.update({
+            where: { id: org.id },
+            data: { subscriptionStatus: SubscriptionStatus.EXPIRED },
+          });
+
+          await tx.auditLog.create({
+            data: {
+              orgId: org.id,
+              actorId: 'SYSTEM',
+              action: 'SUBSCRIPTION_SUSPENDED_DUNNING',
+              entity: 'Organization',
+              entityId: org.id,
+              beforeJson: { subscriptionStatus: org.subscriptionStatus },
+              afterJson: { subscriptionStatus: SubscriptionStatus.EXPIRED },
+            },
+          });
+        });
+        this.logger.log(`Org ${org.id} suspended due to dunning failure.`);
+      } catch (err) {
+        this.logger.error(`Failed to suspend org ${org.id}: ${(err as Error).message}`);
+      }
+    }
+  }
 }
