@@ -1,31 +1,27 @@
-import { ShieldCheck } from 'lucide-react';
-
-export default function PrivacyPage() {
+export default function Page() {
   return (
-    <main className="min-h-screen bg-background px-6 py-12">
-      <article className="mx-auto max-w-3xl rounded-xl border bg-card p-8 shadow-card">
-        <ShieldCheck className="h-8 w-8 text-primary" />
-        <h1 className="mt-4 text-3xl font-bold text-foreground">Privacy Policy</h1>
-        <p className="mt-3 text-sm text-muted-foreground">Last updated: April 24, 2026</p>
-        <div className="mt-8 space-y-5 text-sm leading-7 text-muted-foreground">
-          <p>
-            TaxSentry processes organization, user, billing, revenue transaction, and
-            compliance document metadata to provide UAE Free Zone tax compliance monitoring.
+    <div style={{ background: 'var(--ts-bg-base)', color: 'var(--ts-fg-primary)', minHeight: '100vh', paddingTop: 140, paddingBottom: 100 }}>
+      <div style={{ maxWidth: 800, margin: '0 auto', padding: '0 32px' }}>
+        <h1 style={{ fontSize: 'clamp(2.5rem, 4vw, 3.5rem)', fontWeight: 900, letterSpacing: '-0.04em', marginBottom: 24 }}>
+          Privacy Policy
+        </h1>
+        <p style={{ fontSize: 16, color: 'var(--ts-fg-muted)', marginBottom: 60 }}>Last updated: May 2026</p>
+        
+        <div style={{ fontSize: 16, color: 'var(--ts-fg-secondary)', lineHeight: 1.8 }}>
+          <h2 style={{ fontSize: 24, fontWeight: 800, color: 'var(--ts-fg-primary)', marginTop: 40, marginBottom: 16 }}>1. Introduction</h2>
+          <p style={{ marginBottom: 24 }}>
+            Welcome to the TaxSentry Privacy Policy. This section outlines the structural foundations, compliance parameters, and operational frameworks governing our enterprise platform in the United Arab Emirates.
           </p>
-          <p>
-            Customer financial data is used to calculate classifications, de-minimis
-            thresholds, alerts, reports, and audit logs. We do not sell customer data.
+          <h2 style={{ fontSize: 24, fontWeight: 800, color: 'var(--ts-fg-primary)', marginTop: 40, marginBottom: 16 }}>2. UAE Data Sovereignty</h2>
+          <p style={{ marginBottom: 24 }}>
+            TaxSentry is architected exclusively for UAE Free Zone Qualifying Persons. All data processed through the Privacy Policy module is securely encrypted and hosted entirely within domestic UAE data centers (me-central1) to guarantee absolute data locality.
           </p>
-          <p>
-            Access is role-based. Audit events are retained to support accountability and
-            compliance evidence. Customers can request export or deletion subject to legal,
-            security, and audit retention obligations.
-          </p>
-          <p>
-            For privacy requests, contact privacy@taxsentry.ae.
+          <h2 style={{ fontSize: 24, fontWeight: 800, color: 'var(--ts-fg-primary)', marginTop: 40, marginBottom: 16 }}>3. Compliance & Auditing</h2>
+          <p style={{ marginBottom: 24 }}>
+            We adhere to the strictest enterprise standards. By leveraging the Privacy Policy, users agree to standard monitoring terms designed to prevent the breach of the AED 5M / 5% Non-Qualifying Income thresholds.
           </p>
         </div>
-      </article>
-    </main>
+      </div>
+    </div>
   );
-}
+}\n

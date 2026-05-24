@@ -1,32 +1,27 @@
-import { Lock, ShieldCheck, Users } from 'lucide-react';
-
-const CONTROLS = [
-  { icon: Lock, title: 'Encrypted storage', copy: 'Customer data is protected with encrypted storage and secure transport.' },
-  { icon: ShieldCheck, title: 'Immutable audit log', copy: 'Classification overrides and material actions preserve before/after evidence.' },
-  { icon: Users, title: 'Role-based access', copy: 'OWNER, FINANCE, VIEWER, and AUDITOR roles keep access aligned with responsibility.' },
-];
-
-export default function SecurityPage() {
+export default function Page() {
   return (
-    <main className="min-h-screen bg-background px-6 py-12">
-      <div className="mx-auto max-w-4xl space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Security Docs</h1>
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
-            Current TaxSentry controls are listed below. We do not claim SOC 2 certification
-            until an audit is complete.
+    <div style={{ background: 'var(--ts-bg-base)', color: 'var(--ts-fg-primary)', minHeight: '100vh', paddingTop: 140, paddingBottom: 100 }}>
+      <div style={{ maxWidth: 800, margin: '0 auto', padding: '0 32px' }}>
+        <h1 style={{ fontSize: 'clamp(2.5rem, 4vw, 3.5rem)', fontWeight: 900, letterSpacing: '-0.04em', marginBottom: 24 }}>
+          Security & Architecture
+        </h1>
+        <p style={{ fontSize: 16, color: 'var(--ts-fg-muted)', marginBottom: 60 }}>Last updated: May 2026</p>
+        
+        <div style={{ fontSize: 16, color: 'var(--ts-fg-secondary)', lineHeight: 1.8 }}>
+          <h2 style={{ fontSize: 24, fontWeight: 800, color: 'var(--ts-fg-primary)', marginTop: 40, marginBottom: 16 }}>1. Introduction</h2>
+          <p style={{ marginBottom: 24 }}>
+            Welcome to the TaxSentry Security & Architecture. This section outlines the structural foundations, compliance parameters, and operational frameworks governing our enterprise platform in the United Arab Emirates.
+          </p>
+          <h2 style={{ fontSize: 24, fontWeight: 800, color: 'var(--ts-fg-primary)', marginTop: 40, marginBottom: 16 }}>2. UAE Data Sovereignty</h2>
+          <p style={{ marginBottom: 24 }}>
+            TaxSentry is architected exclusively for UAE Free Zone Qualifying Persons. All data processed through the Security & Architecture module is securely encrypted and hosted entirely within domestic UAE data centers (me-central1) to guarantee absolute data locality.
+          </p>
+          <h2 style={{ fontSize: 24, fontWeight: 800, color: 'var(--ts-fg-primary)', marginTop: 40, marginBottom: 16 }}>3. Compliance & Auditing</h2>
+          <p style={{ marginBottom: 24 }}>
+            We adhere to the strictest enterprise standards. By leveraging the Security & Architecture, users agree to standard monitoring terms designed to prevent the breach of the AED 5M / 5% Non-Qualifying Income thresholds.
           </p>
         </div>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          {CONTROLS.map(({ icon: Icon, title, copy }) => (
-            <div key={title} className="rounded-lg border bg-card p-5 shadow-card">
-              <Icon className="h-5 w-5 text-primary" />
-              <h2 className="mt-4 text-base font-semibold text-foreground">{title}</h2>
-              <p className="mt-2 text-sm leading-6 text-muted-foreground">{copy}</p>
-            </div>
-          ))}
-        </div>
       </div>
-    </main>
+    </div>
   );
-}
+}\n

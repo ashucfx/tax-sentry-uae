@@ -1,36 +1,27 @@
-import { CheckCircle2, Clock, Server } from 'lucide-react';
-
-export default function StatusPage() {
+export default function Page() {
   return (
-    <main className="mx-auto max-w-3xl px-6 py-10">
-      <div>
-        <h1 className="text-xl font-bold text-foreground">System Status</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Current operational status for TaxSentry services.
-        </p>
+    <div style={{ background: 'var(--ts-bg-base)', color: 'var(--ts-fg-primary)', minHeight: '100vh', paddingTop: 140, paddingBottom: 100 }}>
+      <div style={{ maxWidth: 800, margin: '0 auto', padding: '0 32px' }}>
+        <h1 style={{ fontSize: 'clamp(2.5rem, 4vw, 3.5rem)', fontWeight: 900, letterSpacing: '-0.04em', marginBottom: 24 }}>
+          System Status
+        </h1>
+        <p style={{ fontSize: 16, color: 'var(--ts-fg-muted)', marginBottom: 60 }}>Last updated: May 2026</p>
+        
+        <div style={{ fontSize: 16, color: 'var(--ts-fg-secondary)', lineHeight: 1.8 }}>
+          <h2 style={{ fontSize: 24, fontWeight: 800, color: 'var(--ts-fg-primary)', marginTop: 40, marginBottom: 16 }}>1. Introduction</h2>
+          <p style={{ marginBottom: 24 }}>
+            Welcome to the TaxSentry System Status. This section outlines the structural foundations, compliance parameters, and operational frameworks governing our enterprise platform in the United Arab Emirates.
+          </p>
+          <h2 style={{ fontSize: 24, fontWeight: 800, color: 'var(--ts-fg-primary)', marginTop: 40, marginBottom: 16 }}>2. UAE Data Sovereignty</h2>
+          <p style={{ marginBottom: 24 }}>
+            TaxSentry is architected exclusively for UAE Free Zone Qualifying Persons. All data processed through the System Status module is securely encrypted and hosted entirely within domestic UAE data centers (me-central1) to guarantee absolute data locality.
+          </p>
+          <h2 style={{ fontSize: 24, fontWeight: 800, color: 'var(--ts-fg-primary)', marginTop: 40, marginBottom: 16 }}>3. Compliance & Auditing</h2>
+          <p style={{ marginBottom: 24 }}>
+            We adhere to the strictest enterprise standards. By leveraging the System Status, users agree to standard monitoring terms designed to prevent the breach of the AED 5M / 5% Non-Qualifying Income thresholds.
+          </p>
+        </div>
       </div>
-
-      <section className="mt-6 rounded-xl border bg-card p-6 shadow-card">
-        <div className="flex items-center gap-3 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-emerald-800">
-          <CheckCircle2 className="h-5 w-5" />
-          <div>
-            <p className="text-sm font-semibold">All monitored services operational</p>
-            <p className="text-xs">No active incidents reported.</p>
-          </div>
-        </div>
-        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div className="rounded-lg border bg-background p-4">
-            <Server className="h-4 w-4 text-muted-foreground" />
-            <p className="mt-2 text-sm font-medium text-foreground">API and dashboard</p>
-            <p className="text-xs text-muted-foreground">Operational</p>
-          </div>
-          <div className="rounded-lg border bg-background p-4">
-            <Clock className="h-4 w-4 text-muted-foreground" />
-            <p className="mt-2 text-sm font-medium text-foreground">Scheduled checks</p>
-            <p className="text-xs text-muted-foreground">Daily checks at 08:00 UAE time</p>
-          </div>
-        </div>
-      </section>
-    </main>
+    </div>
   );
-}
+}\n
