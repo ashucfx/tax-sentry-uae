@@ -2,6 +2,14 @@
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
 
+// Extract origin for CSP (e.g. 'https://tax-sentry-uae.onrender.com/api/v1' -> 'https://tax-sentry-uae.onrender.com')
+let CSP_API_ORIGIN = API_URL;
+try {
+  CSP_API_ORIGIN = new URL(API_URL).origin;
+} catch (e) {
+  // fallback if URL is invalid
+}
+
 const securityHeaders = [
   // Prevent MIME-type sniffing
   { key: 'X-Content-Type-Options', value: 'nosniff' },
@@ -23,7 +31,7 @@ const securityHeaders = [
   // - script-src: self + Next.js inline scripts (unsafe-inline needed for App Router hydration)
   // - style-src: self + inline (Tailwind applies inline styles)
   // - img-src: self + data URIs (charts, avatars)
-  // - connect-src: self + API backend
+  // - connect-src: self + API backend (using origin to allow all subpaths)
   // - font-src: self + Google Fonts
   // - frame-ancestors: none (redundant with X-Frame-Options but defence-in-depth)
   {
@@ -33,7 +41,7 @@ const securityHeaders = [
       "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "img-src 'self' data: blob:",
-      `connect-src 'self' ${API_URL}`,
+      `connect-src 'self' ${CSP_API_ORIGIN}`,
       "font-src 'self' https://fonts.gstatic.com",
       "frame-ancestors 'none'",
       "base-uri 'self'",
