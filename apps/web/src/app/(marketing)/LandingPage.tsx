@@ -619,8 +619,8 @@ export function LandingPage() {
       </motion.section>
 
       {/* ── CTA ──────────────────────────────────────── */}
-      <motion.section initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ type: "spring", stiffness: 400, damping: 35 }} className="relative overflow-hidden" style={{ padding: '120px 32px 100px', textAlign: 'center', background: 'var(--ts-bg-deepest)' }}>
-        <div className="pointer-events-none absolute" style={{ top: '0', left: '50%', transform: 'translateX(-50%)', width: 800, height: 400, background: 'radial-gradient(ellipse at top, oklch(0.55 0.22 260 / 0.15), transparent 70%)' }} />
+      <motion.section initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ type: "spring", stiffness: 400, damping: 35 }} className="relative overflow-hidden" style={{ padding: '120px 32px 100px', textAlign: 'center', background: '#0B1121' }}>
+        <div className="pointer-events-none absolute" style={{ top: '0', left: '50%', transform: 'translateX(-50%)', width: 800, height: 400, background: 'radial-gradient(ellipse at top, rgba(255,255,255,0.05), transparent 70%)' }} />
         <div className="relative z-10" style={{ maxWidth: 800, margin: '0 auto' }}>
           <div className="inline-flex items-center gap-2 mb-6" style={{ padding: '6px 16px', borderRadius: 9999, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ts-fg-secondary)' }}>
             <Lock size={12} /> Enterprise Ready
@@ -667,7 +667,7 @@ export function LandingPage() {
       </motion.section>
 
       {/* ── Footer ───────────────────────────────────── */}
-      <footer style={{ background: 'var(--ts-bg-deepest)', borderTop: '1px solid oklch(0.20 0.02 260)' }}>
+      <footer style={{ background: '#0B1121', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
         <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 40px' }}>
           {/* 5-column grid */}
           <motion.div 
@@ -676,7 +676,7 @@ export function LandingPage() {
             viewport={{ once: true }}
             transition={{ duration: 0.5, staggerChildren: 0.1 }}
             className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-12 lg:gap-8" 
-            style={{ padding: '80px 0 60px', borderBottom: '1px solid oklch(0.20 0.02 260)' }}
+            style={{ padding: '80px 0 60px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}
           >
             {/* Brand */}
             <div className="col-span-2 md:col-span-3 lg:col-span-1">
@@ -716,10 +716,10 @@ export function LandingPage() {
               <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#fff', marginBottom: 24 }}>Platform</div>
               <div className="flex flex-col gap-4">
                 {[
-                  ['De-Minimis Tracker', '#features'],
-                  ['Classification Engine', '#features'],
-                  ['Substance Vault', '#features'],
-                  ['Audit Pack Generation', '#features'],
+                  ['De-Minimis Tracker', '/platform/de-minimis'],
+                  ['Classification Engine', '/platform/classification'],
+                  ['Substance Vault', '/platform/substance'],
+                  ['Audit Pack Generation', '/platform/audit'],
                   ['API Access', '/api-docs'],
                   ['Accounting Sync', '/integrations']
                 ].map(([label, href]) => (
@@ -781,7 +781,7 @@ export function LandingPage() {
           </motion.div>
 
           {/* Trust Badges Bar */}
-          <div className="flex flex-wrap items-center justify-between gap-6" style={{ padding: '32px 0', borderBottom: '1px solid oklch(0.20 0.02 260)' }}>
+          <div className="flex flex-wrap items-center justify-between gap-6" style={{ padding: '32px 0', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2" style={{ fontSize: 11, fontWeight: 600, color: 'var(--ts-fg-muted)' }}>
                 <Globe size={14} /> Architected for UAE Data Sovereignty
