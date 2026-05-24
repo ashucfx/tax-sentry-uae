@@ -146,7 +146,6 @@ export function MarketingFooter() {
               <div className="flex flex-col gap-4">
                 {[
                   ['About Us', '/about'],
-                  ['Careers', '/careers'],
                   ['Contact Sales', '/contact'],
                   ['Privacy Policy', '/privacy'],
                   ['Terms of Service', '/terms'],
