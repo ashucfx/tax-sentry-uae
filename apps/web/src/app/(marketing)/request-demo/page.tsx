@@ -19,8 +19,6 @@ import {
   Loader2,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MarketingNav } from '@/components/marketing/MarketingNav';
-import { MarketingFooter } from '@/components/marketing/MarketingFooter';
 
 const FREE_ZONES = [
   'DMCC', 'DIFC', 'JAFZA', 'ADGM', 'RAKEZ', 'DIC', 'DWTC', 'DAFZA',
@@ -233,7 +231,6 @@ export default function RequestDemoPage() {
 
   return (
     <div style={{ background: 'var(--ts-bg-base)', color: 'var(--ts-fg-primary)', fontFamily: 'var(--font-sans)', minHeight: '100vh' }}>
-      <MarketingNav />
 
       {/* Hero */}
       <section
@@ -582,8 +579,6 @@ export default function RequestDemoPage() {
           </div>
         </div>
       </section>
-
-      <MarketingFooter />
     </div>
   );
 }

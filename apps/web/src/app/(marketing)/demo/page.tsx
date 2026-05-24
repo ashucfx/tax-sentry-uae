@@ -201,7 +201,6 @@ export default function DemoPage() {
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--ts-bg-base)', color: 'var(--ts-fg-primary)', fontFamily: 'var(--font-sans)' }}>
-      <MarketingNav />
 
       {/* Hero */}
       <section style={{ padding: '140px 32px 60px', textAlign: 'center', maxWidth: 860, margin: '0 auto' }}>
