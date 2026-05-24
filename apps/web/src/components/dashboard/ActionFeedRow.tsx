@@ -14,23 +14,23 @@ const SEVERITY_CONFIG: Record<
 > = {
   RED: {
     icon: AlertOctagon,
-    color: 'var(--ts-red-500)',
-    bg: 'oklch(0.62 0.24 25 / 0.08)',
-    border: 'oklch(0.62 0.24 25 / 0.25)',
+    color: 'var(--ts-red-600)',
+    bg: 'oklch(0.96 0.02 25)',
+    border: 'oklch(0.90 0.04 25)',
     label: 'Critical',
   },
   AMBER: {
     icon: AlertTriangle,
-    color: 'var(--ts-amber-500)',
-    bg: 'oklch(0.80 0.18 85 / 0.08)',
-    border: 'oklch(0.80 0.18 85 / 0.25)',
+    color: 'var(--ts-amber-600)',
+    bg: 'oklch(0.96 0.02 85)',
+    border: 'oklch(0.90 0.04 85)',
     label: 'Warning',
   },
   INFO: {
     icon: Info,
-    color: 'var(--ts-blue-400)',
-    bg: 'oklch(0.55 0.22 260 / 0.08)',
-    border: 'oklch(0.55 0.22 260 / 0.25)',
+    color: 'var(--ts-blue-600)',
+    bg: 'oklch(0.96 0.02 260)',
+    border: 'oklch(0.90 0.04 260)',
     label: 'Notice',
   },
 };
@@ -54,7 +54,7 @@ function AlertCard({ alert, onAck }: { alert: Alert; onAck?: () => void }) {
       style={{
         border: `1px solid ${config.border}`,
         background: config.bg,
-        padding: '12px 14px',
+        padding: '8px 12px',
       }}
     >
       <Icon
@@ -199,8 +199,8 @@ function EmptyState() {
         style={{
           width: 36,
           height: 36,
-          background: 'oklch(0.70 0.20 155 / 0.1)',
-          border: '1px solid oklch(0.70 0.20 155 / 0.25)',
+          background: 'oklch(0.96 0.02 155)',
+          border: '1px solid oklch(0.90 0.04 155)',
         }}
       >
         <CheckCircle2 size={18} color="var(--ts-green-500)" />

@@ -45,18 +45,15 @@ export function LandingPage() {
         {/* Radial glow */}
         <div
           className="pointer-events-none absolute"
-          style={{ inset: 0, background: 'radial-gradient(ellipse 70% 60% at 50% -5%, oklch(0.55 0.22 260 / 0.13) 0%, transparent 65%)', zIndex: 0 }}
+          style={{ inset: 0, background: 'radial-gradient(ellipse 70% 60% at 50% -5%, oklch(0.96 0.01 240) 0%, transparent 65%)', zIndex: 0 }}
         />
-        {/* Orbs */}
-        <div className="pointer-events-none absolute" style={{ width: 500, height: 500, top: '5%', left: '-8%', borderRadius: '50%', background: 'oklch(0.55 0.22 260 / 0.07)', filter: 'blur(100px)', zIndex: 0 }} />
-        <div className="pointer-events-none absolute" style={{ width: 400, height: 400, bottom: 0, right: '-6%', borderRadius: '50%', background: 'oklch(0.70 0.20 155 / 0.05)', filter: 'blur(100px)', zIndex: 0 }} />
 
         <div className="relative z-10 w-full" style={{ maxWidth: 1160, margin: '0 auto', padding: '0 32px' }}>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-14 items-center">
             {/* Left: Content */}
             <div>
               {/* Eyebrow */}
-              <div className="inline-flex items-center gap-2 mb-6" style={{ padding: '6px 16px', borderRadius: 9999, background: 'oklch(0.55 0.22 260 / 0.10)', border: '1px solid oklch(0.55 0.22 260 / 0.28)', fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#93c5fd' }}>
+              <div className="inline-flex items-center gap-2 mb-6" style={{ padding: '6px 16px', borderRadius: 9999, background: 'var(--ts-bg-muted)', border: '1px solid var(--ts-border)', fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--ts-blue-600)' }}>
                 <ShieldCheck size={12} />
                 Real-Time QFZP Protection Platform
               </div>
@@ -133,15 +130,15 @@ export function LandingPage() {
             <div className="hidden lg:block">
               <div
                 className="relative overflow-hidden rounded-2xl"
-                style={{ background: '#0c1a30', border: '1px solid oklch(0.55 0.22 260 / 0.18)', boxShadow: '0 40px 120px rgba(0,0,0,0.6), 0 0 0 1px oklch(0.55 0.22 260 / 0.08)' }}
+                style={{ background: '#ffffff', border: '1px solid var(--ts-border)', boxShadow: '0 40px 120px rgba(0,0,0,0.08), 0 0 0 1px var(--ts-border)' }}
               >
-                <div className="absolute top-0 left-0 right-0" style={{ height: 1, background: 'linear-gradient(90deg, transparent, rgba(37,99,235,0.5), rgba(52,211,153,0.3), transparent)' }} />
+                <div className="absolute top-0 left-0 right-0" style={{ height: 1, background: 'linear-gradient(90deg, transparent, var(--ts-border-subtle), transparent)' }} />
                 {/* Browser bar */}
-                <div className="flex items-center gap-2" style={{ background: '#060e1c', padding: '10px 16px', borderBottom: '1px solid rgba(37,99,235,0.1)' }}>
+                <div className="flex items-center gap-2" style={{ background: '#f8fafc', padding: '10px 16px', borderBottom: '1px solid var(--ts-border)' }}>
                   {[['#ff5f57', '#febc2e', '#28c840']].map(colors => colors.map((c, i) => (
                     <div key={i} style={{ width: 10, height: 10, borderRadius: '50%', background: c }} />
                   )))}
-                  <div style={{ flex: 1, textAlign: 'center', fontSize: 11, color: '#2a3d58', marginRight: 28 }}>TaxSentry — QFZP Dashboard</div>
+                  <div style={{ flex: 1, textAlign: 'center', fontSize: 11, color: 'var(--ts-fg-muted)', marginRight: 28 }}>TaxSentry — QFZP Dashboard</div>
                 </div>
                 {/* Content */}
                 <div style={{ padding: 20 }}>
@@ -156,9 +153,9 @@ export function LandingPage() {
                   {/* KPI row */}
                   <div className="grid grid-cols-3 gap-2.5 mb-3">
                     {[
-                      { label: 'Total Revenue', value: 'AED 5.04M', color: '#eaf0ff', border: 'rgba(37,99,235,0.12)', bg: '#0f1f3d' },
-                      { label: 'Qualifying', value: 'AED 4.83M', color: '#34d399', border: 'rgba(52,211,153,0.2)', bg: 'rgba(52,211,153,0.04)' },
-                      { label: 'Non-Qualifying', value: 'AED 214K', color: '#fbbf24', border: 'rgba(245,158,11,0.2)', bg: 'rgba(245,158,11,0.04)' },
+                      { label: 'Total Revenue', value: 'AED 5.04M', color: 'var(--ts-fg-primary)', border: 'var(--ts-border)', bg: 'var(--ts-bg-muted)' },
+                      { label: 'Qualifying', value: 'AED 4.83M', color: 'var(--ts-green-600)', border: 'var(--ts-green-400)', bg: 'oklch(0.96 0.02 155)' },
+                      { label: 'Non-Qualifying', value: 'AED 214K', color: 'var(--ts-amber-600)', border: 'var(--ts-amber-400)', bg: 'oklch(0.96 0.02 85)' },
                     ].map(c => (
                       <div key={c.label} style={{ background: c.bg, border: `1px solid ${c.border}`, borderRadius: 10, padding: '10px 12px' }}>
                         <div style={{ fontSize: 9, color: '#3a5580', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 5 }}>{c.label}</div>
@@ -291,8 +288,8 @@ export function LandingPage() {
                 className="relative"
                 style={{
                   padding: '40px 36px',
-                  background: 'rgba(255,255,255,0.015)',
-                  border: '1px solid oklch(0.55 0.22 260 / 0.10)',
+                  background: 'var(--ts-bg-card)',
+                  border: '1px solid var(--ts-border)',
                   borderRadius: i === 0 ? '16px 0 0 16px' : i === 2 ? '0 16px 16px 0' : 0,
                 }}
               >
@@ -349,11 +346,10 @@ export function LandingPage() {
                 style={{
                   padding: '32px 28px',
                   borderRadius: 16,
-                  border: `1px solid ${greenBorder ? 'rgba(52,211,153,0.2)' : 'oklch(0.55 0.22 260 / 0.10)'}`,
-                  background: 'linear-gradient(145deg, oklch(0.18 0.035 255 / 0.8), oklch(0.14 0.03 255 / 0.9))',
+                  border: `1px solid ${greenBorder ? 'var(--ts-green-400)' : 'var(--ts-border)'}`,
+                  background: 'var(--ts-bg-card)',
+                  boxShadow: 'var(--ts-shadow-card)',
                 }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'oklch(0.55 0.22 260 / 0.28)'; (e.currentTarget as HTMLElement).style.transform = 'translateY(-3px)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 20px 60px rgba(0,0,0,0.4)'; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = greenBorder ? 'rgba(52,211,153,0.2)' : 'oklch(0.55 0.22 260 / 0.10)'; (e.currentTarget as HTMLElement).style.transform = ''; (e.currentTarget as HTMLElement).style.boxShadow = ''; }}
               >
                 <div className="absolute top-0 left-0 right-0" style={{ height: 1, background: greenBorder ? 'linear-gradient(90deg, transparent, rgba(52,211,153,0.4), transparent)' : 'linear-gradient(90deg, transparent, rgba(37,99,235,0.3), transparent)' }} />
                 {badge && (
@@ -382,11 +378,9 @@ export function LandingPage() {
         <div style={{ maxWidth: 1160, margin: '0 auto' }}>
           <div
             className="relative overflow-hidden rounded-2xl"
-            style={{ padding: '52px 56px', background: 'linear-gradient(135deg, #0c1a30 0%, #091222 100%)', border: '1px solid oklch(0.55 0.22 260 / 0.18)' }}
+            style={{ padding: '52px 56px', background: 'var(--ts-bg-elevated)', border: '1px solid var(--ts-border)' }}
           >
-            <div className="absolute top-0 left-0 right-0" style={{ height: 1, background: 'linear-gradient(90deg, transparent, rgba(37,99,235,0.5), transparent)' }} />
-            <div className="absolute" style={{ top: -40, right: -40, width: 200, height: 200, background: 'rgba(37,99,235,0.08)', borderRadius: '50%', filter: 'blur(60px)' }} />
-
+            <div className="absolute top-0 left-0 right-0" style={{ height: 1, background: 'linear-gradient(90deg, transparent, var(--ts-blue-400), transparent)' }} />
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-12 items-center relative z-10">
               <div>
                 <div className="inline-flex items-center gap-2 mb-6" style={{ padding: '5px 14px', borderRadius: 9999, background: 'oklch(0.55 0.22 260 / 0.10)', border: '1px solid oklch(0.55 0.22 260 / 0.25)', fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ts-blue-400)' }}>
@@ -448,7 +442,7 @@ export function LandingPage() {
               { quote: '"Our auditor asked for a full de-minimis workings pack during the FTA review. I generated it in 90 seconds. The auditor said it was the most prepared file they\'d seen from a Free Zone company."', name: 'Finance Director, Gulf Logistics FZE', role: 'Logistics & Freight · JAFZA', avatar: 'AM', bg: '#059669' },
               { quote: '"The risk score alone is worth the subscription. Our board now reviews it monthly. It\'s become the single metric everyone watches to make sure we stay at 0%."', name: 'Group CFO, MENA Holdings', role: 'Multi-entity · DIFC', avatar: 'RK', bg: '#7c3aed' },
             ].map(({ quote, name, role, avatar, bg }) => (
-              <div key={name} style={{ padding: 32, borderRadius: 16, background: 'oklch(0.18 0.035 255 / 0.6)', border: '1px solid oklch(0.55 0.22 260 / 0.10)' }}>
+              <div key={name} style={{ padding: 32, borderRadius: 16, background: 'var(--ts-bg-card)', border: '1px solid var(--ts-border)', boxShadow: 'var(--ts-shadow-card)' }}>
                 <div className="flex gap-1 mb-5">
                   {'★★★★★'.split('').map((s, i) => <span key={i} style={{ color: '#f59e0b', fontSize: 14 }}>{s}</span>)}
                 </div>
@@ -517,10 +511,10 @@ export function LandingPage() {
                 style={{
                   borderRadius: 20,
                   padding: '36px 32px',
-                  background: 'linear-gradient(145deg, #0c1a30, #091222)',
-                  border: `1px solid ${featured ? 'oklch(0.55 0.22 260 / 0.40)' : 'oklch(0.55 0.22 260 / 0.14)'}`,
-                  boxShadow: featured ? '0 0 60px oklch(0.55 0.22 260 / 0.12)' : 'none',
-                  transform: featured ? 'scale(1.04)' : 'none',
+                  background: 'var(--ts-bg-card)',
+                  border: `1px solid ${featured ? 'var(--ts-blue-400)' : 'var(--ts-border)'}`,
+                  boxShadow: featured ? '0 8px 32px rgba(37,99,235,0.1)' : 'var(--ts-shadow-card)',
+                  transform: featured ? 'scale(1.02)' : 'none',
                   transition: 'transform 0.2s',
                 }}
               >

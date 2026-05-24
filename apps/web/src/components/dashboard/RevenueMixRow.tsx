@@ -140,10 +140,10 @@ export function RevenueMixRow() {
                   tickLine={false}
                   width={44}
                 />
-                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'oklch(0.98 0 0 / 0.03)', radius: 4 }} />
+                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'var(--ts-bg-muted)', radius: 4 }} />
                 <Bar dataKey="QI" stackId="a" fill="var(--ts-green-500)" name="QI" radius={[0, 0, 0, 0]} />
                 <Bar dataKey="NQI" stackId="a" fill="var(--ts-amber-500)" name="NQI" radius={[0, 0, 0, 0]} />
-                <Bar dataKey="EXCLUDED" stackId="a" fill="oklch(0.35 0.02 255)" name="EXCLUDED" radius={[3, 3, 0, 0]} />
+                <Bar dataKey="EXCLUDED" stackId="a" fill="var(--ts-bg-muted)" name="EXCLUDED" radius={[3, 3, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           )}
@@ -153,7 +153,7 @@ export function RevenueMixRow() {
             {[
               { color: 'var(--ts-green-500)', label: 'Qualifying Income' },
               { color: 'var(--ts-amber-500)', label: 'Non-Qualifying' },
-              { color: 'oklch(0.35 0.02 255)', label: 'Excluded' },
+              { color: 'var(--ts-bg-muted)', label: 'Excluded' },
             ].map(({ color, label }) => (
               <div key={label} className="flex items-center gap-1.5" style={{ fontSize: 11, color: 'var(--ts-fg-muted)' }}>
                 <span className="inline-block rounded-sm" style={{ width: 10, height: 10, background: color, flexShrink: 0 }} />
@@ -222,7 +222,7 @@ export function RevenueMixRow() {
                     >
                       <div
                         className="h-full rounded-full"
-                        style={{ width: `${barWidth}%`, background: 'oklch(0.62 0.24 25 / 0.5)' }}
+                        style={{ width: `${barWidth}%`, background: 'var(--ts-red-400)' }}
                       />
                     </div>
                   </div>

@@ -5,66 +5,66 @@
 @layer base {
   :root {
     /* ── OKLCH Design Tokens ─────────────────────── */
-    --ts-bg-deepest:    oklch(0.12 0.025 255);
-    --ts-bg-base:       oklch(0.15 0.03  255);
-    --ts-bg-card:       oklch(0.18 0.035 255);
-    --ts-bg-elevated:   oklch(0.22 0.03  255);
-    --ts-bg-muted:      oklch(0.25 0.025 255);
+    --ts-bg-deepest:    oklch(0.96 0.005 240);
+    --ts-bg-base:       oklch(0.98 0.002 240);
+    --ts-bg-card:       oklch(1.0 0 0);
+    --ts-bg-elevated:   oklch(1.0 0 0);
+    --ts-bg-muted:      oklch(0.94 0.005 240);
 
-    --ts-blue-400:      oklch(0.65 0.20  260);
-    --ts-blue-500:      oklch(0.55 0.22  260);
-    --ts-blue-600:      oklch(0.50 0.20  260);
-    --ts-blue-glow:     oklch(0.55 0.22  260 / 0.4);
+    --ts-blue-400:      oklch(0.60 0.15  260);
+    --ts-blue-500:      oklch(0.50 0.18  260);
+    --ts-blue-600:      oklch(0.40 0.15  260);
+    --ts-blue-glow:     transparent;
 
-    --ts-green-400:     oklch(0.75 0.18  155);
-    --ts-green-500:     oklch(0.70 0.20  155);
-    --ts-green-600:     oklch(0.60 0.20  155);
-    --ts-green-glow:    oklch(0.70 0.20  155 / 0.4);
+    --ts-green-400:     oklch(0.70 0.15  155);
+    --ts-green-500:     oklch(0.60 0.15  155);
+    --ts-green-600:     oklch(0.50 0.15  155);
+    --ts-green-glow:    transparent;
 
-    --ts-amber-400:     oklch(0.85 0.16   85);
-    --ts-amber-500:     oklch(0.80 0.18   85);
-    --ts-amber-600:     oklch(0.70 0.18   85);
-    --ts-amber-glow:    oklch(0.80 0.18   85 / 0.4);
+    --ts-amber-400:     oklch(0.80 0.15   85);
+    --ts-amber-500:     oklch(0.70 0.18   85);
+    --ts-amber-600:     oklch(0.60 0.18   85);
+    --ts-amber-glow:    transparent;
 
-    --ts-red-400:       oklch(0.68 0.22   25);
-    --ts-red-500:       oklch(0.62 0.24   25);
-    --ts-red-600:       oklch(0.55 0.22   25);
-    --ts-red-glow:      oklch(0.62 0.24   25 / 0.4);
+    --ts-red-400:       oklch(0.65 0.18   25);
+    --ts-red-500:       oklch(0.55 0.20   25);
+    --ts-red-600:       oklch(0.45 0.20   25);
+    --ts-red-glow:      transparent;
 
-    --ts-fg-primary:    oklch(0.98 0     0);
-    --ts-fg-secondary:  oklch(0.88 0     0);
-    --ts-fg-muted:      oklch(0.60 0     0);
-    --ts-fg-dimmer:     oklch(0.45 0     0);
+    --ts-fg-primary:    oklch(0.15 0.02 240);
+    --ts-fg-secondary:  oklch(0.35 0.01 240);
+    --ts-fg-muted:      oklch(0.50 0.01 240);
+    --ts-fg-dimmer:     oklch(0.65 0.01 240);
 
-    --ts-border:        oklch(0.28 0.025 255);
-    --ts-border-subtle: oklch(0.22 0.025 255);
+    --ts-border:        oklch(0.90 0.01 240);
+    --ts-border-subtle: oklch(0.94 0.01 240);
 
-    --ts-radius-sm:   0.375rem;
-    --ts-radius-md:   0.5rem;
-    --ts-radius-lg:   0.75rem;
-    --ts-radius-xl:   1rem;
-    --ts-radius-2xl:  1.25rem;
+    --ts-radius-sm:   0.25rem;
+    --ts-radius-md:   0.375rem;
+    --ts-radius-lg:   0.5rem;
+    --ts-radius-xl:   0.5rem;
+    --ts-radius-2xl:  0.75rem;
     --ts-radius-full: 9999px;
 
-    --ts-glow-blue:  0 0 30px oklch(0.55 0.22 260 / 0.4);
-    --ts-glow-green: 0 0 30px oklch(0.70 0.20 155 / 0.4);
-    --ts-glow-amber: 0 0 30px oklch(0.80 0.18  85 / 0.4);
-    --ts-glow-red:   0 0 30px oklch(0.62 0.24  25 / 0.4);
-    --ts-shadow-card: 0 4px 24px oklch(0 0 0 / 0.4);
+    --ts-glow-blue:   none;
+    --ts-glow-green:  none;
+    --ts-glow-amber:  none;
+    --ts-glow-red:    none;
+    --ts-shadow-card: 0 1px 3px oklch(0 0 0 / 0.05), 0 2px 8px oklch(0 0 0 / 0.02);
 
     /* ── Semantic aliases ────────────────────────── */
-    --background:         222 75% 6%;
-    --card:               222 62% 9%;
-    --card-foreground:    220 30% 92%;
-    --foreground:         220 30% 92%;
-    --muted:              222 55% 13%;
-    --muted-foreground:   215 20% 48%;
-    --border:             222 45% 16%;
-    --input:              222 55% 13%;
-    --primary:            221 83% 53%;
-    --primary-foreground: 0 0% 100%;
-    --radius: 0.75rem;
-    --ring:   221 83% 53%;
+    --background:         0 0% 100%;
+    --card:               0 0% 100%;
+    --card-foreground:    222 47% 11%;
+    --foreground:         222 47% 11%;
+    --muted:              210 40% 96.1%;
+    --muted-foreground:   215.4 16.3% 46.9%;
+    --border:             214.3 31.8% 91.4%;
+    --input:              214.3 31.8% 91.4%;
+    --primary:            221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --radius: 0.5rem;
+    --ring:   221.2 83.2% 53.3%;
 
     /* ── Legacy palette (kept for backward compat) ── */
     --navy-950: 222 80% 4%;
@@ -142,14 +142,13 @@
 
   /* ── Premium card ────────────────────────────────── */
   .glass-card {
-    background: oklch(0.18 0.035 255 / 0.8);
-    backdrop-filter: blur(16px);
+    background: var(--ts-bg-card);
     border: 1px solid var(--ts-border);
   }
   .premium-card {
     background: var(--ts-bg-card);
     border: 1px solid var(--ts-border);
-    border-radius: var(--ts-radius-lg);
+    border-radius: var(--ts-radius-md);
     transition: all 0.2s ease;
     box-shadow: var(--ts-shadow-card);
     position: relative;
@@ -160,32 +159,28 @@
     position: absolute;
     top: 0; left: 0; right: 0;
     height: 1px;
-    background: linear-gradient(90deg, transparent, oklch(0.55 0.22 260 / 0.3), transparent);
+    background: linear-gradient(90deg, transparent, var(--ts-border-subtle), transparent);
   }
   .premium-card:hover {
-    border-color: oklch(0.55 0.22 260 / 0.3);
-    transform: translateY(-2px);
-    box-shadow: 0 0 0 0 transparent, 0 8px 32px oklch(0 0 0 / 0.5), 0 0 20px oklch(0.55 0.22 260 / 0.1);
+    border-color: var(--ts-border-subtle);
+    box-shadow: 0 4px 12px oklch(0 0 0 / 0.05);
   }
 
   /* ── Status badge system ─────────────────────────── */
   .status-safe {
-    background: oklch(0.70 0.20 155 / 0.15);
-    color: oklch(0.70 0.20 155);
-    border: 1px solid oklch(0.70 0.20 155 / 0.3);
-    box-shadow: 0 0 20px oklch(0.70 0.20 155 / 0.25);
+    background: oklch(0.96 0.02 155);
+    color: var(--ts-green-600);
+    border: 1px solid oklch(0.90 0.04 155);
   }
   .status-at-risk {
-    background: oklch(0.80 0.18 85 / 0.15);
-    color: oklch(0.80 0.18 85);
-    border: 1px solid oklch(0.80 0.18 85 / 0.3);
-    box-shadow: 0 0 20px oklch(0.80 0.18 85 / 0.25);
+    background: oklch(0.96 0.02 85);
+    color: var(--ts-amber-600);
+    border: 1px solid oklch(0.90 0.04 85);
   }
   .status-breach {
-    background: oklch(0.62 0.24 25 / 0.15);
-    color: oklch(0.62 0.24 25);
-    border: 1px solid oklch(0.62 0.24 25 / 0.3);
-    box-shadow: 0 0 20px oklch(0.62 0.24 25 / 0.25);
+    background: oklch(0.96 0.02 25);
+    color: var(--ts-red-600);
+    border: 1px solid oklch(0.90 0.04 25);
   }
 
   /* ── Alert severity borders ──────────────────────── */
@@ -275,12 +270,12 @@
 
   /* ── Grid / hero backgrounds ─────────────────────── */
   .hero-glow {
-    background: radial-gradient(ellipse 80% 50% at 50% -20%, oklch(0.55 0.22 260 / 0.15) 0%, transparent 60%),
-                radial-gradient(ellipse 60% 40% at 80% 60%, oklch(0.50 0.15 280 / 0.08) 0%, transparent 60%);
+    background: radial-gradient(ellipse 80% 50% at 50% -20%, oklch(0.96 0.01 240) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 40% at 80% 60%, oklch(0.98 0.005 240) 0%, transparent 60%);
   }
   .grid-pattern {
-    background-image: linear-gradient(oklch(0.98 0 0 / 0.025) 1px, transparent 1px),
-                      linear-gradient(90deg, oklch(0.98 0 0 / 0.025) 1px, transparent 1px);
+    background-image: linear-gradient(oklch(0.90 0.01 240) 1px, transparent 1px),
+                      linear-gradient(90deg, oklch(0.90 0.01 240) 1px, transparent 1px);
     background-size: 40px 40px;
   }
   .noise-overlay::after {

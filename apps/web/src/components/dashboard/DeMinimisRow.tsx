@@ -64,7 +64,6 @@ function CircularGauge({
           strokeDasharray={circ}
           strokeDashoffset={offset}
           style={{
-            filter: `drop-shadow(0 0 6px ${color})`,
             transition: 'stroke-dashoffset 0.7s ease',
           }}
         />
@@ -150,7 +149,7 @@ function ThresholdCard({
       <div
         className="flex items-center justify-between rounded-lg"
         style={{
-          background: 'oklch(0.22 0.03 255 / 0.6)',
+          background: 'var(--ts-bg-muted)',
           padding: '12px 16px',
         }}
       >
@@ -173,9 +172,9 @@ function ThresholdCard({
         <div
           className="mt-3 rounded-lg p-3 text-[12px]"
           style={{
-            border: '1px solid oklch(0.80 0.18 85 / 0.3)',
-            background: 'oklch(0.80 0.18 85 / 0.1)',
-            color: 'var(--ts-amber-500)',
+            border: '1px solid var(--ts-amber-400)',
+            background: 'var(--ts-bg-muted)',
+            color: 'var(--ts-amber-600)',
           }}
         >
           <strong>Warning:</strong> Approaching de-minimis threshold. Review pending NQI transactions.

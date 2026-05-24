@@ -5,21 +5,21 @@ import { api } from '@/lib/api/client';
 
 const BAND_CONFIG = {
   GREEN: {
-    color: 'var(--ts-green-500)',
-    bg: 'oklch(0.70 0.20 155 / 0.1)',
-    border: 'oklch(0.70 0.20 155 / 0.3)',
+    color: 'var(--ts-green-600)',
+    bg: 'oklch(0.96 0.02 155)',
+    border: 'oklch(0.90 0.04 155)',
     label: 'Excellent — Low Risk',
   },
   AMBER: {
-    color: 'var(--ts-amber-500)',
-    bg: 'oklch(0.80 0.18 85 / 0.1)',
-    border: 'oklch(0.80 0.18 85 / 0.3)',
+    color: 'var(--ts-amber-600)',
+    bg: 'oklch(0.96 0.02 85)',
+    border: 'oklch(0.90 0.04 85)',
     label: 'Moderate — Monitor Closely',
   },
   RED: {
-    color: 'var(--ts-red-500)',
-    bg: 'oklch(0.62 0.24 25 / 0.1)',
-    border: 'oklch(0.62 0.24 25 / 0.3)',
+    color: 'var(--ts-red-600)',
+    bg: 'oklch(0.96 0.02 25)',
+    border: 'oklch(0.90 0.04 25)',
     label: 'High Risk — Action Required',
   },
 };

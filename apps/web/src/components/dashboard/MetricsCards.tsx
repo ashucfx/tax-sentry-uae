@@ -46,16 +46,9 @@ function MetricCard({ label, value, sub, variant, trend, trendDir }: MetricCard)
   return (
     <div
       className="relative overflow-hidden rounded-xl"
-      style={{ border: `1px solid ${vs.border}`, background: vs.bg, padding: '18px 20px' }}
+      style={{ border: `1px solid ${vs.border}`, background: vs.bg, padding: '12px 16px' }}
     >
-      <div
-        className="absolute top-0 left-0 right-0"
-        style={{
-          height: 1,
-          background: `linear-gradient(90deg, transparent, ${vs.border}, transparent)`,
-        }}
-      />
-      <p style={{ fontSize: 12, color: 'var(--ts-fg-muted)', marginBottom: 6 }}>{label}</p>
+      <p style={{ fontSize: 12, color: 'var(--ts-fg-muted)', marginBottom: 6, fontWeight: 600 }}>{label}</p>
       <p
         className="ts-metric"
         style={{ color: vs.valueColor, fontSize: 24 }}
