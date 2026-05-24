@@ -314,10 +314,8 @@ export default function RequestDemoPage() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 <a
                   href="mailto:hello@taxsentry.com"
-                  className="flex items-center gap-3"
-                  style={{ fontSize: 13, color: 'var(--ts-fg-secondary)', textDecoration: 'none', transition: 'color 0.15s' }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--ts-fg-primary)'; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--ts-fg-secondary)'; }}
+                  className="flex items-center gap-3 text-[var(--ts-fg-secondary)] hover:text-[var(--ts-fg-primary)] transition-colors"
+                  style={{ fontSize: 13, textDecoration: 'none' }}
                 >
                   <Mail size={14} color="var(--ts-blue-400)" />
                   hello@taxsentry.com

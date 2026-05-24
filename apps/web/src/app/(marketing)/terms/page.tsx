@@ -188,9 +188,7 @@ export default function TermsPage() {
           <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.10em', textTransform: 'uppercase', color: 'var(--ts-fg-secondary)', marginBottom: 16 }}>Table of Contents</div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '6px 24px' }}>
             {SECTIONS.map(s => (
-              <a key={s.id} href={`#${s.id}`} style={{ fontSize: 13, color: 'var(--ts-fg-secondary)', textDecoration: 'none', display: 'block', padding: '3px 0' }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--ts-fg-primary)'; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--ts-fg-secondary)'; }}>
+              <a key={s.id} href={`#${s.id}`} className="text-[var(--ts-fg-secondary)] hover:text-[var(--ts-fg-primary)] transition-colors" style={{ fontSize: 13, textDecoration: 'none', display: 'block', padding: '3px 0' }}>
                 {s.title}
               </a>
             ))}
