@@ -19,14 +19,50 @@ import {
   Users,
 } from 'lucide-react';
 import { MarketingNav, TaxSentryLogo } from '@/components/marketing/MarketingNav';
-import { motion } from 'framer-motion';
-
+import { motion, animate, useInView } from 'framer-motion';
+import { useEffect, useRef } from 'react';
 /* ─── Divider ───────────────────────────────────────── */
 function Divider() {
   return (
     <div style={{ width: '100%', height: 1, background: 'linear-gradient(90deg, transparent, oklch(0.55 0.22 260 / 0.15), transparent)' }} />
   );
 }
+
+function AnimatedCounter({ value, prefix = '', suffix = '', duration = 1.5, decimals = 2 }: { value: number, prefix?: string, suffix?: string, duration?: number, decimals?: number }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-50px" });
+
+  useEffect(() => {
+    if (inView && ref.current) {
+      const controls = animate(0, value, {
+        duration,
+        type: "spring",
+        stiffness: 50,
+        damping: 20,
+        onUpdate(v) {
+          if (ref.current) {
+            ref.current.textContent = `${prefix}${v.toFixed(decimals)}${suffix}`;
+          }
+        }
+      });
+      return () => controls.stop();
+    }
+  }, [inView, value, prefix, suffix, duration, decimals]);
+
+  return <span ref={ref}>{prefix}0{(decimals > 0 ? '.' + '0'.repeat(decimals) : '')}{suffix}</span>;
+}
+
+const dashboardContainerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.15, delayChildren: 0.3 }
+  }
+};
+const dashboardRowVariants = {
+  hidden: { opacity: 0, y: 15 },
+  visible: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 400, damping: 35 } }
+};
 
 export function LandingPage() {
   return (
@@ -86,21 +122,27 @@ export function LandingPage() {
                 UAE Free Zone companies can lose their 0% corporate tax status overnight. TaxSentry watches every revenue stream, document, and threshold — continuously — so your CFO never gets a surprise from the FTA.
               </p>
 
-              <div className="fade-in-up stagger-2 flex flex-wrap gap-3 mb-12">
-                <Link
-                  href="/sign-in"
-                  className="flex items-center gap-2 rounded-xl font-bold transition-all hover:-translate-y-px"
-                  style={{ fontSize: 16, padding: '15px 30px', background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', color: '#fff', boxShadow: '0 4px 20px rgba(37,99,235,0.4)', textDecoration: 'none' }}
-                >
-                  Get Protected Today <ArrowRight size={16} />
-                </Link>
-                <Link
-                  href="#how"
-                  className="flex items-center gap-2 rounded-xl font-bold transition-all"
-                  style={{ fontSize: 16, padding: '15px 30px', background: 'transparent', color: 'var(--ts-fg-secondary)', border: '1px solid oklch(0.40 0.025 255)', textDecoration: 'none' }}
-                >
-                  See How It Works
-                </Link>
+              <div className="fade-in-up stagger-2 mb-12">
+                <div className="flex flex-wrap gap-3 mb-4">
+                  <Link
+                    href="/sign-in"
+                    className="flex items-center gap-2 rounded-xl font-bold transition-all hover:-translate-y-px"
+                    style={{ fontSize: 16, padding: '15px 30px', background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', color: '#fff', boxShadow: '0 4px 20px rgba(37,99,235,0.4)', textDecoration: 'none' }}
+                  >
+                    Get Protected Today <ArrowRight size={16} />
+                  </Link>
+                  <Link
+                    href="#how"
+                    className="flex items-center gap-2 rounded-xl font-bold transition-all"
+                    style={{ fontSize: 16, padding: '15px 30px', background: 'transparent', color: 'var(--ts-fg-secondary)', border: '1px solid oklch(0.40 0.025 255)', textDecoration: 'none' }}
+                  >
+                    See How It Works
+                  </Link>
+                </div>
+                <div className="flex items-center gap-2" style={{ fontSize: 13, color: 'var(--ts-fg-secondary)', fontWeight: 500 }}>
+                  <Lock size={12} color="var(--ts-fg-muted)" />
+                  Read-only ERP connection. Setup in 10 minutes.
+                </div>
               </div>
 
               {/* Social proof */}
@@ -142,36 +184,36 @@ export function LandingPage() {
                   <div style={{ flex: 1, textAlign: 'center', fontSize: 11, color: 'var(--ts-fg-muted)', marginRight: 28 }}>TaxSentry — QFZP Dashboard</div>
                 </div>
                 {/* Content */}
-                <div style={{ padding: 20 }}>
+                <motion.div variants={dashboardContainerVariants} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }} style={{ padding: 20 }}>
                   {/* Status row */}
-                  <div className="flex items-center justify-between mb-4">
+                  <motion.div variants={dashboardRowVariants} className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2 rounded-full" style={{ padding: '5px 13px', background: 'rgba(52,211,153,0.12)', border: '1px solid rgba(52,211,153,0.25)', fontSize: 11, fontWeight: 700, color: '#34d399', letterSpacing: '0.06em' }}>
                       <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#34d399', boxShadow: '0 0 6px #34d399' }} />
                       QFZP PROTECTED
                     </div>
                     <span style={{ fontSize: 11, color: '#2a3d58', fontFamily: 'JetBrains Mono, monospace' }}>147 days remaining</span>
-                  </div>
+                  </motion.div>
                   {/* KPI row */}
-                  <div className="grid grid-cols-3 gap-2.5 mb-3">
+                  <motion.div variants={dashboardRowVariants} className="grid grid-cols-3 gap-2.5 mb-3">
                     {[
-                      { label: 'Total Revenue', value: 'AED 5.04M', color: 'var(--ts-fg-primary)', border: 'var(--ts-border)', bg: 'var(--ts-bg-muted)' },
-                      { label: 'Qualifying', value: 'AED 4.83M', color: 'var(--ts-green-600)', border: 'var(--ts-green-400)', bg: 'oklch(0.96 0.02 155)' },
-                      { label: 'Non-Qualifying', value: 'AED 214K', color: 'var(--ts-amber-600)', border: 'var(--ts-amber-400)', bg: 'oklch(0.96 0.02 85)' },
+                      { label: 'Total Revenue', value: <AnimatedCounter value={5.04} prefix="AED " suffix="M" decimals={2} />, color: 'var(--ts-fg-primary)', border: 'var(--ts-border)', bg: 'var(--ts-bg-muted)' },
+                      { label: 'Qualifying', value: <AnimatedCounter value={4.83} prefix="AED " suffix="M" decimals={2} />, color: 'var(--ts-green-600)', border: 'var(--ts-green-400)', bg: 'oklch(0.96 0.02 155)' },
+                      { label: 'Non-Qualifying', value: <AnimatedCounter value={214} prefix="AED " suffix="K" decimals={0} />, color: 'var(--ts-amber-600)', border: 'var(--ts-amber-400)', bg: 'oklch(0.96 0.02 85)' },
                     ].map(c => (
                       <div key={c.label} style={{ background: c.bg, border: `1px solid ${c.border}`, borderRadius: 10, padding: '10px 12px' }}>
                         <div style={{ fontSize: 9, color: '#3a5580', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 5 }}>{c.label}</div>
                         <div style={{ fontSize: 17, fontWeight: 700, color: c.color, fontFamily: 'JetBrains Mono, monospace' }}>{c.value}</div>
                       </div>
                     ))}
-                  </div>
+                  </motion.div>
                   {/* Chart row */}
-                  <div className="grid grid-cols-2 gap-2.5">
+                  <motion.div variants={dashboardRowVariants} className="grid grid-cols-2 gap-2.5">
                     <div style={{ background: '#0f1f3d', border: '1px solid rgba(37,99,235,0.1)', borderRadius: 10, padding: '12px 14px' }}>
                       <div style={{ fontSize: 10, color: '#4a6080', fontWeight: 600, marginBottom: 10 }}>De-Minimis Tracker</div>
                       <svg viewBox="0 0 100 56" style={{ width: '100%', overflow: 'visible' }}>
                         <circle cx="50" cy="52" r="36" fill="none" stroke="rgba(37,99,235,0.12)" strokeWidth="7" strokeDasharray="113 113" strokeDashoffset="-56.5" />
                         <circle cx="50" cy="52" r="36" fill="none" stroke="#10b981" strokeWidth="7" strokeLinecap="round" strokeDasharray="43 170" strokeDashoffset="-56.5" style={{ filter: 'drop-shadow(0 0 4px #10b981)' }} />
-                        <text x="50" y="46" textAnchor="middle" fill="#34d399" fontSize="13" fontWeight="700" fontFamily="JetBrains Mono,monospace">3.8%</text>
+                        <text x="50" y="46" textAnchor="middle" fill="#34d399" fontSize="13" fontWeight="700" fontFamily="JetBrains Mono,monospace"><AnimatedCounter value={3.8} suffix="%" decimals={1} /></text>
                         <text x="50" y="55" textAnchor="middle" fill="#2a3d58" fontSize="7" fontFamily="Inter,sans-serif">of 5% limit</text>
                       </svg>
                     </div>
@@ -183,12 +225,12 @@ export function LandingPage() {
                         ))}
                       </div>
                       <div style={{ textAlign: 'center' }}>
-                        <span style={{ fontSize: 22, fontWeight: 700, color: '#fbbf24', fontFamily: 'JetBrains Mono,monospace' }}>72</span>
+                        <span style={{ fontSize: 22, fontWeight: 700, color: '#fbbf24', fontFamily: 'JetBrains Mono,monospace' }}><AnimatedCounter value={72} decimals={0} /></span>
                         <span style={{ fontSize: 10, color: '#2a3d58' }}> / 100</span>
                       </div>
                     </div>
-                  </div>
-                </div>
+                  </motion.div>
+                </motion.div>
               </div>
             </div>
           </div>
@@ -600,8 +642,9 @@ export function LandingPage() {
               Request a Demo
             </Link>
           </div>
-          <p style={{ fontSize: 12, color: 'oklch(0.58 0 0)', marginTop: 20 }}>
-            No credit card required · 14-day free trial · Setup in under 10 minutes
+          <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--ts-fg-secondary)', marginTop: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+            <ShieldCheck size={14} color="var(--ts-blue-400)" />
+            Zero IT integration required. Full board-level visibility.
           </p>
         </div>
       </motion.section>
