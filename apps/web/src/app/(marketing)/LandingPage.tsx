@@ -17,6 +17,9 @@ import {
   Bell,
   Globe,
   Users,
+  Linkedin,
+  Twitter,
+  Mail,
 } from 'lucide-react';
 import { MarketingNav, TaxSentryLogo } from '@/components/marketing/MarketingNav';
 import { motion, animate, useInView } from 'framer-motion';
@@ -616,136 +619,198 @@ export function LandingPage() {
       </motion.section>
 
       {/* ── CTA ──────────────────────────────────────── */}
-      <motion.section initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ type: "spring", stiffness: 400, damping: 35 }} className="relative overflow-hidden" style={{ padding: '100px 32px', textAlign: 'center' }}>
-        <div className="pointer-events-none absolute" style={{ top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 600, height: 300, background: 'radial-gradient(ellipse, oklch(0.55 0.22 260 / 0.12), transparent 70%)' }} />
-        <div className="relative z-10" style={{ maxWidth: 1160, margin: '0 auto' }}>
-          <h2 style={{ fontSize: 'clamp(2rem, 5vw, 3.2rem)', fontWeight: 900, letterSpacing: '-0.03em', marginBottom: 20, color: 'var(--ts-fg-primary)' }}>
-            The FTA doesn't send warnings.{' '}
+      <motion.section initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ type: "spring", stiffness: 400, damping: 35 }} className="relative overflow-hidden" style={{ padding: '120px 32px 100px', textAlign: 'center', background: 'var(--ts-bg-deepest)' }}>
+        <div className="pointer-events-none absolute" style={{ top: '0', left: '50%', transform: 'translateX(-50%)', width: 800, height: 400, background: 'radial-gradient(ellipse at top, oklch(0.55 0.22 260 / 0.15), transparent 70%)' }} />
+        <div className="relative z-10" style={{ maxWidth: 800, margin: '0 auto' }}>
+          <div className="inline-flex items-center gap-2 mb-6" style={{ padding: '6px 16px', borderRadius: 9999, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ts-fg-secondary)' }}>
+            <Lock size={12} /> Enterprise Ready
+          </div>
+          <h2 style={{ fontSize: 'clamp(2.5rem, 5vw, 3.8rem)', fontWeight: 900, letterSpacing: '-0.04em', marginBottom: 24, color: '#fff', lineHeight: 1.1 }}>
+            The FTA doesn't send warnings.<br/>
             <span style={{ background: 'linear-gradient(125deg, #60a5fa 0%, #34d399 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>We do.</span>
           </h2>
-          <p style={{ fontSize: 17, color: 'var(--ts-fg-muted)', marginBottom: 40, maxWidth: 500, margin: '0 auto 40px', lineHeight: 1.65 }}>
-            Start your 14-day free trial. Connect your accounting data. Know your QFZP status in under 10 minutes.
+          <p style={{ fontSize: 18, color: 'var(--ts-fg-secondary)', marginBottom: 48, maxWidth: 600, margin: '0 auto 48px', lineHeight: 1.6 }}>
+            Start your 14-day free trial. Connect your accounting data in minutes. Monitor your UAE QFZP status continuously with board-level visibility.
           </p>
-          <div className="flex flex-wrap gap-4 justify-center">
-            <Link
-              href="/sign-in"
-              className="flex items-center gap-2 rounded-xl font-bold transition-all hover:-translate-y-px hover:opacity-95"
-              style={{ fontSize: 16, padding: '15px 30px', background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', color: '#fff', boxShadow: '0 4px 20px rgba(37,99,235,0.4)', textDecoration: 'none' }}
-            >
-              Get Protected Today <ArrowRight size={16} />
-            </Link>
-            <Link
-              href="/demo"
-              className="flex items-center gap-2 rounded-xl font-bold transition-all"
-              style={{ fontSize: 16, padding: '15px 30px', background: 'transparent', color: 'var(--ts-fg-secondary)', border: '1px solid oklch(0.40 0.025 255)', textDecoration: 'none' }}
-            >
-              Request a Demo
-            </Link>
+          <div className="flex flex-wrap gap-5 justify-center items-center">
+            <motion.div whileHover={{ y: -1 }} whileTap={{ scale: 0.98 }}>
+              <Link
+                href="/sign-in"
+                className="flex items-center justify-center gap-2 rounded-xl font-bold transition-all"
+                style={{ fontSize: 16, padding: '0 36px', height: 56, background: '#fff', color: '#000', boxShadow: '0 8px 30px rgba(255,255,255,0.15)', textDecoration: 'none' }}
+              >
+                Get Protected Today <ArrowRight size={18} />
+              </Link>
+            </motion.div>
+            <motion.div whileHover={{ y: -1 }} whileTap={{ scale: 0.98 }}>
+              <Link
+                href="/demo"
+                className="flex items-center justify-center gap-2 rounded-xl font-bold transition-all"
+                style={{ fontSize: 16, padding: '0 36px', height: 56, background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.15)', textDecoration: 'none' }}
+              >
+                Request a Demo
+              </Link>
+            </motion.div>
           </div>
-          <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--ts-fg-secondary)', marginTop: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-            <ShieldCheck size={14} color="var(--ts-blue-400)" />
-            Zero IT integration required. Full board-level visibility.
-          </p>
+          <div style={{ marginTop: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 24, flexWrap: 'wrap' }}>
+            <div className="flex items-center gap-2" style={{ fontSize: 12, fontWeight: 600, color: 'var(--ts-fg-muted)' }}>
+              <ShieldCheck size={14} color="#34d399" /> Zero IT Integration
+            </div>
+            <div className="flex items-center gap-2" style={{ fontSize: 12, fontWeight: 600, color: 'var(--ts-fg-muted)' }}>
+              <Lock size={14} color="#60a5fa" /> Bank-Grade Encryption
+            </div>
+            <div className="flex items-center gap-2" style={{ fontSize: 12, fontWeight: 600, color: 'var(--ts-fg-muted)' }}>
+              <CheckCircle2 size={14} color="#34d399" /> Cancel Anytime
+            </div>
+          </div>
         </div>
       </motion.section>
 
       {/* ── Footer ───────────────────────────────────── */}
-      <footer style={{ borderTop: '1px solid var(--ts-border)', background: 'var(--ts-bg-deepest)' }}>
-        <div style={{ maxWidth: 1160, margin: '0 auto', padding: '0 32px' }}>
-          {/* 4-column grid */}
-          <div className="grid grid-cols-1 md:grid-cols-[1.4fr_1fr_1fr_1fr] gap-12" style={{ padding: '64px 0 48px', borderBottom: '1px solid var(--ts-border-subtle)' }}>
+      <footer style={{ background: 'var(--ts-bg-deepest)', borderTop: '1px solid oklch(0.20 0.02 260)' }}>
+        <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 40px' }}>
+          {/* 5-column grid */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, staggerChildren: 0.1 }}
+            className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-12 lg:gap-8" 
+            style={{ padding: '80px 0 60px', borderBottom: '1px solid oklch(0.20 0.02 260)' }}
+          >
             {/* Brand */}
-            <div>
-              <div className="flex items-center gap-2.5 mb-4">
-                <TaxSentryLogo size={30} />
+            <div className="col-span-2 md:col-span-3 lg:col-span-1">
+              <div className="flex items-center gap-2.5 mb-6">
+                <TaxSentryLogo size={32} />
                 <div>
-                  <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--ts-fg-primary)', letterSpacing: '-0.02em', lineHeight: 1 }}>
-                    Tax<span style={{ color: 'var(--ts-blue-600)' }}>Sentry</span>
+                  <div style={{ fontSize: 20, fontWeight: 900, color: '#fff', letterSpacing: '-0.02em', lineHeight: 1 }}>
+                    Tax<span style={{ color: 'var(--ts-blue-400)' }}>Sentry</span>
                   </div>
-                  <div style={{ fontSize: 8, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--ts-fg-muted)', marginTop: 2 }}>UAE QFZP Monitor</div>
                 </div>
               </div>
-              <p style={{ fontSize: 13, color: 'var(--ts-fg-muted)', lineHeight: 1.7, marginBottom: 16, maxWidth: 240 }}>
-                Real-time QFZP status protection for UAE Free Zone companies navigating the 9% corporate tax regime.
+              <p style={{ fontSize: 13, color: 'var(--ts-fg-muted)', lineHeight: 1.6, marginBottom: 24, paddingRight: 20 }}>
+                Institutional-grade financial compliance infrastructure. Architected exclusively for UAE Free Zone Qualifying Persons navigating the 9% corporate tax regime.
               </p>
-              <p style={{ fontSize: 11, color: 'var(--ts-fg-secondary)', lineHeight: 1.5, marginBottom: 20, maxWidth: 240 }}>
-                A product of{' '}
-                <a href="https://www.theripplenexus.com" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--ts-blue-600)', fontWeight: 600, textDecoration: 'none' }}>Ripple Nexus</a>
-              </p>
-              {/* Social icons */}
-              <div className="flex gap-2.5">
+              <div className="flex gap-3">
                 {[
-                  { label: 'LinkedIn', path: 'M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z' },
-                  { label: 'X/Twitter', path: 'M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2c9 5 20 0 20-11.5a4.5 4.5 0 00-.08-.83A7.72 7.72 0 0023 3z' },
-                ].map(({ label, path }) => (
-                  <div
-                    key={label}
-                    className="flex items-center justify-center rounded-lg cursor-pointer transition-all"
-                    style={{ width: 32, height: 32, background: 'var(--ts-bg-muted)', border: '1px solid var(--ts-border)' }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--ts-blue-400)'; }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--ts-border)'; }}
+                  { icon: Linkedin, href: '#' },
+                  { icon: Twitter, href: '#' },
+                  { icon: Mail, href: 'mailto:contact@taxsentry.com' }
+                ].map(({ icon: Icon, href }, i) => (
+                  <Link
+                    key={i}
+                    href={href}
+                    className="flex items-center justify-center rounded-lg transition-all"
+                    style={{ width: 36, height: 36, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)' }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.08)'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.03)'; }}
                   >
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ts-fg-secondary)" strokeWidth="1.8" strokeLinecap="round">
-                      <path d={path} />
-                      {label === 'LinkedIn' && <><rect x="2" y="9" width="4" height="12" /><circle cx="4" cy="4" r="2" /></>}
-                    </svg>
-                  </div>
+                    <Icon size={16} color="var(--ts-fg-secondary)" />
+                  </Link>
                 ))}
               </div>
             </div>
 
-            {/* Product */}
+            {/* Platform */}
             <div>
-              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ts-fg-muted)', marginBottom: 16 }}>Product</div>
-              <div className="flex flex-col gap-2.5">
-                {[['Features', '#features'], ['Pricing', '#pricing'], ['Security', '#security']].map(([label, href]) => (
-                  <Link key={label} href={href} style={{ fontSize: 13, color: 'var(--ts-fg-secondary)', textDecoration: 'none', transition: 'color 0.2s' }} className="hover:text-black">{label}</Link>
-                ))}
-              </div>
-            </div>
-
-            {/* Company */}
-            <div>
-              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ts-fg-muted)', marginBottom: 16 }}>Company</div>
-              <div className="flex flex-col gap-2.5">
-                {[['About', '/about'], ['Blog', '/blog'], ['Contact', '/contact']].map(([label, href]) => (
-                  <Link key={label} href={href} style={{ fontSize: 13, color: 'var(--ts-fg-secondary)', textDecoration: 'none', transition: 'color 0.2s' }} className="hover:text-black">{label}</Link>
-                ))}
-              </div>
-            </div>
-
-            {/* Legal */}
-            <div>
-              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ts-fg-muted)', marginBottom: 16 }}>Legal</div>
-              <div className="flex flex-col gap-2.5">
-                {[['Privacy Policy', '/privacy'], ['Terms of Service', '/terms'], ['Security', '/security']].map(([label, href]) => (
-                  <Link key={label} href={href} style={{ fontSize: 13, color: 'var(--ts-fg-secondary)', textDecoration: 'none', transition: 'color 0.2s' }} className="hover:text-black">{label}</Link>
-                ))}
-              </div>
-              {/* Trust badges */}
-              <div className="flex flex-col gap-2" style={{ marginTop: 24 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#fff', marginBottom: 24 }}>Platform</div>
+              <div className="flex flex-col gap-4">
                 {[
-                  { icon: Lock, label: 'AES-256 Encrypted' },
-                  { icon: Globe, label: 'UAE-Hosted Data' },
-                ].map(({ icon: Icon, label }) => (
-                  <div key={label} className="flex items-center gap-1.5" style={{ fontSize: 10, fontWeight: 600, color: 'var(--ts-fg-muted)' }}>
-                    <Icon size={11} color="var(--ts-fg-muted)" />{label}
-                  </div>
+                  ['De-Minimis Tracker', '#features'],
+                  ['Classification Engine', '#features'],
+                  ['Substance Vault', '#features'],
+                  ['Audit Pack Generation', '#features'],
+                  ['API Access', '/api-docs'],
+                  ['Accounting Sync', '/integrations']
+                ].map(([label, href]) => (
+                  <Link key={label} href={href} style={{ fontSize: 13, color: 'var(--ts-fg-secondary)', textDecoration: 'none', transition: 'color 0.2s' }} onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#fff'; }} onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--ts-fg-secondary)'; }}>{label}</Link>
                 ))}
               </div>
+            </div>
+
+            {/* Solutions */}
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#fff', marginBottom: 24 }}>Solutions</div>
+              <div className="flex flex-col gap-4">
+                {[
+                  ['For CFOs', '/solutions/cfos'],
+                  ['For Free Zones', '/solutions/free-zones'],
+                  ['For Auditors', '/solutions/auditors'],
+                  ['For Tax Consultants', '/solutions/consultants'],
+                  ['Startups & SMEs', '/solutions/startups'],
+                  ['Enterprise', '/solutions/enterprise']
+                ].map(([label, href]) => (
+                  <Link key={label} href={href} style={{ fontSize: 13, color: 'var(--ts-fg-secondary)', textDecoration: 'none', transition: 'color 0.2s' }} onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#fff'; }} onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--ts-fg-secondary)'; }}>{label}</Link>
+                ))}
+              </div>
+            </div>
+
+            {/* Resources */}
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#fff', marginBottom: 24 }}>Resources</div>
+              <div className="flex flex-col gap-4">
+                {[
+                  ['Documentation', '/docs'],
+                  ['Developer Hub', '/developers'],
+                  ['UAE Tax Glossary', '/glossary'],
+                  ['FTA Guidelines', '/fta-guidelines'],
+                  ['System Status', '/status'],
+                  ['Security & Architecture', '/security']
+                ].map(([label, href]) => (
+                  <Link key={label} href={href} style={{ fontSize: 13, color: 'var(--ts-fg-secondary)', textDecoration: 'none', transition: 'color 0.2s' }} onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#fff'; }} onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--ts-fg-secondary)'; }}>{label}</Link>
+                ))}
+              </div>
+            </div>
+
+            {/* Company & Legal */}
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#fff', marginBottom: 24 }}>Company</div>
+              <div className="flex flex-col gap-4">
+                {[
+                  ['About Us', '/about'],
+                  ['Careers', '/careers'],
+                  ['Contact Sales', '/contact'],
+                  ['Privacy Policy', '/privacy'],
+                  ['Terms of Service', '/terms'],
+                  ['Cookie Policy', '/cookies']
+                ].map(([label, href]) => (
+                  <Link key={label} href={href} style={{ fontSize: 13, color: 'var(--ts-fg-secondary)', textDecoration: 'none', transition: 'color 0.2s' }} onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#fff'; }} onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--ts-fg-secondary)'; }}>{label}</Link>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Trust Badges Bar */}
+          <div className="flex flex-wrap items-center justify-between gap-6" style={{ padding: '32px 0', borderBottom: '1px solid oklch(0.20 0.02 260)' }}>
+            <div className="flex items-center gap-6">
+              <div className="flex items-center gap-2" style={{ fontSize: 11, fontWeight: 600, color: 'var(--ts-fg-muted)' }}>
+                <Globe size={14} /> Architected for UAE Data Sovereignty
+              </div>
+              <div className="flex items-center gap-2" style={{ fontSize: 11, fontWeight: 600, color: 'var(--ts-fg-muted)' }}>
+                <Lock size={14} /> Industry Standard Encryption
+              </div>
+              <div className="flex items-center gap-2" style={{ fontSize: 11, fontWeight: 600, color: 'var(--ts-fg-muted)' }}>
+                <CheckCircle2 size={14} /> FTA-Aligned Methodology
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full" style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)' }}>
+              <motion.div 
+                animate={{ opacity: [1, 0.4, 1] }} 
+                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 8px rgba(16,185,129,0.6)' }} 
+              />
+              <span style={{ fontSize: 11, fontWeight: 700, color: '#34d399', letterSpacing: '0.02em' }}>All systems operational</span>
             </div>
           </div>
 
-          {/* Bottom bar */}
-          <div className="flex flex-wrap items-center justify-between gap-3" style={{ padding: '24px 0' }}>
+          {/* Copyright Bar */}
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4" style={{ padding: '32px 0' }}>
             <div style={{ fontSize: 12, color: 'var(--ts-fg-muted)' }}>
-              TaxSentry is a product of{' '}
-              <a href="https://www.theripplenexus.com" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--ts-blue-600)', fontWeight: 600, textDecoration: 'none' }}>Ripple Nexus</a>
-              {' '}· © 2026 Ripple Nexus. All rights reserved.
+              © 2026 TaxSentry. All rights reserved.
             </div>
-            <div className="flex items-center gap-2">
-              <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 6px rgba(16,185,129,0.3)' }} />
-              <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--ts-fg-secondary)' }}>All systems operational</span>
+            <div style={{ fontSize: 12, color: 'var(--ts-fg-muted)' }}>
+              A product of <a href="https://www.theripplenexus.com" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--ts-fg-secondary)', fontWeight: 600, textDecoration: 'none', transition: 'color 0.2s' }} onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#fff'; }} onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--ts-fg-secondary)'; }}>Ripple Nexus</a>
             </div>
           </div>
         </div>
