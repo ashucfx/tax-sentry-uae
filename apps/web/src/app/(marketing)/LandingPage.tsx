@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { motion, animate, useInView } from 'framer-motion';
 import { useEffect, useRef } from 'react';
+
 /* ─── Divider ───────────────────────────────────────── */
 function Divider() {
   return (
@@ -27,20 +28,20 @@ function Divider() {
 
 function AnimatedCounter({ value, prefix = '', suffix = '', duration = 1.5, decimals = 2 }: { value: number, prefix?: string, suffix?: string, duration?: number, decimals?: number }) {
   const ref = useRef<HTMLSpanElement>(null);
-  const inView = useInView(ref, { once: true, margin: "-50px" });
+  const inView = useInView(ref, { once: true, margin: '-50px' });
 
   useEffect(() => {
     if (inView && ref.current) {
       const controls = animate(0, value, {
         duration,
-        type: "spring",
+        type: 'spring',
         stiffness: 50,
         damping: 20,
         onUpdate(v) {
           if (ref.current) {
             ref.current.textContent = `${prefix}${v.toFixed(decimals)}${suffix}`;
           }
-        }
+        },
       });
       return () => controls.stop();
     }
@@ -53,12 +54,12 @@ const dashboardContainerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: { staggerChildren: 0.15, delayChildren: 0.3 }
-  }
+    transition: { staggerChildren: 0.15, delayChildren: 0.3 },
+  },
 };
 const dashboardRowVariants = {
   hidden: { opacity: 0, y: 15 },
-  visible: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 400, damping: 35 } }
+  visible: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 400, damping: 35 } },
 };
 
 export function LandingPage() {
@@ -68,9 +69,13 @@ export function LandingPage() {
       style={{ background: 'var(--ts-bg-base)', color: 'var(--ts-fg-primary)', fontFamily: 'var(--font-sans)' }}
     >
       {/* ── Hero ─────────────────────────────────────── */}
-      <motion.section initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ type: "spring", stiffness: 400, damping: 35 }}
-        className="relative overflow-hidden"
-        style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', padding: '140px 0 80px' }}
+      <motion.section
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: '-50px' }}
+        transition={{ type: 'spring', stiffness: 400, damping: 35 }}
+        className="relative overflow-hidden ts-hero"
+        style={{ display: 'flex', alignItems: 'center' }}
       >
         {/* Grid bg */}
         <div className="pointer-events-none absolute inset-0 grid-pattern" style={{ opacity: 0.5 }} />
@@ -80,19 +85,22 @@ export function LandingPage() {
           style={{ inset: 0, background: 'radial-gradient(ellipse 70% 60% at 50% -5%, oklch(0.96 0.01 240) 0%, transparent 65%)', zIndex: 0 }}
         />
 
-        <div className="relative z-10 w-full" style={{ maxWidth: 1160, margin: '0 auto', padding: '0 32px' }}>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-14 items-center">
+        <div className="relative z-10 w-full ts-container">
+          <div className="ts-hero-grid">
             {/* Left: Content */}
             <div>
               {/* Eyebrow */}
-              <div className="inline-flex items-center gap-2 mb-6" style={{ padding: '6px 16px', borderRadius: 9999, background: 'var(--ts-bg-muted)', border: '1px solid var(--ts-border)', fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--ts-blue-600)' }}>
+              <div
+                className="inline-flex items-center gap-2 mb-5"
+                style={{ padding: '6px 14px', borderRadius: 9999, background: 'var(--ts-bg-muted)', border: '1px solid var(--ts-border)', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--ts-blue-600)' }}
+              >
                 <ShieldCheck size={12} />
                 Real-Time QFZP Protection Platform
               </div>
 
               <h1
                 className="fade-in-up"
-                style={{ fontSize: 'clamp(2.5rem, 5vw, 3.8rem)', fontWeight: 900, lineHeight: 1.06, letterSpacing: '-0.04em', marginBottom: 24, color: 'var(--ts-fg-primary)' }}
+                style={{ fontSize: 'clamp(2.2rem, 6vw, 3.8rem)', fontWeight: 900, lineHeight: 1.06, letterSpacing: '-0.04em', marginBottom: 20, color: 'var(--ts-fg-primary)' }}
               >
                 Your 0% Tax Rate<br />
                 Has a{' '}
@@ -112,26 +120,26 @@ export function LandingPage() {
 
               <p
                 className="fade-in-up stagger-1"
-                style={{ fontSize: 17, color: 'var(--ts-fg-muted)', lineHeight: 1.75, marginBottom: 40, maxWidth: 480 }}
+                style={{ fontSize: 'clamp(15px, 2vw, 17px)', color: 'var(--ts-fg-muted)', lineHeight: 1.75, marginBottom: 36, maxWidth: 480 }}
               >
                 UAE Free Zone companies can lose their 0% corporate tax status overnight. TaxSentry watches every revenue stream, document, and threshold — continuously — so your CFO never gets a surprise from the FTA.
               </p>
 
-              <div className="fade-in-up stagger-2 mb-12">
-                <div className="flex flex-wrap gap-3 mb-4">
+              <div className="fade-in-up stagger-2 mb-10">
+                <div className="ts-cta-group mb-4">
                   <Link
                     href="/sign-in"
                     className="flex items-center gap-2 rounded-xl font-bold transition-all hover:-translate-y-px"
-                    style={{ fontSize: 16, padding: '15px 30px', background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', color: '#fff', boxShadow: '0 4px 20px rgba(37,99,235,0.4)', textDecoration: 'none' }}
+                    style={{ fontSize: 'clamp(14px, 2vw, 16px)', padding: '14px 28px', background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', color: '#fff', boxShadow: '0 4px 20px rgba(37,99,235,0.4)', textDecoration: 'none' }}
                   >
                     Get Protected Today <ArrowRight size={16} />
                   </Link>
                   <Link
-                    href="#how"
+                    href="/request-demo"
                     className="flex items-center gap-2 rounded-xl font-bold transition-all"
-                    style={{ fontSize: 16, padding: '15px 30px', background: 'transparent', color: 'var(--ts-fg-secondary)', border: '1px solid oklch(0.40 0.025 255)', textDecoration: 'none' }}
+                    style={{ fontSize: 'clamp(14px, 2vw, 16px)', padding: '14px 28px', background: 'transparent', color: 'var(--ts-fg-secondary)', border: '1px solid oklch(0.40 0.025 255)', textDecoration: 'none' }}
                   >
-                    See How It Works
+                    Request a Demo
                   </Link>
                 </div>
                 <div className="flex items-center gap-2" style={{ fontSize: 13, color: 'var(--ts-fg-secondary)', fontWeight: 500 }}>
@@ -164,8 +172,8 @@ export function LandingPage() {
               </div>
             </div>
 
-            {/* Right: Dashboard mockup */}
-            <div className="hidden lg:block">
+            {/* Right: Dashboard mockup — hidden on mobile/tablet */}
+            <div className="ts-dashboard-mockup">
               <div
                 className="relative overflow-hidden rounded-2xl"
                 style={{ background: '#ffffff', border: '1px solid var(--ts-border)', boxShadow: '0 40px 120px rgba(0,0,0,0.08), 0 0 0 1px var(--ts-border)' }}
@@ -179,7 +187,7 @@ export function LandingPage() {
                   <div style={{ flex: 1, textAlign: 'center', fontSize: 11, color: 'var(--ts-fg-muted)', marginRight: 28 }}>TaxSentry — QFZP Dashboard</div>
                 </div>
                 {/* Content */}
-                <motion.div variants={dashboardContainerVariants} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }} style={{ padding: 20 }}>
+                <motion.div variants={dashboardContainerVariants} initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-50px' }} style={{ padding: 20 }}>
                   {/* Status row */}
                   <motion.div variants={dashboardRowVariants} className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2 rounded-full" style={{ padding: '5px 13px', background: 'rgba(52,211,153,0.12)', border: '1px solid rgba(52,211,153,0.25)', fontSize: 11, fontWeight: 700, color: '#34d399', letterSpacing: '0.06em' }}>
@@ -189,7 +197,7 @@ export function LandingPage() {
                     <span style={{ fontSize: 11, color: '#2a3d58', fontFamily: 'JetBrains Mono, monospace' }}>147 days remaining</span>
                   </motion.div>
                   {/* KPI row */}
-                  <motion.div variants={dashboardRowVariants} className="grid grid-cols-3 gap-2.5 mb-3">
+                  <motion.div variants={dashboardRowVariants} className="ts-kpi-row mb-3">
                     {[
                       { label: 'Total Revenue', value: <AnimatedCounter value={5.04} prefix="AED " suffix="M" decimals={2} />, color: 'var(--ts-fg-primary)', border: 'var(--ts-border)', bg: 'var(--ts-bg-muted)' },
                       { label: 'Qualifying', value: <AnimatedCounter value={4.83} prefix="AED " suffix="M" decimals={2} />, color: 'var(--ts-green-600)', border: 'var(--ts-green-400)', bg: 'oklch(0.96 0.02 155)' },
@@ -234,10 +242,12 @@ export function LandingPage() {
 
       {/* ── Trust bar ────────────────────────────────── */}
       <Divider />
-      <div style={{ padding: '28px 32px' }}>
-        <div style={{ maxWidth: 1160, margin: '0 auto', display: 'flex', flexWrap: 'wrap', gap: 32, justifyContent: 'center', alignItems: 'center' }}>
+      <div className="ts-container" style={{ padding: '24px 16px' }}>
+        <div
+          style={{ display: 'flex', flexWrap: 'wrap', gap: '16px 32px', justifyContent: 'center', alignItems: 'center' }}
+        >
           <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'oklch(0.58 0 0)' }}>Trusted by companies in</div>
-          <div className="flex flex-wrap gap-7 items-center">
+          <div className="flex flex-wrap gap-5 items-center justify-center">
             {['DMCC', 'DIFC', 'JAFZA', 'ADGM', 'RAKEZ', 'DIC'].map(fz => (
               <span key={fz} style={{ fontSize: 13, fontWeight: 700, color: 'oklch(0.75 0 0)' }}>{fz}</span>
             ))}
@@ -247,41 +257,49 @@ export function LandingPage() {
       <Divider />
 
       {/* ── Problem ──────────────────────────────────── */}
-      <motion.section initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ type: "spring", stiffness: 400, damping: 35 }} style={{ padding: '100px 32px' }}>
-        <div style={{ maxWidth: 1160, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 80, alignItems: 'center' }}>
-          {/* Left */}
-          <div>
-            <div className="inline-flex items-center gap-2 mb-6" style={{ padding: '5px 14px', borderRadius: 9999, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ts-red-400)' }}>
-              The Risk Is Real
-            </div>
-            <h2 style={{ fontSize: 'clamp(2rem, 4vw, 2.8rem)', fontWeight: 900, letterSpacing: '-0.03em', lineHeight: 1.1, marginBottom: 20, color: 'var(--ts-fg-primary)' }}>
-              Most Free Zone<br />companies don't<br />know they're at risk<br />until the{' '}
-              <span style={{ background: 'linear-gradient(125deg, #ef4444, #f87171)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>FTA does.</span>
-            </h2>
-            <p style={{ fontSize: 16, color: 'var(--ts-fg-muted)', lineHeight: 1.75, marginBottom: 32 }}>
-              The 9% corporate tax trap isn't complex — it's invisible. A few misclassified invoices, a single mainland contract, or one expired document can silently revoke your QFZP status. By then, the damage is done.
-            </p>
-            <Link
-              href="/sign-in"
-              className="inline-flex items-center gap-2 rounded-xl font-bold transition-all hover:opacity-90"
-              style={{ fontSize: 14, padding: '11px 22px', background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', color: '#fff', boxShadow: '0 4px 16px rgba(37,99,235,0.3)', textDecoration: 'none' }}
-            >
-              See How TaxSentry Fixes This <ArrowRight size={14} />
-            </Link>
-          </div>
-          {/* Right: stat cards */}
-          <div className="flex flex-col gap-7">
-            {[
-              { stat: '9%', label: 'Corporate Tax on Loss', desc: 'Corporate tax triggered the moment your NQI exceeds 5% of total revenue — with no grace period.', borderColor: '#ef4444', bg: 'rgba(239,68,68,0.04)', statColor: '#f87171' },
-              { stat: 'AED 5M', label: 'Absolute NQI Threshold', desc: 'Even if your percentage is fine, exceeding AED 5M in Non-Qualifying Income costs your QFZP status.', borderColor: '#f59e0b', bg: 'rgba(245,158,11,0.04)', statColor: '#fbbf24' },
-              { stat: '2 tests', label: 'To Fail Simultaneously', desc: 'You must pass both the percentage test and the absolute test simultaneously. Failing either disqualifies you.', borderColor: '#3b82f6', bg: 'rgba(59,130,246,0.04)', statColor: '#60a5fa' },
-            ].map(({ stat, label, desc, borderColor, bg, statColor }) => (
-              <div key={stat} style={{ borderLeft: `3px solid ${borderColor}`, padding: '20px 24px', borderRadius: '0 12px 12px 0', background: bg }}>
-                <div style={{ fontSize: 36, fontWeight: 900, letterSpacing: '-0.03em', fontFamily: 'JetBrains Mono, monospace', color: statColor, marginBottom: 4 }}>{stat}</div>
-                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--ts-fg-secondary)', marginBottom: 6 }}>{label}</div>
-                <div style={{ fontSize: 14, color: 'var(--ts-fg-muted)', lineHeight: 1.5 }}>{desc}</div>
+      <motion.section
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: '-50px' }}
+        transition={{ type: 'spring', stiffness: 400, damping: 35 }}
+        className="ts-section"
+      >
+        <div className="ts-container">
+          <div className="ts-problem-grid">
+            {/* Left */}
+            <div>
+              <div className="inline-flex items-center gap-2 mb-6" style={{ padding: '5px 14px', borderRadius: 9999, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ts-red-400)' }}>
+                The Risk Is Real
               </div>
-            ))}
+              <h2 style={{ fontSize: 'clamp(1.8rem, 4vw, 2.8rem)', fontWeight: 900, letterSpacing: '-0.03em', lineHeight: 1.1, marginBottom: 20, color: 'var(--ts-fg-primary)' }}>
+                Most Free Zone<br />companies don&apos;t<br />know they&apos;re at risk<br />until the{' '}
+                <span style={{ background: 'linear-gradient(125deg, #ef4444, #f87171)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>FTA does.</span>
+              </h2>
+              <p style={{ fontSize: 'clamp(14px, 2vw, 16px)', color: 'var(--ts-fg-muted)', lineHeight: 1.75, marginBottom: 32 }}>
+                The 9% corporate tax trap isn&apos;t complex — it&apos;s invisible. A few misclassified invoices, a single mainland contract, or one expired document can silently revoke your QFZP status. By then, the damage is done.
+              </p>
+              <Link
+                href="/sign-in"
+                className="inline-flex items-center gap-2 rounded-xl font-bold transition-all hover:opacity-90"
+                style={{ fontSize: 14, padding: '11px 22px', background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', color: '#fff', boxShadow: '0 4px 16px rgba(37,99,235,0.3)', textDecoration: 'none' }}
+              >
+                See How TaxSentry Fixes This <ArrowRight size={14} />
+              </Link>
+            </div>
+            {/* Right: stat cards */}
+            <div className="flex flex-col gap-5">
+              {[
+                { stat: '9%', label: 'Corporate Tax on Loss', desc: 'Corporate tax triggered the moment your NQI exceeds 5% of total revenue — with no grace period.', borderColor: '#ef4444', bg: 'rgba(239,68,68,0.04)', statColor: '#f87171' },
+                { stat: 'AED 5M', label: 'Absolute NQI Threshold', desc: 'Even if your percentage is fine, exceeding AED 5M in Non-Qualifying Income costs your QFZP status.', borderColor: '#f59e0b', bg: 'rgba(245,158,11,0.04)', statColor: '#fbbf24' },
+                { stat: '2 tests', label: 'To Fail Simultaneously', desc: 'You must pass both the percentage test and the absolute test simultaneously. Failing either disqualifies you.', borderColor: '#3b82f6', bg: 'rgba(59,130,246,0.04)', statColor: '#60a5fa' },
+              ].map(({ stat, label, desc, borderColor, bg, statColor }) => (
+                <div key={stat} style={{ borderLeft: `3px solid ${borderColor}`, padding: '18px 22px', borderRadius: '0 12px 12px 0', background: bg }}>
+                  <div style={{ fontSize: 'clamp(28px, 4vw, 36px)', fontWeight: 900, letterSpacing: '-0.03em', fontFamily: 'JetBrains Mono, monospace', color: statColor, marginBottom: 4 }}>{stat}</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--ts-fg-secondary)', marginBottom: 6 }}>{label}</div>
+                  <div style={{ fontSize: 13, color: 'var(--ts-fg-muted)', lineHeight: 1.5 }}>{desc}</div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </motion.section>
@@ -289,46 +307,54 @@ export function LandingPage() {
       <Divider />
 
       {/* ── How It Works ─────────────────────────────── */}
-      <motion.section initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ type: "spring", stiffness: 400, damping: 35 }} id="how" style={{ padding: '100px 32px', background: 'var(--ts-bg-deepest)' }}>
-        <div style={{ maxWidth: 1160, margin: '0 auto' }}>
-          <div className="text-center" style={{ marginBottom: 60 }}>
+      <motion.section
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: '-50px' }}
+        transition={{ type: 'spring', stiffness: 400, damping: 35 }}
+        id="how"
+        className="ts-section"
+        style={{ background: 'var(--ts-bg-deepest)' }}
+      >
+        <div className="ts-container">
+          <div className="text-center" style={{ marginBottom: 48 }}>
             <div className="inline-flex items-center gap-2 mb-5" style={{ padding: '5px 14px', borderRadius: 9999, background: 'oklch(0.55 0.22 260 / 0.10)', border: '1px solid oklch(0.55 0.22 260 / 0.25)', fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ts-blue-400)' }}>
               How It Works
             </div>
-            <h2 style={{ fontSize: 'clamp(2rem, 4vw, 2.8rem)', fontWeight: 900, letterSpacing: '-0.03em', color: 'var(--ts-fg-primary)', marginBottom: 16 }}>
+            <h2 style={{ fontSize: 'clamp(1.8rem, 4vw, 2.8rem)', fontWeight: 900, letterSpacing: '-0.03em', color: 'var(--ts-fg-primary)', marginBottom: 16 }}>
               From data to protection<br />in three steps
             </h2>
-            <p style={{ maxWidth: 500, margin: '0 auto', fontSize: 15, color: 'var(--ts-fg-muted)', lineHeight: 1.65 }}>
+            <p style={{ maxWidth: 500, margin: '0 auto', fontSize: 'clamp(13px, 2vw, 15px)', color: 'var(--ts-fg-muted)', lineHeight: 1.65 }}>
               Connects to your accounting system, classifies every transaction, and gives your finance team a live compliance signal.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3" style={{ gap: 2 }}>
+          <div className="ts-steps-grid">
             {[
               {
                 step: 'Step 01', icon: Upload, title: 'Connect Your Data',
                 body: 'Sync Zoho Books, QuickBooks, or Xero — or import a CSV. TaxSentry ingests your full transaction history in minutes.',
-                showArrow: true,
+                showArrow: true, idx: 0,
               },
               {
                 step: 'Step 02', icon: Zap, title: 'Classify Every Transaction',
                 body: 'Each revenue line is categorised as QI, NQI, or Excluded. Related party transactions are flagged automatically.',
-                showArrow: true,
+                showArrow: true, idx: 1,
               },
               {
                 step: 'Step 03', icon: ShieldCheck, title: 'Stay Protected',
                 body: 'Your QFZP status is monitored live. Receive threshold alerts before you breach, and generate FTA-ready audit packs on demand.',
-                showArrow: false,
+                showArrow: false, idx: 2,
               },
-            ].map(({ step, icon: Icon, title, body, showArrow }, i) => (
+            ].map(({ step, icon: Icon, title, body, showArrow, idx }) => (
               <div
                 key={step}
                 className="relative"
                 style={{
-                  padding: '40px 36px',
+                  padding: 'clamp(24px, 3vw, 40px) clamp(20px, 3vw, 36px)',
                   background: 'var(--ts-bg-card)',
                   border: '1px solid var(--ts-border)',
-                  borderRadius: i === 0 ? '16px 0 0 16px' : i === 2 ? '0 16px 16px 0' : 0,
+                  borderRadius: idx === 0 ? '16px 16px 0 0' : idx === 2 ? '0 0 16px 16px' : 0,
                 }}
               >
                 <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'oklch(0.58 0.12 260)', marginBottom: 20 }}>{step}</div>
@@ -339,7 +365,7 @@ export function LandingPage() {
                 <p style={{ fontSize: 14, color: 'var(--ts-fg-muted)', lineHeight: 1.65, margin: 0 }}>{body}</p>
                 {showArrow && (
                   <div
-                    className="hidden md:flex absolute items-center justify-center"
+                    className="hidden lg:flex absolute items-center justify-center"
                     style={{ right: -14, top: '50%', transform: 'translateY(-50%)', zIndex: 2, width: 28, height: 28, background: 'var(--ts-bg-deepest)', border: '1px solid oklch(0.55 0.22 260 / 0.20)', borderRadius: '50%' }}
                   >
                     <ArrowRight size={12} color="oklch(0.55 0.22 260)" />
@@ -354,22 +380,29 @@ export function LandingPage() {
       <Divider />
 
       {/* ── Features ─────────────────────────────────── */}
-      <motion.section initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ type: "spring", stiffness: 400, damping: 35 }} id="features" style={{ padding: '100px 32px' }}>
-        <div style={{ maxWidth: 1160, margin: '0 auto' }}>
-          <div className="text-center" style={{ marginBottom: 60 }}>
+      <motion.section
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: '-50px' }}
+        transition={{ type: 'spring', stiffness: 400, damping: 35 }}
+        id="features"
+        className="ts-section"
+      >
+        <div className="ts-container">
+          <div className="text-center" style={{ marginBottom: 48 }}>
             <div className="inline-flex items-center gap-2 mb-5" style={{ padding: '5px 14px', borderRadius: 9999, background: 'oklch(0.55 0.22 260 / 0.10)', border: '1px solid oklch(0.55 0.22 260 / 0.25)', fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ts-blue-400)' }}>
               Platform Features
             </div>
-            <h2 style={{ fontSize: 'clamp(2rem, 4vw, 2.8rem)', fontWeight: 900, letterSpacing: '-0.03em', color: 'var(--ts-fg-primary)', marginBottom: 16 }}>
-              Built for the UAE.<br />Designed for{' '}
+            <h2 style={{ fontSize: 'clamp(1.8rem, 4vw, 2.8rem)', fontWeight: 900, letterSpacing: '-0.03em', color: 'var(--ts-fg-primary)', marginBottom: 16 }}>
+              Built for the UAE.{' '}Designed for{' '}
               <span style={{ background: 'linear-gradient(125deg, #60a5fa 0%, #34d399 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>your CFO.</span>
             </h2>
-            <p style={{ maxWidth: 500, margin: '0 auto', fontSize: 15, color: 'var(--ts-fg-muted)', lineHeight: 1.65 }}>
+            <p style={{ maxWidth: 500, margin: '0 auto', fontSize: 'clamp(13px, 2vw, 15px)', color: 'var(--ts-fg-muted)', lineHeight: 1.65 }}>
               Every feature maps directly to an FTA requirement or a common compliance failure point.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="ts-features-grid">
             {[
               { badge: 'Most Critical', badgeGreen: true, icon: Clock, iconColor: '#34d399', iconBg: 'rgba(52,211,153,0.12)', greenBorder: true, title: 'Dual De-Minimis Tracker', body: 'Simultaneous tracking of both the 5% percentage test and the AED 5M absolute threshold. Live gauges update with every transaction. Alerts at 80% and 95%.' },
               { icon: TrendingUp, iconColor: '#3b82f6', iconBg: 'oklch(0.55 0.22 260 / 0.12)', title: 'Revenue Classification Engine', body: 'QI, NQI, and Excluded categorisation with full audit trail. Related party detection. One-click reclassification with documented rationale.' },
@@ -380,9 +413,9 @@ export function LandingPage() {
             ].map(({ badge, badgeGreen, badgeSoon, greenBorder, icon: Icon, iconColor, iconBg, title, body }) => (
               <div
                 key={title}
-                className="relative overflow-hidden transition-all"
+                className="relative overflow-hidden"
                 style={{
-                  padding: '32px 28px',
+                  padding: 'clamp(24px, 3vw, 32px) clamp(20px, 3vw, 28px)',
                   borderRadius: 16,
                   border: `1px solid ${greenBorder ? 'var(--ts-green-400)' : 'var(--ts-border)'}`,
                   background: 'var(--ts-bg-card)',
@@ -398,11 +431,11 @@ export function LandingPage() {
                     {badge}
                   </span>
                 )}
-                <div className="flex items-center justify-center rounded-2xl mb-6" style={{ width: 64, height: 64, background: iconBg }}>
-                  <Icon size={30} color={iconColor} />
+                <div className="flex items-center justify-center rounded-2xl mb-5" style={{ width: 56, height: 56, background: iconBg }}>
+                  <Icon size={26} color={iconColor} />
                 </div>
-                <h3 style={{ fontSize: 18, fontWeight: 800, color: 'var(--ts-fg-primary)', marginBottom: 10 }}>{title}</h3>
-                <p style={{ fontSize: 14, color: 'var(--ts-fg-muted)', lineHeight: 1.65, margin: 0 }}>{body}</p>
+                <h3 style={{ fontSize: 'clamp(15px, 2vw, 18px)', fontWeight: 800, color: 'var(--ts-fg-primary)', marginBottom: 10 }}>{title}</h3>
+                <p style={{ fontSize: 13, color: 'var(--ts-fg-muted)', lineHeight: 1.65, margin: 0 }}>{body}</p>
               </div>
             ))}
           </div>
@@ -412,25 +445,33 @@ export function LandingPage() {
       <Divider />
 
       {/* ── Security ─────────────────────────────────── */}
-      <motion.section initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ type: "spring", stiffness: 400, damping: 35 }} id="security" style={{ padding: '100px 32px', background: 'var(--ts-bg-deepest)' }}>
-        <div style={{ maxWidth: 1160, margin: '0 auto' }}>
+      <motion.section
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: '-50px' }}
+        transition={{ type: 'spring', stiffness: 400, damping: 35 }}
+        id="security"
+        className="ts-section"
+        style={{ background: 'var(--ts-bg-deepest)' }}
+      >
+        <div className="ts-container">
           <div
             className="relative overflow-hidden rounded-2xl"
-            style={{ padding: '52px 56px', background: 'var(--ts-bg-elevated)', border: '1px solid var(--ts-border)' }}
+            style={{ padding: 'clamp(32px, 5vw, 52px) clamp(24px, 5vw, 56px)', background: 'var(--ts-bg-elevated)', border: '1px solid var(--ts-border)' }}
           >
             <div className="absolute top-0 left-0 right-0" style={{ height: 1, background: 'linear-gradient(90deg, transparent, var(--ts-blue-400), transparent)' }} />
-            <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-12 items-center relative z-10">
+            <div className="ts-security-inner relative z-10">
               <div>
                 <div className="inline-flex items-center gap-2 mb-6" style={{ padding: '5px 14px', borderRadius: 9999, background: 'oklch(0.55 0.22 260 / 0.10)', border: '1px solid oklch(0.55 0.22 260 / 0.25)', fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ts-blue-400)' }}>
-                  Security & Architecture
+                  Security &amp; Architecture
                 </div>
-                <h2 style={{ fontSize: 'clamp(1.8rem, 3.5vw, 2.4rem)', fontWeight: 900, letterSpacing: '-0.03em', color: 'var(--ts-fg-primary)', marginBottom: 16 }}>
+                <h2 style={{ fontSize: 'clamp(1.6rem, 3.5vw, 2.4rem)', fontWeight: 900, letterSpacing: '-0.03em', color: 'var(--ts-fg-primary)', marginBottom: 16 }}>
                   Architected for strict<br />UAE Data Sovereignty.
                 </h2>
-                <p style={{ fontSize: 15, color: 'var(--ts-fg-muted)', lineHeight: 1.75, marginBottom: 4 }}>
-                  We are building TaxSentry's foundational architecture around enterprise-grade security principles. By design, our systems mandate modern encryption standards and strict data locality to ensure compliance with emerging FTA data sovereignty expectations.
+                <p style={{ fontSize: 'clamp(13px, 2vw, 15px)', color: 'var(--ts-fg-muted)', lineHeight: 1.75 }}>
+                  We are building TaxSentry&apos;s foundational architecture around enterprise-grade security principles. By design, our systems mandate modern encryption standards and strict data locality to ensure compliance with emerging FTA data sovereignty expectations.
                 </p>
-                <div className="grid grid-cols-2 gap-3" style={{ marginTop: 28 }}>
+                <div className="ts-security-badges">
                   {[
                     { icon: Lock, label: 'Industry Standard Encryption' },
                     { icon: Globe, label: 'Architected for UAE Locality' },
@@ -464,27 +505,33 @@ export function LandingPage() {
       <Divider />
 
       {/* ── Testimonials ─────────────────────────────── */}
-      <motion.section initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ type: "spring", stiffness: 400, damping: 35 }} style={{ padding: '100px 32px' }}>
-        <div style={{ maxWidth: 1160, margin: '0 auto' }}>
-          <div className="text-center" style={{ marginBottom: 52 }}>
+      <motion.section
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: '-50px' }}
+        transition={{ type: 'spring', stiffness: 400, damping: 35 }}
+        className="ts-section"
+      >
+        <div className="ts-container">
+          <div className="text-center" style={{ marginBottom: 48 }}>
             <div className="inline-flex items-center gap-2 mb-5" style={{ padding: '5px 14px', borderRadius: 9999, background: 'oklch(0.55 0.22 260 / 0.10)', border: '1px solid oklch(0.55 0.22 260 / 0.25)', fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ts-blue-400)' }}>
               What CFOs Say
             </div>
-            <h2 style={{ fontSize: 'clamp(1.8rem, 3.5vw, 2.4rem)', fontWeight: 900, letterSpacing: '-0.03em', color: 'var(--ts-fg-primary)' }}>
+            <h2 style={{ fontSize: 'clamp(1.6rem, 3.5vw, 2.4rem)', fontWeight: 900, letterSpacing: '-0.03em', color: 'var(--ts-fg-primary)' }}>
               Built for the people<br />who sign the tax returns.
             </h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <div className="ts-testimonials-grid">
             {[
               { quote: '"We had no idea three of our contracts were borderline NQI. TaxSentry flagged them within the first week. At our revenue level, that\'s a multi-million dirham exposure we caught in time."', name: 'CFO, DMCC Trading Co.', role: 'Technology Distributor · DMCC', avatar: 'CF', bg: '#1d4ed8' },
               { quote: '"Our auditor asked for a full de-minimis workings pack during the FTA review. I generated it in 90 seconds. The auditor said it was the most prepared file they\'d seen from a Free Zone company."', name: 'Finance Director, Gulf Logistics FZE', role: 'Logistics & Freight · JAFZA', avatar: 'AM', bg: '#059669' },
               { quote: '"The risk score alone is worth the subscription. Our board now reviews it monthly. It\'s become the single metric everyone watches to make sure we stay at 0%."', name: 'Group CFO, MENA Holdings', role: 'Multi-entity · DIFC', avatar: 'RK', bg: '#7c3aed' },
             ].map(({ quote, name, role, avatar, bg }) => (
-              <div key={name} style={{ padding: 32, borderRadius: 16, background: 'var(--ts-bg-card)', border: '1px solid var(--ts-border)', boxShadow: 'var(--ts-shadow-card)' }}>
+              <div key={name} style={{ padding: 'clamp(24px, 3vw, 32px)', borderRadius: 16, background: 'var(--ts-bg-card)', border: '1px solid var(--ts-border)', boxShadow: 'var(--ts-shadow-card)' }}>
                 <div className="flex gap-1 mb-5">
                   {'★★★★★'.split('').map((s, i) => <span key={i} style={{ color: '#f59e0b', fontSize: 14 }}>{s}</span>)}
                 </div>
-                <p style={{ fontSize: 15, color: 'var(--ts-fg-muted)', lineHeight: 1.7, marginBottom: 24, fontStyle: 'italic' }}>{quote}</p>
+                <p style={{ fontSize: 'clamp(13px, 1.8vw, 15px)', color: 'var(--ts-fg-muted)', lineHeight: 1.7, marginBottom: 24, fontStyle: 'italic' }}>{quote}</p>
                 <div className="flex items-center gap-3">
                   <div className="flex items-center justify-center rounded-full text-white flex-shrink-0" style={{ width: 38, height: 38, background: bg, fontSize: 13, fontWeight: 700 }}>{avatar}</div>
                   <div>
@@ -501,22 +548,30 @@ export function LandingPage() {
       <Divider />
 
       {/* ── Pricing ──────────────────────────────────── */}
-      <motion.section initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ type: "spring", stiffness: 400, damping: 35 }} id="pricing" style={{ padding: '100px 32px', background: 'var(--ts-bg-deepest)' }}>
-        <div style={{ maxWidth: 1160, margin: '0 auto' }}>
-          <div className="text-center" style={{ marginBottom: 56 }}>
+      <motion.section
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: '-50px' }}
+        transition={{ type: 'spring', stiffness: 400, damping: 35 }}
+        id="pricing"
+        className="ts-section"
+        style={{ background: 'var(--ts-bg-deepest)' }}
+      >
+        <div className="ts-container">
+          <div className="text-center" style={{ marginBottom: 48 }}>
             <div className="inline-flex items-center gap-2 mb-5" style={{ padding: '5px 14px', borderRadius: 9999, background: 'oklch(0.55 0.22 260 / 0.10)', border: '1px solid oklch(0.55 0.22 260 / 0.25)', fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ts-blue-400)' }}>
               Pricing
             </div>
-            <h2 style={{ fontSize: 'clamp(2rem, 4vw, 2.8rem)', fontWeight: 900, letterSpacing: '-0.03em', color: 'var(--ts-fg-primary)', marginBottom: 16 }}>
+            <h2 style={{ fontSize: 'clamp(1.8rem, 4vw, 2.8rem)', fontWeight: 900, letterSpacing: '-0.03em', color: 'var(--ts-fg-primary)', marginBottom: 16 }}>
               One breach costs more<br />than years of{' '}
               <span style={{ background: 'linear-gradient(125deg, #60a5fa 0%, #34d399 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>TaxSentry.</span>
             </h2>
-            <p style={{ maxWidth: 460, margin: '0 auto', fontSize: 15, color: 'var(--ts-fg-muted)', lineHeight: 1.65 }}>
+            <p style={{ maxWidth: 460, margin: '0 auto', fontSize: 'clamp(13px, 2vw, 15px)', color: 'var(--ts-fg-muted)', lineHeight: 1.65 }}>
               The 9% tax on a single year of AED 10M revenue is AED 900,000. TaxSentry Starter is AED 11,880/year.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5" style={{ maxWidth: 1000, margin: '0 auto' }}>
+          <div className="ts-pricing-grid">
             {[
               {
                 name: 'Starter', price: 'AED 990', period: '/month',
@@ -548,12 +603,10 @@ export function LandingPage() {
                 className="relative"
                 style={{
                   borderRadius: 20,
-                  padding: '36px 32px',
+                  padding: 'clamp(28px, 4vw, 36px) clamp(22px, 3vw, 32px)',
                   background: 'var(--ts-bg-card)',
                   border: `1px solid ${featured ? 'var(--ts-blue-400)' : 'var(--ts-border)'}`,
                   boxShadow: featured ? '0 8px 32px rgba(37,99,235,0.1)' : 'var(--ts-shadow-card)',
-                  transform: featured ? 'scale(1.02)' : 'none',
-                  transition: 'transform 0.2s',
                 }}
               >
                 <div className="absolute top-0 left-0 right-0" style={{ height: 1, background: featured ? 'linear-gradient(90deg, transparent, rgba(37,99,235,0.7), transparent)' : 'linear-gradient(90deg, transparent, rgba(37,99,235,0.35), transparent)', borderRadius: '20px 20px 0 0' }} />
@@ -569,12 +622,12 @@ export function LandingPage() {
                   <Icon size={22} color={featured ? '#fff' : '#3b82f6'} />
                 </div>
                 <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--ts-fg-primary)', marginBottom: 6 }}>{name}</div>
-                <div style={{ fontSize: 13, color: 'var(--ts-fg-muted)', marginBottom: 24, lineHeight: 1.5 }}>{desc}</div>
-                <div style={{ marginBottom: 28 }}>
-                  <span style={{ fontSize: 34, fontWeight: 900, color: 'var(--ts-fg-primary)', fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-0.02em' }}>{price}</span>
+                <div style={{ fontSize: 13, color: 'var(--ts-fg-muted)', marginBottom: 20, lineHeight: 1.5 }}>{desc}</div>
+                <div style={{ marginBottom: 24 }}>
+                  <span style={{ fontSize: 'clamp(26px, 3vw, 34px)', fontWeight: 900, color: 'var(--ts-fg-primary)', fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-0.02em' }}>{price}</span>
                   {period && <span style={{ fontSize: 14, color: 'oklch(0.62 0 0)', fontFamily: 'Inter, sans-serif', fontWeight: 400 }}>{period}</span>}
                 </div>
-                <div className="flex flex-col gap-2.5" style={{ marginBottom: 28 }}>
+                <div className="flex flex-col gap-2.5" style={{ marginBottom: 24 }}>
                   {features.map((f, i) => (
                     <div key={f} className="flex items-start gap-2.5" style={{ fontSize: 13, color: i === 0 && f.includes('Everything') ? '#c8d8f0' : 'var(--ts-fg-secondary)', fontWeight: i === 0 && f.includes('Everything') ? 500 : 400 }}>
                       {!(i === 0 && f.includes('Everything')) && (
@@ -585,7 +638,7 @@ export function LandingPage() {
                   ))}
                 </div>
                 <button
-                  className="w-full rounded-xl font-bold transition-all"
+                  className="w-full rounded-xl font-bold"
                   style={{
                     display: 'block', width: '100%', padding: 14, borderRadius: 12, fontSize: 15, fontWeight: 700, textAlign: 'center', cursor: 'pointer', fontFamily: 'inherit',
                     background: ctaStyle === 'primary' ? 'linear-gradient(135deg, #2563eb, #1d4ed8)' : 'transparent',
@@ -601,7 +654,7 @@ export function LandingPage() {
             ))}
           </div>
 
-          <div className="text-center mt-12">
+          <div className="text-center mt-10">
             <div className="inline-flex items-center gap-2 rounded-full" style={{ padding: '12px 24px', background: 'oklch(0.70 0.20 155 / 0.07)', border: '1px solid oklch(0.70 0.20 155 / 0.18)', fontSize: 13, fontWeight: 600, color: '#34d399' }}>
               <CheckCircle2 size={16} color="#34d399" />
               30-day money-back guarantee — no questions asked
