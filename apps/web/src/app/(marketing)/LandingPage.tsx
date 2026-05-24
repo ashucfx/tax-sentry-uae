@@ -619,13 +619,13 @@ export function LandingPage() {
       </motion.section>
 
       {/* ── CTA ──────────────────────────────────────── */}
-      <motion.section initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ type: "spring", stiffness: 400, damping: 35 }} className="relative overflow-hidden" style={{ padding: '120px 32px 100px', textAlign: 'center', background: '#0B1121' }}>
-        <div className="pointer-events-none absolute" style={{ top: '0', left: '50%', transform: 'translateX(-50%)', width: 800, height: 400, background: 'radial-gradient(ellipse at top, rgba(255,255,255,0.05), transparent 70%)' }} />
+      <motion.section initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ type: "spring", stiffness: 400, damping: 35 }} className="relative overflow-hidden" style={{ padding: '120px 32px 100px', textAlign: 'center', background: 'var(--ts-bg-deepest)' }}>
+        <div className="pointer-events-none absolute" style={{ top: '0', left: '50%', transform: 'translateX(-50%)', width: 800, height: 400, background: 'radial-gradient(ellipse at top, oklch(0.55 0.22 260 / 0.15), transparent 70%)' }} />
         <div className="relative z-10" style={{ maxWidth: 800, margin: '0 auto' }}>
-          <div className="inline-flex items-center gap-2 mb-6" style={{ padding: '6px 16px', borderRadius: 9999, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ts-fg-secondary)' }}>
+          <div className="inline-flex items-center gap-2 mb-6" style={{ padding: '6px 16px', borderRadius: 9999, background: 'var(--ts-bg-muted)', border: '1px solid var(--ts-border)', fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ts-fg-secondary)' }}>
             <Lock size={12} /> Enterprise Ready
           </div>
-          <h2 style={{ fontSize: 'clamp(2.5rem, 5vw, 3.8rem)', fontWeight: 900, letterSpacing: '-0.04em', marginBottom: 24, color: '#fff', lineHeight: 1.1 }}>
+          <h2 style={{ fontSize: 'clamp(2.5rem, 5vw, 3.8rem)', fontWeight: 900, letterSpacing: '-0.04em', marginBottom: 24, color: 'var(--ts-fg-primary)', lineHeight: 1.1 }}>
             The FTA doesn't send warnings.<br/>
             <span style={{ background: 'linear-gradient(125deg, #60a5fa 0%, #34d399 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>We do.</span>
           </h2>
@@ -636,8 +636,8 @@ export function LandingPage() {
             <motion.div whileHover={{ y: -1 }} whileTap={{ scale: 0.98 }}>
               <Link
                 href="/sign-in"
-                className="flex items-center justify-center gap-2 rounded-xl font-bold transition-all"
-                style={{ fontSize: 16, padding: '0 36px', height: 56, background: '#fff', color: '#000', boxShadow: '0 8px 30px rgba(255,255,255,0.15)', textDecoration: 'none' }}
+                className="flex items-center justify-center gap-2 rounded-xl font-bold transition-all hover:opacity-95"
+                style={{ fontSize: 16, padding: '0 36px', height: 56, background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', color: '#fff', boxShadow: '0 4px 20px rgba(37,99,235,0.3)', textDecoration: 'none' }}
               >
                 Get Protected Today <ArrowRight size={18} />
               </Link>
@@ -646,7 +646,7 @@ export function LandingPage() {
               <Link
                 href="/demo"
                 className="flex items-center justify-center gap-2 rounded-xl font-bold transition-all"
-                style={{ fontSize: 16, padding: '0 36px', height: 56, background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.15)', textDecoration: 'none' }}
+                style={{ fontSize: 16, padding: '0 36px', height: 56, background: 'transparent', color: 'var(--ts-fg-secondary)', border: '1px solid oklch(0.40 0.025 255)', textDecoration: 'none' }}
               >
                 Request a Demo
               </Link>
@@ -667,7 +667,7 @@ export function LandingPage() {
       </motion.section>
 
       {/* ── Footer ───────────────────────────────────── */}
-      <footer style={{ background: '#0B1121', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+      <footer style={{ background: 'var(--ts-bg-deepest)', borderTop: '1px solid var(--ts-border)' }}>
         <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 40px' }}>
           {/* 5-column grid */}
           <motion.div 
@@ -676,14 +676,14 @@ export function LandingPage() {
             viewport={{ once: true }}
             transition={{ duration: 0.5, staggerChildren: 0.1 }}
             className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-12 lg:gap-8" 
-            style={{ padding: '80px 0 60px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}
+            style={{ padding: '80px 0 60px', borderBottom: '1px solid var(--ts-border-subtle)' }}
           >
             {/* Brand */}
             <div className="col-span-2 md:col-span-3 lg:col-span-1">
               <div className="flex items-center gap-2.5 mb-6">
                 <TaxSentryLogo size={32} />
                 <div>
-                  <div style={{ fontSize: 20, fontWeight: 900, color: '#fff', letterSpacing: '-0.02em', lineHeight: 1 }}>
+                  <div style={{ fontSize: 20, fontWeight: 900, color: 'var(--ts-fg-primary)', letterSpacing: '-0.02em', lineHeight: 1 }}>
                     Tax<span style={{ color: 'var(--ts-blue-400)' }}>Sentry</span>
                   </div>
                 </div>
@@ -701,9 +701,9 @@ export function LandingPage() {
                     key={i}
                     href={href}
                     className="flex items-center justify-center rounded-lg transition-all"
-                    style={{ width: 36, height: 36, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)' }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.08)'; }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.03)'; }}
+                    style={{ width: 36, height: 36, background: 'var(--ts-bg-muted)', border: '1px solid var(--ts-border)' }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--ts-blue-400)'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--ts-border)'; }}
                   >
                     <Icon size={16} color="var(--ts-fg-secondary)" />
                   </Link>
@@ -713,7 +713,7 @@ export function LandingPage() {
 
             {/* Platform */}
             <div>
-              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#fff', marginBottom: 24 }}>Platform</div>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--ts-fg-primary)', marginBottom: 24 }}>Platform</div>
               <div className="flex flex-col gap-4">
                 {[
                   ['De-Minimis Tracker', '/platform/de-minimis'],
@@ -723,14 +723,14 @@ export function LandingPage() {
                   ['API Access', '/api-docs'],
                   ['Accounting Sync', '/integrations']
                 ].map(([label, href]) => (
-                  <Link key={label} href={href} style={{ fontSize: 13, color: 'var(--ts-fg-secondary)', textDecoration: 'none', transition: 'color 0.2s' }} onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#fff'; }} onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--ts-fg-secondary)'; }}>{label}</Link>
+                  <Link key={label} href={href} style={{ fontSize: 13, color: 'var(--ts-fg-secondary)', textDecoration: 'none', transition: 'color 0.2s' }} onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--ts-fg-primary)'; }} onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--ts-fg-secondary)'; }}>{label}</Link>
                 ))}
               </div>
             </div>
 
             {/* Solutions */}
             <div>
-              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#fff', marginBottom: 24 }}>Solutions</div>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--ts-fg-primary)', marginBottom: 24 }}>Solutions</div>
               <div className="flex flex-col gap-4">
                 {[
                   ['For CFOs', '/solutions/cfos'],
@@ -740,14 +740,14 @@ export function LandingPage() {
                   ['Startups & SMEs', '/solutions/startups'],
                   ['Enterprise', '/solutions/enterprise']
                 ].map(([label, href]) => (
-                  <Link key={label} href={href} style={{ fontSize: 13, color: 'var(--ts-fg-secondary)', textDecoration: 'none', transition: 'color 0.2s' }} onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#fff'; }} onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--ts-fg-secondary)'; }}>{label}</Link>
+                  <Link key={label} href={href} style={{ fontSize: 13, color: 'var(--ts-fg-secondary)', textDecoration: 'none', transition: 'color 0.2s' }} onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--ts-fg-primary)'; }} onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--ts-fg-secondary)'; }}>{label}</Link>
                 ))}
               </div>
             </div>
 
             {/* Resources */}
             <div>
-              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#fff', marginBottom: 24 }}>Resources</div>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--ts-fg-primary)', marginBottom: 24 }}>Resources</div>
               <div className="flex flex-col gap-4">
                 {[
                   ['Documentation', '/docs'],
@@ -757,14 +757,14 @@ export function LandingPage() {
                   ['System Status', '/status'],
                   ['Security & Architecture', '/security']
                 ].map(([label, href]) => (
-                  <Link key={label} href={href} style={{ fontSize: 13, color: 'var(--ts-fg-secondary)', textDecoration: 'none', transition: 'color 0.2s' }} onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#fff'; }} onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--ts-fg-secondary)'; }}>{label}</Link>
+                  <Link key={label} href={href} style={{ fontSize: 13, color: 'var(--ts-fg-secondary)', textDecoration: 'none', transition: 'color 0.2s' }} onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--ts-fg-primary)'; }} onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--ts-fg-secondary)'; }}>{label}</Link>
                 ))}
               </div>
             </div>
 
             {/* Company & Legal */}
             <div>
-              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#fff', marginBottom: 24 }}>Company</div>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--ts-fg-primary)', marginBottom: 24 }}>Company</div>
               <div className="flex flex-col gap-4">
                 {[
                   ['About Us', '/about'],
@@ -774,14 +774,14 @@ export function LandingPage() {
                   ['Terms of Service', '/terms'],
                   ['Cookie Policy', '/cookies']
                 ].map(([label, href]) => (
-                  <Link key={label} href={href} style={{ fontSize: 13, color: 'var(--ts-fg-secondary)', textDecoration: 'none', transition: 'color 0.2s' }} onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#fff'; }} onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--ts-fg-secondary)'; }}>{label}</Link>
+                  <Link key={label} href={href} style={{ fontSize: 13, color: 'var(--ts-fg-secondary)', textDecoration: 'none', transition: 'color 0.2s' }} onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--ts-fg-primary)'; }} onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--ts-fg-secondary)'; }}>{label}</Link>
                 ))}
               </div>
             </div>
           </motion.div>
 
           {/* Trust Badges Bar */}
-          <div className="flex flex-wrap items-center justify-between gap-6" style={{ padding: '32px 0', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+          <div className="flex flex-wrap items-center justify-between gap-6" style={{ padding: '32px 0', borderBottom: '1px solid var(--ts-border-subtle)' }}>
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2" style={{ fontSize: 11, fontWeight: 600, color: 'var(--ts-fg-muted)' }}>
                 <Globe size={14} /> Architected for UAE Data Sovereignty
@@ -810,7 +810,7 @@ export function LandingPage() {
               © 2026 TaxSentry. All rights reserved.
             </div>
             <div style={{ fontSize: 12, color: 'var(--ts-fg-muted)' }}>
-              A product of <a href="https://www.theripplenexus.com" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--ts-fg-secondary)', fontWeight: 600, textDecoration: 'none', transition: 'color 0.2s' }} onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#fff'; }} onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--ts-fg-secondary)'; }}>Ripple Nexus</a>
+              A product of <a href="https://www.theripplenexus.com" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--ts-fg-secondary)', fontWeight: 600, textDecoration: 'none', transition: 'color 0.2s' }} onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--ts-fg-primary)'; }} onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--ts-fg-secondary)'; }}>Ripple Nexus</a>
             </div>
           </div>
         </div>
