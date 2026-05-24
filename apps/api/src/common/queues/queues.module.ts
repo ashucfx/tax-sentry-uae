@@ -2,30 +2,32 @@ import { Module, Global } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
+import { getQueueToken } from '@nestjs/bullmq';
+
 export const SYNC_QUEUE = 'sync';
 export const CLASSIFICATION_QUEUE = 'classification';
 
+const mockQueueProvider = (name: string) => ({
+  provide: getQueueToken(name),
+  useValue: {
+    add: async () => ({ id: 'mock-job-id' }),
+    getJobs: async () => [],
+    getJobCounts: async () => ({ waiting: 0, active: 0, completed: 0, failed: 0, delayed: 0 }),
+    pause: async () => {},
+    resume: async () => {},
+    obliterate: async () => {},
+  },
+});
+
 @Global()
 @Module({
-  imports: [
-    BullModule.forRootAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        connection: {
-          host: config.get('REDIS_HOST', 'localhost'),
-          port: config.get('REDIS_PORT', 6379),
-          password: config.get('REDIS_PASSWORD'),
-        },
-      }),
-    }),
-    BullModule.registerQueue({
-      name: SYNC_QUEUE,
-    }),
-    BullModule.registerQueue({
-      name: CLASSIFICATION_QUEUE,
-    }),
+  providers: [
+    mockQueueProvider(SYNC_QUEUE),
+    mockQueueProvider(CLASSIFICATION_QUEUE),
   ],
-  exports: [BullModule],
+  exports: [
+    getQueueToken(SYNC_QUEUE),
+    getQueueToken(CLASSIFICATION_QUEUE),
+  ],
 })
 export class QueuesModule {}
