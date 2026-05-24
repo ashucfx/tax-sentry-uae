@@ -339,3 +339,261 @@ button, a {
               border-color 0.12s ease, box-shadow 0.15s ease,
               transform 0.1s ease;
 }
+
+/* ── Responsive Marketing Utilities ─────────────────── */
+
+/* Container with responsive horizontal padding */
+.ts-container {
+  max-width: 1160px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 16px;
+  padding-right: 16px;
+}
+@media (min-width: 480px) {
+  .ts-container { padding-left: 24px; padding-right: 24px; }
+}
+@media (min-width: 768px) {
+  .ts-container { padding-left: 40px; padding-right: 40px; }
+}
+@media (min-width: 1024px) {
+  .ts-container { padding-left: 48px; padding-right: 48px; }
+}
+@media (min-width: 1280px) {
+  .ts-container { padding-left: 32px; padding-right: 32px; }
+}
+
+/* Responsive section padding */
+.ts-section {
+  padding-top: 64px;
+  padding-bottom: 64px;
+}
+@media (min-width: 768px) {
+  .ts-section { padding-top: 80px; padding-bottom: 80px; }
+}
+@media (min-width: 1024px) {
+  .ts-section { padding-top: 100px; padding-bottom: 100px; }
+}
+
+/* Hero responsive padding */
+.ts-hero {
+  padding-top: 100px;
+  padding-bottom: 60px;
+  min-height: auto;
+}
+@media (min-width: 768px) {
+  .ts-hero { padding-top: 120px; min-height: 80vh; }
+}
+@media (min-width: 1024px) {
+  .ts-hero { padding-top: 140px; padding-bottom: 80px; min-height: 100vh; }
+}
+
+/* Responsive hero grid: stack on mobile/tablet, side-by-side on desktop */
+.ts-hero-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 40px;
+  align-items: center;
+}
+@media (min-width: 1024px) {
+  .ts-hero-grid { grid-template-columns: 1fr 1fr; gap: 56px; }
+}
+
+/* Dashboard mockup: hide on small screens, show on lg */
+.ts-dashboard-mockup {
+  display: none;
+}
+@media (min-width: 1024px) {
+  .ts-dashboard-mockup { display: block; }
+}
+
+/* Responsive CTA button group */
+.ts-cta-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+@media (max-width: 480px) {
+  .ts-cta-group { flex-direction: column; align-items: stretch; }
+  .ts-cta-group > * { text-align: center; justify-content: center; }
+}
+
+/* Responsive 3-col step grid */
+.ts-steps-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2px;
+}
+@media (min-width: 640px) {
+  .ts-steps-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (min-width: 1024px) {
+  .ts-steps-grid { grid-template-columns: 1fr 1fr 1fr; }
+}
+
+/* Responsive features grid */
+.ts-features-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+@media (min-width: 640px) {
+  .ts-features-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (min-width: 1024px) {
+  .ts-features-grid { grid-template-columns: 1fr 1fr 1fr; }
+}
+
+/* Responsive testimonials grid */
+.ts-testimonials-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+@media (min-width: 768px) {
+  .ts-testimonials-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (min-width: 1024px) {
+  .ts-testimonials-grid { grid-template-columns: 1fr 1fr 1fr; }
+}
+
+/* Responsive pricing grid */
+.ts-pricing-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+  max-width: 1000px;
+  margin-left: auto;
+  margin-right: auto;
+}
+@media (min-width: 640px) {
+  .ts-pricing-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (min-width: 1024px) {
+  .ts-pricing-grid { grid-template-columns: 1fr 1fr 1fr; }
+}
+
+/* Responsive security section inner layout */
+.ts-security-inner {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 40px;
+  align-items: center;
+}
+@media (min-width: 1024px) {
+  .ts-security-inner { grid-template-columns: 1fr auto; gap: 48px; }
+}
+
+/* Responsive security badges */
+.ts-security-badges {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-top: 28px;
+}
+@media (min-width: 480px) {
+  .ts-security-badges { grid-template-columns: 1fr 1fr; }
+}
+
+/* Responsive footer grid */
+.ts-footer-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  padding: 60px 0;
+  border-bottom: 1px solid var(--ts-border-subtle);
+}
+@media (min-width: 640px) {
+  .ts-footer-grid { grid-template-columns: 1fr 1fr 1fr; gap: 48px; }
+}
+@media (min-width: 1024px) {
+  .ts-footer-grid { grid-template-columns: 2fr 1fr 1fr 1fr 1fr; gap: 40px; padding: 80px 0 60px; }
+}
+
+/* Footer brand col spans full width on small screens */
+.ts-footer-brand {
+  grid-column: 1 / -1;
+}
+@media (min-width: 1024px) {
+  .ts-footer-brand { grid-column: auto; }
+}
+
+/* Responsive trust bar in footer */
+.ts-trust-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  padding: 24px 0;
+  border-bottom: 1px solid var(--ts-border-subtle);
+}
+@media (min-width: 768px) {
+  .ts-trust-bar { justify-content: space-between; }
+}
+
+/* Responsive copyright bar */
+.ts-copyright-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 24px 0;
+  text-align: center;
+}
+@media (min-width: 640px) {
+  .ts-copyright-bar { flex-direction: row; justify-content: space-between; text-align: left; }
+}
+
+/* Demo request form responsive */
+.ts-demo-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 48px;
+  align-items: start;
+}
+@media (min-width: 1024px) {
+  .ts-demo-layout { grid-template-columns: 1fr 1fr; gap: 64px; }
+}
+
+.ts-form-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+@media (min-width: 480px) {
+  .ts-form-row { grid-template-columns: 1fr 1fr; }
+}
+
+/* Problem section responsive */
+.ts-problem-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 48px;
+  align-items: center;
+}
+@media (min-width: 768px) {
+  .ts-problem-grid { grid-template-columns: 1fr 1fr; gap: 60px; }
+}
+@media (min-width: 1024px) {
+  .ts-problem-grid { gap: 80px; }
+}
+
+/* KPI cards in hero dashboard */
+.ts-kpi-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+}
+
+/* Tab bar responsive */
+.ts-tab-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 6px;
+}
+@media (max-width: 480px) {
+  .ts-tab-bar button { font-size: 11px !important; padding: 6px 10px !important; }
+}
+
