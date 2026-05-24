@@ -403,11 +403,11 @@ export function LandingPage() {
                     {badge}
                   </span>
                 )}
-                <div className="flex items-center justify-center rounded-[13px] mb-5" style={{ width: 46, height: 46, background: iconBg }}>
-                  <Icon size={22} color={iconColor} />
+                <div className="flex items-center justify-center rounded-2xl mb-6" style={{ width: 64, height: 64, background: iconBg }}>
+                  <Icon size={30} color={iconColor} />
                 </div>
-                <h3 style={{ fontSize: 16, fontWeight: 700, color: '#dce8ff', marginBottom: 10 }}>{title}</h3>
-                <p style={{ fontSize: 13, color: 'var(--ts-fg-muted)', lineHeight: 1.65, margin: 0 }}>{body}</p>
+                <h3 style={{ fontSize: 18, fontWeight: 800, color: 'var(--ts-fg-primary)', marginBottom: 10 }}>{title}</h3>
+                <p style={{ fontSize: 14, color: 'var(--ts-fg-muted)', lineHeight: 1.65, margin: 0 }}>{body}</p>
               </div>
             ))}
           </div>
