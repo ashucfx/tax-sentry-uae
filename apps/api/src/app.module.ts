@@ -16,8 +16,10 @@ import { ReportsModule } from './modules/reports/reports.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { HealthModule } from './modules/health/health.module';
 import { BillingModule } from './modules/billing/billing.module';
+import { LeadsModule } from './modules/leads/leads.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { SubscriptionGuard } from './common/guards/subscription.guard';
+import { RolesGuard } from './common/guards/roles.guard';
 
 @Module({
   imports: [
@@ -49,12 +51,15 @@ import { SubscriptionGuard } from './common/guards/subscription.guard';
     SubstanceModule,
     ReportsModule,
     BillingModule,
+    LeadsModule,
   ],
   providers: [
     // Rate limiting — must be first so brute-force attacks are blocked before any auth work
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     // Apply JwtAuthGuard globally — individual controllers can opt out with @Public()
     { provide: APP_GUARD, useClass: JwtAuthGuard },
+    // Apply RolesGuard globally — requires JwtAuthGuard to have set user
+    { provide: APP_GUARD, useClass: RolesGuard },
     // Apply SubscriptionGuard globally — runs after auth, checks subscription status
     { provide: APP_GUARD, useClass: SubscriptionGuard },
   ],

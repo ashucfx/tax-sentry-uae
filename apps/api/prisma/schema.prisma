@@ -569,3 +569,25 @@ model OtpCode {
   @@index([phone])
   @@map("otp_codes")
 }
+
+// ─── LEADS (Marketing / Demo Requests) ───────────────────────────────────────
+
+model Lead {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  firstName    String
+  lastName     String?
+  company      String
+  jobTitle     String?
+  phone        String?
+  freeZone     String?
+  companySize  String?
+  revenueRange String?
+  demoSlot     String?
+  message      String?  @db.Text
+  source       String   @default("DEMO_REQUEST")
+  ipAddress    String?
+  createdAt    DateTime @default(now())
+
+  @@map("leads")
+}
