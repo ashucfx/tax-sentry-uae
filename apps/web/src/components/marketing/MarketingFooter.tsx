@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   ShieldCheck,
   Globe,
+  Mail,
 } from 'lucide-react';
 import { TaxSentryLogo } from './MarketingNav';
 
@@ -87,6 +88,22 @@ export function MarketingFooter() {
               <p style={{ fontSize: 13, color: 'var(--ts-fg-muted)', lineHeight: 1.6, marginBottom: 24, paddingRight: 20 }}>
                 Institutional-grade financial compliance infrastructure. Architected exclusively for UAE Free Zone Qualifying Persons navigating the 9% corporate tax regime.
               </p>
+              <div className="flex gap-3">
+                {[
+                  { icon: Mail, href: 'mailto:hello@taxsentry.com' }
+                ].map(({ icon: Icon, href }, i) => (
+                  <Link
+                    key={i}
+                    href={href}
+                    className="flex items-center justify-center rounded-lg transition-all"
+                    style={{ width: 36, height: 36, background: 'var(--ts-bg-muted)', border: '1px solid var(--ts-border)' }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--ts-blue-400)'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--ts-border)'; }}
+                  >
+                    <Icon size={16} color="var(--ts-fg-secondary)" />
+                  </Link>
+                ))}
+              </div>
             </div>
 
             {/* Platform */}

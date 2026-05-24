@@ -44,7 +44,7 @@ export default function Page() {
           <div style={{ marginTop: 80, padding: 32, background: 'var(--ts-bg-muted)', borderRadius: 16, border: '1px solid var(--ts-border)' }}>
             <h3 style={{ fontSize: 16, fontWeight: 800, color: 'var(--ts-fg-primary)', marginBottom: 12 }}>Contact the Legal Team</h3>
             <p style={{ fontSize: 14, margin: 0 }}>
-              If you have any questions regarding this Privacy Policy, please contact Ripple Nexus legal counsel at legal@theripplenexus.com.
+              If you have any questions regarding this Privacy Policy, please contact Ripple Nexus legal counsel at info@theripplenexus.com.
             </p>
           </div>
         </div>
