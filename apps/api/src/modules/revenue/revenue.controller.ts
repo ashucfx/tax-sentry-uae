@@ -17,6 +17,7 @@ import {
   FileTypeValidator,
   ParseBoolPipe,
   DefaultValuePipe,
+  BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '../../common/interceptors/fastify-file.interceptor';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiConsumes } from '@nestjs/swagger';
@@ -121,66 +122,23 @@ export class RevenueController {
     )
     file: Express.Multer.File,
   ) {
-    const csvContent = file.buffer.toString('utf-8');
-    const rows = this.parseCsv(csvContent);
-    return this.revenueService.processCsvImport(orgId, taxPeriodId, rows, userId);
-  }
+    const { parse } = require('csv-parse/sync');
+    try {
+      const records = parse(file.buffer, {
+        columns: (header: string[]) => header.map((h: string) => h.trim().toLowerCase()),
+        skip_empty_lines: true,
+        trim: true,
+        relax_quotes: true,
+        bom: true, // Handle UTF-8 BOM
+      });
 
-  private parseCsv(content: string): Array<Record<string, string>> {
-    const cleaned = content.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-    
-    const rows: string[][] = [];
-    let field = '';
-    let row: string[] = [];
-    let inQuotes = false;
-    
-    for (let i = 0; i < cleaned.length; i++) {
-      const ch = cleaned[i];
-      
-      if (inQuotes) {
-        if (ch === '"') {
-          if (i + 1 < cleaned.length && cleaned[i + 1] === '"') {
-            field += '"';
-            i++; // skip escaped quote
-          } else {
-            inQuotes = false;
-          }
-        } else {
-          field += ch;
-        }
-      } else {
-        if (ch === '"') {
-          inQuotes = true;
-        } else if (ch === ',') {
-          row.push(field.trim());
-          field = '';
-        } else if (ch === '\n') {
-          row.push(field.trim());
-          rows.push(row);
-          row = [];
-          field = '';
-        } else {
-          field += ch;
-        }
+      if (!records || records.length === 0) {
+        return [];
       }
-    }
-    
-    if (field !== '' || row.length > 0) {
-      row.push(field.trim());
-      rows.push(row);
-    }
-    
-    const nonEmptyRows = rows.filter(r => !r.every(v => v === ''));
-    if (nonEmptyRows.length < 2) return [];
 
-    const headers = nonEmptyRows[0].map(h => h.toLowerCase());
-    const dataRows: Array<Record<string, string>> = [];
-
-    for (let i = 1; i < nonEmptyRows.length; i++) {
-      const values = nonEmptyRows[i];
-      dataRows.push(Object.fromEntries(headers.map((h, idx) => [h, values[idx] ?? ''])));
+      return this.revenueService.processCsvImport(orgId, taxPeriodId, records, userId);
+    } catch (error) {
+      throw new BadRequestException(`Failed to parse CSV file: ${(error as Error).message}`);
     }
-
-    return dataRows;
   }
 }
