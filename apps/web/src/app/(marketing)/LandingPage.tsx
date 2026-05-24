@@ -19,6 +19,7 @@ import {
   Users,
 } from 'lucide-react';
 import { MarketingNav, TaxSentryLogo } from '@/components/marketing/MarketingNav';
+import { motion } from 'framer-motion';
 
 /* ─── Divider ───────────────────────────────────────── */
 function Divider() {
@@ -36,7 +37,7 @@ export function LandingPage() {
       <MarketingNav />
 
       {/* ── Hero ─────────────────────────────────────── */}
-      <section
+      <motion.section initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ type: "spring", stiffness: 400, damping: 35 }}
         className="relative overflow-hidden"
         style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', padding: '140px 0 80px' }}
       >
@@ -192,7 +193,7 @@ export function LandingPage() {
             </div>
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* ── Trust bar ────────────────────────────────── */}
       <Divider />
@@ -209,7 +210,7 @@ export function LandingPage() {
       <Divider />
 
       {/* ── Problem ──────────────────────────────────── */}
-      <section style={{ padding: '100px 32px' }}>
+      <motion.section initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ type: "spring", stiffness: 400, damping: 35 }} style={{ padding: '100px 32px' }}>
         <div style={{ maxWidth: 1160, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 80, alignItems: 'center' }}>
           {/* Left */}
           <div>
@@ -246,12 +247,12 @@ export function LandingPage() {
             ))}
           </div>
         </div>
-      </section>
+      </motion.section>
 
       <Divider />
 
       {/* ── How It Works ─────────────────────────────── */}
-      <section id="how" style={{ padding: '100px 32px', background: 'var(--ts-bg-deepest)' }}>
+      <motion.section initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ type: "spring", stiffness: 400, damping: 35 }} id="how" style={{ padding: '100px 32px', background: 'var(--ts-bg-deepest)' }}>
         <div style={{ maxWidth: 1160, margin: '0 auto' }}>
           <div className="text-center" style={{ marginBottom: 60 }}>
             <div className="inline-flex items-center gap-2 mb-5" style={{ padding: '5px 14px', borderRadius: 9999, background: 'oklch(0.55 0.22 260 / 0.10)', border: '1px solid oklch(0.55 0.22 260 / 0.25)', fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ts-blue-400)' }}>
@@ -311,12 +312,12 @@ export function LandingPage() {
             ))}
           </div>
         </div>
-      </section>
+      </motion.section>
 
       <Divider />
 
       {/* ── Features ─────────────────────────────────── */}
-      <section id="features" style={{ padding: '100px 32px' }}>
+      <motion.section initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ type: "spring", stiffness: 400, damping: 35 }} id="features" style={{ padding: '100px 32px' }}>
         <div style={{ maxWidth: 1160, margin: '0 auto' }}>
           <div className="text-center" style={{ marginBottom: 60 }}>
             <div className="inline-flex items-center gap-2 mb-5" style={{ padding: '5px 14px', borderRadius: 9999, background: 'oklch(0.55 0.22 260 / 0.10)', border: '1px solid oklch(0.55 0.22 260 / 0.25)', fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ts-blue-400)' }}>
@@ -369,12 +370,12 @@ export function LandingPage() {
             ))}
           </div>
         </div>
-      </section>
+      </motion.section>
 
       <Divider />
 
       {/* ── Security ─────────────────────────────────── */}
-      <section id="security" style={{ padding: '100px 32px', background: 'var(--ts-bg-deepest)' }}>
+      <motion.section initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ type: "spring", stiffness: 400, damping: 35 }} id="security" style={{ padding: '100px 32px', background: 'var(--ts-bg-deepest)' }}>
         <div style={{ maxWidth: 1160, margin: '0 auto' }}>
           <div
             className="relative overflow-hidden rounded-2xl"
@@ -421,12 +422,12 @@ export function LandingPage() {
             </div>
           </div>
         </div>
-      </section>
+      </motion.section>
 
       <Divider />
 
       {/* ── Testimonials ─────────────────────────────── */}
-      <section style={{ padding: '100px 32px' }}>
+      <motion.section initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ type: "spring", stiffness: 400, damping: 35 }} style={{ padding: '100px 32px' }}>
         <div style={{ maxWidth: 1160, margin: '0 auto' }}>
           <div className="text-center" style={{ marginBottom: 52 }}>
             <div className="inline-flex items-center gap-2 mb-5" style={{ padding: '5px 14px', borderRadius: 9999, background: 'oklch(0.55 0.22 260 / 0.10)', border: '1px solid oklch(0.55 0.22 260 / 0.25)', fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ts-blue-400)' }}>
@@ -458,12 +459,12 @@ export function LandingPage() {
             ))}
           </div>
         </div>
-      </section>
+      </motion.section>
 
       <Divider />
 
       {/* ── Pricing ──────────────────────────────────── */}
-      <section id="pricing" style={{ padding: '100px 32px', background: 'var(--ts-bg-deepest)' }}>
+      <motion.section initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ type: "spring", stiffness: 400, damping: 35 }} id="pricing" style={{ padding: '100px 32px', background: 'var(--ts-bg-deepest)' }}>
         <div style={{ maxWidth: 1160, margin: '0 auto' }}>
           <div className="text-center" style={{ marginBottom: 56 }}>
             <div className="inline-flex items-center gap-2 mb-5" style={{ padding: '5px 14px', borderRadius: 9999, background: 'oklch(0.55 0.22 260 / 0.10)', border: '1px solid oklch(0.55 0.22 260 / 0.25)', fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ts-blue-400)' }}>
@@ -570,10 +571,10 @@ export function LandingPage() {
             </div>
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* ── CTA ──────────────────────────────────────── */}
-      <section className="relative overflow-hidden" style={{ padding: '100px 32px', textAlign: 'center' }}>
+      <motion.section initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ type: "spring", stiffness: 400, damping: 35 }} className="relative overflow-hidden" style={{ padding: '100px 32px', textAlign: 'center' }}>
         <div className="pointer-events-none absolute" style={{ top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 600, height: 300, background: 'radial-gradient(ellipse, oklch(0.55 0.22 260 / 0.12), transparent 70%)' }} />
         <div className="relative z-10" style={{ maxWidth: 1160, margin: '0 auto' }}>
           <h2 style={{ fontSize: 'clamp(2rem, 5vw, 3.2rem)', fontWeight: 900, letterSpacing: '-0.03em', marginBottom: 20, color: 'var(--ts-fg-primary)' }}>
@@ -603,30 +604,30 @@ export function LandingPage() {
             No credit card required · 14-day free trial · Setup in under 10 minutes
           </p>
         </div>
-      </section>
+      </motion.section>
 
       {/* ── Footer ───────────────────────────────────── */}
-      <footer style={{ borderTop: '1px solid oklch(0.55 0.22 260 / 0.18)', background: 'oklch(0.12 0.015 260)' }}>
+      <footer style={{ borderTop: '1px solid var(--ts-border)', background: 'var(--ts-bg-deepest)' }}>
         <div style={{ maxWidth: 1160, margin: '0 auto', padding: '0 32px' }}>
           {/* 4-column grid */}
-          <div className="grid grid-cols-1 md:grid-cols-[1.4fr_1fr_1fr_1fr] gap-12" style={{ padding: '64px 0 48px', borderBottom: '1px solid oklch(0.55 0.22 260 / 0.08)' }}>
+          <div className="grid grid-cols-1 md:grid-cols-[1.4fr_1fr_1fr_1fr] gap-12" style={{ padding: '64px 0 48px', borderBottom: '1px solid var(--ts-border-subtle)' }}>
             {/* Brand */}
             <div>
               <div className="flex items-center gap-2.5 mb-4">
-                <TaxSentryLogo size={30} gradId="ft-sg" filterId="ft-sf" />
+                <TaxSentryLogo size={30} />
                 <div>
                   <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--ts-fg-primary)', letterSpacing: '-0.02em', lineHeight: 1 }}>
-                    Tax<span style={{ color: '#60a5fa' }}>Sentry</span>
+                    Tax<span style={{ color: 'var(--ts-blue-600)' }}>Sentry</span>
                   </div>
-                  <div style={{ fontSize: 8, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'oklch(0.55 0.12 260)', marginTop: 2 }}>UAE QFZP Monitor</div>
+                  <div style={{ fontSize: 8, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--ts-fg-muted)', marginTop: 2 }}>UAE QFZP Monitor</div>
                 </div>
               </div>
-              <p style={{ fontSize: 13, color: 'oklch(0.62 0 0)', lineHeight: 1.7, marginBottom: 16, maxWidth: 240 }}>
+              <p style={{ fontSize: 13, color: 'var(--ts-fg-muted)', lineHeight: 1.7, marginBottom: 16, maxWidth: 240 }}>
                 Real-time QFZP status protection for UAE Free Zone companies navigating the 9% corporate tax regime.
               </p>
-              <p style={{ fontSize: 11, color: 'oklch(0.50 0 0)', lineHeight: 1.5, marginBottom: 20, maxWidth: 240 }}>
+              <p style={{ fontSize: 11, color: 'var(--ts-fg-secondary)', lineHeight: 1.5, marginBottom: 20, maxWidth: 240 }}>
                 A product of{' '}
-                <a href="https://www.theripplenexus.com" target="_blank" rel="noopener noreferrer" style={{ color: 'oklch(0.72 0.10 260)', fontWeight: 600, textDecoration: 'none' }}>Ripple Nexus</a>
+                <a href="https://www.theripplenexus.com" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--ts-blue-600)', fontWeight: 600, textDecoration: 'none' }}>Ripple Nexus</a>
               </p>
               {/* Social icons */}
               <div className="flex gap-2.5">
@@ -637,11 +638,11 @@ export function LandingPage() {
                   <div
                     key={label}
                     className="flex items-center justify-center rounded-lg cursor-pointer transition-all"
-                    style={{ width: 32, height: 32, background: 'oklch(0.55 0.22 260 / 0.08)', border: '1px solid oklch(0.55 0.22 260 / 0.15)' }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'oklch(0.55 0.22 260 / 0.35)'; }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'oklch(0.55 0.22 260 / 0.15)'; }}
+                    style={{ width: 32, height: 32, background: 'var(--ts-bg-muted)', border: '1px solid var(--ts-border)' }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--ts-blue-400)'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--ts-border)'; }}
                   >
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="oklch(0.65 0 0)" strokeWidth="1.8" strokeLinecap="round">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ts-fg-secondary)" strokeWidth="1.8" strokeLinecap="round">
                       <path d={path} />
                       {label === 'LinkedIn' && <><rect x="2" y="9" width="4" height="12" /><circle cx="4" cy="4" r="2" /></>}
                     </svg>
@@ -652,30 +653,30 @@ export function LandingPage() {
 
             {/* Product */}
             <div>
-              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'oklch(0.78 0 0)', marginBottom: 16 }}>Product</div>
+              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ts-fg-muted)', marginBottom: 16 }}>Product</div>
               <div className="flex flex-col gap-2.5">
                 {[['Features', '#features'], ['Pricing', '#pricing'], ['Security', '#security']].map(([label, href]) => (
-                  <Link key={label} href={href} style={{ fontSize: 13, color: 'oklch(0.60 0 0)', textDecoration: 'none', transition: 'color 0.2s' }} className="hover:text-white">{label}</Link>
+                  <Link key={label} href={href} style={{ fontSize: 13, color: 'var(--ts-fg-secondary)', textDecoration: 'none', transition: 'color 0.2s' }} className="hover:text-black">{label}</Link>
                 ))}
               </div>
             </div>
 
             {/* Company */}
             <div>
-              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'oklch(0.78 0 0)', marginBottom: 16 }}>Company</div>
+              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ts-fg-muted)', marginBottom: 16 }}>Company</div>
               <div className="flex flex-col gap-2.5">
                 {[['About', '/about'], ['Blog', '/blog'], ['Contact', '/contact']].map(([label, href]) => (
-                  <Link key={label} href={href} style={{ fontSize: 13, color: 'oklch(0.60 0 0)', textDecoration: 'none', transition: 'color 0.2s' }} className="hover:text-white">{label}</Link>
+                  <Link key={label} href={href} style={{ fontSize: 13, color: 'var(--ts-fg-secondary)', textDecoration: 'none', transition: 'color 0.2s' }} className="hover:text-black">{label}</Link>
                 ))}
               </div>
             </div>
 
             {/* Legal */}
             <div>
-              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'oklch(0.78 0 0)', marginBottom: 16 }}>Legal</div>
+              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ts-fg-muted)', marginBottom: 16 }}>Legal</div>
               <div className="flex flex-col gap-2.5">
                 {[['Privacy Policy', '/privacy'], ['Terms of Service', '/terms'], ['Security', '/security']].map(([label, href]) => (
-                  <Link key={label} href={href} style={{ fontSize: 13, color: 'oklch(0.60 0 0)', textDecoration: 'none', transition: 'color 0.2s' }} className="hover:text-white">{label}</Link>
+                  <Link key={label} href={href} style={{ fontSize: 13, color: 'var(--ts-fg-secondary)', textDecoration: 'none', transition: 'color 0.2s' }} className="hover:text-black">{label}</Link>
                 ))}
               </div>
               {/* Trust badges */}
@@ -684,8 +685,8 @@ export function LandingPage() {
                   { icon: Lock, label: 'AES-256 Encrypted' },
                   { icon: Globe, label: 'UAE-Hosted Data' },
                 ].map(({ icon: Icon, label }) => (
-                  <div key={label} className="flex items-center gap-1.5" style={{ fontSize: 10, fontWeight: 600, color: 'oklch(0.60 0 0)' }}>
-                    <Icon size={11} color="oklch(0.60 0 0)" />{label}
+                  <div key={label} className="flex items-center gap-1.5" style={{ fontSize: 10, fontWeight: 600, color: 'var(--ts-fg-muted)' }}>
+                    <Icon size={11} color="var(--ts-fg-muted)" />{label}
                   </div>
                 ))}
               </div>
@@ -694,14 +695,14 @@ export function LandingPage() {
 
           {/* Bottom bar */}
           <div className="flex flex-wrap items-center justify-between gap-3" style={{ padding: '24px 0' }}>
-            <div style={{ fontSize: 12, color: 'oklch(0.48 0 0)' }}>
+            <div style={{ fontSize: 12, color: 'var(--ts-fg-muted)' }}>
               TaxSentry is a product of{' '}
-              <a href="https://www.theripplenexus.com" target="_blank" rel="noopener noreferrer" style={{ color: 'oklch(0.68 0.10 260)', fontWeight: 600, textDecoration: 'none' }}>Ripple Nexus</a>
+              <a href="https://www.theripplenexus.com" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--ts-blue-600)', fontWeight: 600, textDecoration: 'none' }}>Ripple Nexus</a>
               {' '}· © 2026 Ripple Nexus. All rights reserved.
             </div>
             <div className="flex items-center gap-2">
-              <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 6px #10b981' }} />
-              <span style={{ fontSize: 11, fontWeight: 600, color: 'oklch(0.60 0 0)' }}>All systems operational</span>
+              <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 6px rgba(16,185,129,0.3)' }} />
+              <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--ts-fg-secondary)' }}>All systems operational</span>
             </div>
           </div>
         </div>
