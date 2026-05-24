@@ -427,19 +427,19 @@ export function LandingPage() {
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-12 items-center relative z-10">
               <div>
                 <div className="inline-flex items-center gap-2 mb-6" style={{ padding: '5px 14px', borderRadius: 9999, background: 'oklch(0.55 0.22 260 / 0.10)', border: '1px solid oklch(0.55 0.22 260 / 0.25)', fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ts-blue-400)' }}>
-                  Enterprise Security
+                  Security & Architecture
                 </div>
                 <h2 style={{ fontSize: 'clamp(1.8rem, 3.5vw, 2.4rem)', fontWeight: 900, letterSpacing: '-0.03em', color: 'var(--ts-fg-primary)', marginBottom: 16 }}>
-                  Your financial data<br />never leaves the UAE.
+                  Architected for strict<br />UAE Data Sovereignty.
                 </h2>
                 <p style={{ fontSize: 15, color: 'var(--ts-fg-muted)', lineHeight: 1.75, marginBottom: 4 }}>
-                  TaxSentry is hosted entirely within UAE infrastructure (Google Cloud me-central1). Every data point is encrypted in transit and at rest. Role-based access controls ensure your CFO, auditor, and board see exactly what they need — nothing more.
+                  We are building TaxSentry's foundational architecture around enterprise-grade security principles. By design, our systems mandate modern encryption standards and strict data locality to ensure compliance with emerging FTA data sovereignty expectations.
                 </p>
                 <div className="grid grid-cols-2 gap-3" style={{ marginTop: 28 }}>
                   {[
-                    { icon: Lock, label: 'AES-256 Encryption' },
-                    { icon: Globe, label: 'UAE-Only Hosting' },
-                    { icon: Users, label: 'Role-Based Access' },
+                    { icon: Lock, label: 'Industry Standard Encryption' },
+                    { icon: Globe, label: 'Architected for UAE Locality' },
+                    { icon: Users, label: 'Strict Access Protocols' },
                     { icon: CheckCircle2, label: 'FTA-Aligned Methodology' },
                   ].map(({ icon: Icon, label }) => (
                     <div key={label} className="flex items-center gap-3" style={{ padding: '12px 16px', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: '1px solid oklch(0.55 0.22 260 / 0.12)' }}>
@@ -455,10 +455,10 @@ export function LandingPage() {
                 <div
                   style={{ fontSize: 52, fontWeight: 900, fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-0.03em', background: 'linear-gradient(125deg, #60a5fa 0%, #34d399 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}
                 >
-                  256
+                  By
                 </div>
-                <div style={{ fontSize: 13, color: 'oklch(0.62 0 0)', marginTop: 4 }}>bit encryption</div>
-                <div style={{ marginTop: 32, fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'oklch(0.78 0 0)' }}>Hosted in</div>
+                <div style={{ fontSize: 32, fontWeight: 900, color: 'var(--ts-fg-primary)', marginTop: -10, fontFamily: 'JetBrains Mono, monospace' }}>Design</div>
+                <div style={{ marginTop: 32, fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'oklch(0.78 0 0)' }}>Prepared for</div>
                 <div style={{ fontSize: 24, fontWeight: 900, color: 'var(--ts-fg-primary)', marginTop: 6, fontFamily: 'JetBrains Mono, monospace' }}>🇦🇪 UAE</div>
               </div>
             </div>
