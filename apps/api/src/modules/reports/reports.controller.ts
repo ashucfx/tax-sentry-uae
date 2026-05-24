@@ -6,6 +6,8 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { ReportsService } from './reports.service';
 import { PrismaService } from '../prisma/prisma.service';
 
+import { PdfGeneratorService } from './pdf-generator.service';
+
 @ApiTags('reports')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
@@ -14,6 +16,7 @@ export class ReportsController {
   constructor(
     private readonly reportsService: ReportsService,
     private readonly prisma: PrismaService,
+    private readonly pdfGenerator: PdfGeneratorService,
   ) {}
 
   @Get()
@@ -80,6 +83,22 @@ export class ReportsController {
   ) {
     const buffer = await this.reportsService.generateSubstancePack(orgId);
     const filename = `qfzp-substance-pack-${new Date().toISOString().slice(0, 10)}.pdf`;
+
+    reply
+      .header('Content-Type', 'application/pdf')
+      .header('Content-Disposition', `attachment; filename="${filename}"`)
+      .header('X-Generated-At', new Date().toISOString())
+      .send(buffer);
+  }
+
+  @Get('fta-pack/pdf')
+  @ApiOperation({ summary: 'Download complete FTA Audit Pack PDF' })
+  async downloadFtaPack(
+    @CurrentUser('orgId') orgId: string,
+    @Res() reply: FastifyReply,
+  ) {
+    const buffer = await this.pdfGenerator.generateFtaAuditPack(orgId);
+    const filename = `fta-audit-pack-${new Date().toISOString().slice(0, 10)}.pdf`;
 
     reply
       .header('Content-Type', 'application/pdf')
