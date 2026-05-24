@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { ArrowRight } from 'lucide-react';
-import { motion, useScroll, useMotionValueEvent } from 'framer-motion';
+import { ArrowRight, ChevronDown, BarChart3, Lock, FileCheck, Zap } from 'lucide-react';
+import { motion, useScroll, useMotionValueEvent, AnimatePresence } from 'framer-motion';
 
 export function TaxSentryLogo({ size = 32 }: { size?: number }) {
   const h = Math.round(size * 42 / 36);
@@ -26,6 +26,7 @@ export function TaxSentryLogo({ size = 32 }: { size?: number }) {
 export function MarketingNav() {
   const { scrollY } = useScroll();
   const [scrolled, setScrolled] = useState(false);
+  const [activeMenu, setActiveMenu] = useState<string | null>(null);
 
   useMotionValueEvent(scrollY, "change", (latest) => {
     setScrolled(latest > 40);
@@ -44,6 +45,7 @@ export function MarketingNav() {
         borderBottom: `1px solid ${scrolled ? 'var(--ts-border)' : 'transparent'}`,
         backdropFilter: scrolled ? 'blur(16px)' : 'none',
       }}
+      onMouseLeave={() => setActiveMenu(null)}
     >
       <div
         className="flex items-center justify-between h-full"
@@ -63,22 +65,67 @@ export function MarketingNav() {
         </Link>
 
         {/* Nav links */}
-        <ul className="hidden md:flex items-center list-none" style={{ gap: 36 }}>
-          {[
-            ['How It Works', '#how'],
-            ['Features', '#features'],
-            ['Pricing', '#pricing'],
-            ['Security', '#security'],
-          ].map(([label, href]) => (
-            <li key={label}>
+        <ul className="hidden md:flex items-center list-none" style={{ gap: 32 }}>
+          <li className="relative h-full flex items-center" onMouseEnter={() => setActiveMenu('product')}>
+            <button
+              className="flex items-center gap-1 transition-colors hover:text-black"
+              style={{ fontSize: 14, fontWeight: 600, color: activeMenu === 'product' ? 'var(--ts-blue-600)' : 'var(--ts-fg-secondary)', background: 'none', border: 'none', cursor: 'pointer', height: 68 }}
+            >
+              Product <ChevronDown size={14} className={`transition-transform duration-200 ${activeMenu === 'product' ? 'rotate-180' : ''}`} />
+            </button>
+
+            <AnimatePresence>
+              {activeMenu === 'product' && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.98 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                  className="absolute top-[60px] left-1/2 -translate-x-1/2 w-[480px] rounded-2xl overflow-hidden"
+                  style={{ background: 'var(--ts-bg-card)', border: '1px solid var(--ts-border)', boxShadow: '0 20px 60px rgba(0,0,0,0.08)' }}
+                >
+                  <div className="grid grid-cols-2 p-3">
+                    {[
+                      { icon: BarChart3, title: 'Core Dashboard', desc: 'Real-time QFZP risk monitoring' },
+                      { icon: Zap, title: 'ERP Integrations', desc: 'Sync with Xero & QuickBooks' },
+                      { icon: FileCheck, title: 'Auditor Export', desc: 'Generate FTA-ready packs' },
+                      { icon: Lock, title: 'Security', desc: 'Enterprise-grade encryption' },
+                    ].map((item, i) => (
+                      <Link
+                        key={i} href="#features"
+                        className="group flex gap-3 p-3 rounded-xl transition-colors hover:bg-slate-50"
+                        style={{ textDecoration: 'none' }}
+                        onClick={() => setActiveMenu(null)}
+                      >
+                        <div className="flex items-center justify-center rounded-lg mt-0.5" style={{ width: 36, height: 36, background: 'var(--ts-bg-muted)', color: 'var(--ts-blue-600)', flexShrink: 0 }}>
+                          <item.icon size={16} />
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ts-fg-primary)', marginBottom: 2 }}>{item.title}</div>
+                          <div style={{ fontSize: 12, color: 'var(--ts-fg-muted)', lineHeight: 1.4 }}>{item.desc}</div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                  <div className="p-4 flex justify-between items-center" style={{ background: 'var(--ts-bg-muted)', borderTop: '1px solid var(--ts-border)' }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--ts-fg-secondary)' }}>Looking for API access?</span>
+                    <Link href="#contact" style={{ fontSize: 13, fontWeight: 700, color: 'var(--ts-blue-600)', textDecoration: 'none' }} onClick={() => setActiveMenu(null)}>View Documentation →</Link>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </li>
+
+          {['Pricing', 'Security', 'Company'].map(label => (
+            <li key={label} className="h-full flex items-center" onMouseEnter={() => setActiveMenu(null)}>
               <Link
-                href={href}
+                href={`#${label.toLowerCase()}`}
                 className="relative group transition-colors hover:text-black"
-                style={{ fontSize: 14, fontWeight: 600, color: 'var(--ts-fg-secondary)', textDecoration: 'none' }}
+                style={{ fontSize: 14, fontWeight: 600, color: 'var(--ts-fg-secondary)', textDecoration: 'none', height: 68, display: 'flex', alignItems: 'center' }}
               >
                 {label}
                 <span
-                  className="absolute bottom-[-3px] left-0 w-0 group-hover:w-full transition-all duration-250"
+                  className="absolute bottom-[20px] left-0 w-0 group-hover:w-full transition-all duration-250"
                   style={{ height: '1.5px', background: 'var(--ts-blue-600)', display: 'block' }}
                 />
               </Link>
