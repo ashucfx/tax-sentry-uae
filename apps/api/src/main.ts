@@ -7,6 +7,7 @@ import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { AuditInterceptor } from './common/interceptors/audit.interceptor';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
+import { SentryInterceptor } from './common/interceptors/sentry.interceptor';
 
 // Provide WebSocket globally for Supabase realtime client on Node < 22
 if (typeof globalThis.WebSocket === 'undefined') {
@@ -14,8 +15,17 @@ if (typeof globalThis.WebSocket === 'undefined') {
   globalThis.WebSocket = require('ws');
 }
 
+import * as Sentry from '@sentry/node';
+
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
+
+  // Initialize Sentry before the application starts
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
+    environment: process.env.NODE_ENV || 'development',
+  });
 
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
@@ -100,9 +110,13 @@ async function bootstrap() {
   // Global filters
   app.useGlobalFilters(new HttpExceptionFilter());
 
-  // Global interceptors — AuditInterceptor uses DI (requires PrismaService)
+  // Global interceptors
   const auditInterceptor = app.get(AuditInterceptor);
-  app.useGlobalInterceptors(new TransformInterceptor(), auditInterceptor);
+  app.useGlobalInterceptors(
+    new TransformInterceptor(),
+    auditInterceptor,
+    new SentryInterceptor(),
+  );
 
   // Swagger (only in local development — never in staging or production)
   if (!['production', 'staging'].includes(nodeEnv)) {
