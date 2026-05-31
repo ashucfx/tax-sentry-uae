@@ -102,6 +102,13 @@ export class OrganizationsController {
     return this.orgService.listInvitations(orgId);
   }
 
+  @Get('me/members')
+  @ApiOperation({ summary: 'List active members for this org (OWNER only)' })
+  @Roles(UserRole.OWNER)
+  async listMembers(@CurrentUser('orgId') orgId: string) {
+    return this.orgService.listMembers(orgId);
+  }
+
   @Delete('me/invitations/:id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Revoke a pending invitation (OWNER only)' })

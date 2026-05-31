@@ -84,7 +84,24 @@ export class RevenueController {
     });
 
     const { stringify } = require('csv-stringify/sync');
-    const csv = stringify(transactions.transactions, { header: true });
+    
+    // Mitigate CSV Injection (Formula Injection) by prefixing dangerous characters with a single quote
+    const sanitizeCsvField = (val: any) => {
+      if (typeof val === 'string' && /^[=+\-@\t\r]/.test(val)) {
+        return `'${val}`;
+      }
+      return val;
+    };
+
+    const sanitizedTransactions = transactions.transactions.map((t: any) => {
+      const sanitized: any = {};
+      for (const [key, value] of Object.entries(t)) {
+        sanitized[key] = sanitizeCsvField(value);
+      }
+      return sanitized;
+    });
+
+    const csv = stringify(sanitizedTransactions, { header: true });
 
     reply
       .header('Content-Type', 'text/csv')
@@ -141,11 +158,24 @@ export class RevenueController {
       }),
     )
     file: Express.Multer.File,
+    @Body('mapping') mappingJson?: string,
   ) {
     const { parse } = require('csv-parse/sync');
+    let mapping: Record<string, string> = {};
+    if (mappingJson) {
+      try {
+        mapping = JSON.parse(mappingJson);
+      } catch (e) {
+        throw new BadRequestException('Invalid mapping JSON');
+      }
+    }
+
     try {
       const records = parse(file.buffer, {
-        columns: (header: string[]) => header.map((h: string) => h.trim().toLowerCase()),
+        columns: (header: string[]) => header.map((h: string) => {
+          const raw = h.trim();
+          return mapping[raw] || raw.toLowerCase().replace(/ /g, '_');
+        }),
         skip_empty_lines: true,
         trim: true,
         relax_quotes: true,

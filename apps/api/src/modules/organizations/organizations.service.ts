@@ -85,14 +85,41 @@ export class OrganizationsService {
     // Create first TaxPeriod if none exists
     const existing = await this.prisma.taxPeriod.findFirst({ where: { orgId } });
     if (!existing) {
+      const taxPeriodStart = new Date(dto.taxPeriodStart);
+      const taxPeriodEnd = new Date(dto.taxPeriodEnd);
+
+      if (taxPeriodEnd <= taxPeriodStart) {
+        throw new BadRequestException('Tax period end date must be after start date');
+      }
+
       await this.prisma.taxPeriod.create({
         data: {
           orgId,
-          startDate: new Date(dto.taxPeriodStart),
-          endDate: new Date(dto.taxPeriodEnd),
+          startDate: taxPeriodStart,
+          endDate: taxPeriodEnd,
           status: 'OPEN',
           ruleVersionId: 'CD100-2023-v1',
         },
+      });
+
+      // Insert an empty RiskSnapshot so the user has a baseline from day 1
+      await this.prisma.riskSnapshot.create({
+        data: {
+          orgId,
+          snapshotDate: new Date(),
+          score: 100, // Perfect score before any documents/transactions are evaluated
+          bandColor: 'GREEN',
+          deMinimisScore: 40,
+          substanceScore: 25,
+          auditReadinessScore: 15,
+          relatedPartyScore: 10,
+          classificationScore: 10,
+          breakdownJson: {},
+          explanationText: 'Initial baseline created during onboarding.',
+          nqrAmount: 0,
+          totalRevenue: 0,
+          nqrPercentage: 0,
+        }
       });
     }
 
@@ -220,6 +247,19 @@ export class OrganizationsService {
       where: { orgId, acceptedAt: null, expiresAt: { gt: new Date() } },
       select: { id: true, email: true, role: true, expiresAt: true, createdAt: true },
       orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async listMembers(orgId: string) {
+    return this.prisma.user.findMany({
+      where: { orgId },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        createdAt: true,
+      },
+      orderBy: { role: 'asc' },
     });
   }
 

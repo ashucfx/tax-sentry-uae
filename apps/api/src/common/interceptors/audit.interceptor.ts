@@ -17,24 +17,49 @@ export class AuditInterceptor implements NestInterceptor {
       return next.handle();
     }
 
+    const reqBody = request.body ? JSON.parse(JSON.stringify(request.body)) : null;
+
     return next.handle().pipe(
-      tap(async (responseData) => {
-        try {
-          await this.prisma.auditLog.create({
-            data: {
-              orgId: user.orgId,
-              actorId: user.id,
-              actorEmail: user.email,
-              action: `${method}:${url}`,
-              entity: 'HTTP_REQUEST',
-              entityId: url,
-              afterJson: responseData ? JSON.parse(JSON.stringify(responseData)) : null,
-              ipAddress: request.ip,
-              userAgent: request.headers['user-agent'],
-            },
-          });
-        } catch {
-          // Audit logging must never break the main flow
+      tap({
+        next: async (responseData) => {
+          try {
+            await this.prisma.auditLog.create({
+              data: {
+                orgId: user.orgId,
+                actorId: user.id,
+                actorEmail: user.email,
+                action: `${method}:${url}`,
+                entity: 'HTTP_REQUEST',
+                entityId: url,
+                beforeJson: reqBody,
+                afterJson: responseData ? JSON.parse(JSON.stringify(responseData)) : null,
+                ipAddress: request.ip,
+                userAgent: request.headers['user-agent'],
+              },
+            });
+          } catch {
+            // Ignore audit log failures
+          }
+        },
+        error: async (err) => {
+          try {
+            await this.prisma.auditLog.create({
+              data: {
+                orgId: user.orgId,
+                actorId: user.id,
+                actorEmail: user.email,
+                action: `${method}:${url}`,
+                entity: 'HTTP_ERROR',
+                entityId: url,
+                beforeJson: reqBody,
+                afterJson: { error: err.message, status: err.status },
+                ipAddress: request.ip,
+                userAgent: request.headers['user-agent'],
+              },
+            });
+          } catch {
+            // Ignore audit log failures
+          }
         }
       }),
     );

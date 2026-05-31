@@ -224,33 +224,18 @@ export class BillingService {
       `[WEBHOOK] Processing event type=${event.type} subId=${sub?.subscription_id} orgId=${orgId ?? '?'}`,
     );
 
-    // 2. Atomic idempotency guard — attempt INSERT first. If the row already exists
-    //    (duplicate Svix delivery), the unique constraint fires and we skip silently.
-    //    This closes the TOCTOU gap between a read-then-write pattern.
-    let idempotencyRecord: { id: string } | null = null;
-    try {
-      idempotencyRecord = await this.prisma.billingEvent.create({
-        data: {
-          eventId: webhookId,
-          eventType: event.type,
-          payloadJson: event as object,
-          orgId: orgId ?? null,
-        },
-        select: { id: true },
-      });
-    } catch (err: unknown) {
-      // P2002 = unique constraint violation → duplicate webhook, already processed
-      if ((err as { code?: string })?.code === 'P2002') {
-        this.logger.debug(`[WEBHOOK] ⚠ Duplicate webhook ignored id=${webhookId}`);
-        return;
-      }
-      throw err;
+    // 2. Idempotency guard — check if already processed
+    const existing = await this.prisma.billingEvent.findUnique({
+      where: { eventId: webhookId },
+      select: { id: true },
+    });
+
+    if (existing) {
+      this.logger.debug(`[WEBHOOK] ⚠ Duplicate webhook ignored id=${webhookId}`);
+      return;
     }
 
     // 3. Route to handler. If handler throws, Svix will retry.
-    //    The idempotency record is already written — on retry, step 2 will short-circuit
-    //    without re-running the handler. This means handlers must be idempotent within
-    //    themselves (upsert-style writes), which all organization.update() calls are.
     try {
       switch (event.type) {
         case 'subscription.active':
@@ -282,14 +267,32 @@ export class BillingService {
       }
     } catch (err) {
       this.logger.error(
-        `[WEBHOOK] ✗ Handler error for type=${event.type} id=${idempotencyRecord.id}: ${(err as Error).message}`,
+        `[WEBHOOK] ✗ Handler error for type=${event.type} id=${webhookId}: ${(err as Error).message}`,
         (err as Error).stack,
       );
       throw err;
     }
 
+    // 4. Mark as processed to prevent duplicate retries
+    try {
+      await this.prisma.billingEvent.create({
+        data: {
+          eventId: webhookId,
+          eventType: event.type,
+          payloadJson: event as object,
+          orgId: orgId ?? null,
+        },
+      });
+    } catch (err: any) {
+      if (err.code === 'P2002') {
+        this.logger.debug(`[WEBHOOK] ⚠ Concurrent duplicate webhook ignored id=${webhookId}`);
+      } else {
+        throw err;
+      }
+    }
+
     this.logger.log(
-      `[WEBHOOK] ✓ Event processed: ${event.type} sub=${sub?.subscription_id} org=${orgId ?? '?'} record=${idempotencyRecord.id}`,
+      `[WEBHOOK] ✓ Event processed: ${event.type} sub=${sub?.subscription_id} org=${orgId ?? '?'}`,
     );
   }
 

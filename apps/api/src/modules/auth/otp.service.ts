@@ -383,7 +383,7 @@ export class OtpService {
       });
     } catch (err) {
       this.logger.error(`OTP email delivery failed: ${(err as Error).message}`);
-      // Do not re-throw — the code is stored; user can retry or resend
+      throw new HttpException('Failed to dispatch email. Please try again later.', HttpStatus.SERVICE_UNAVAILABLE);
     }
   }
 
@@ -429,6 +429,7 @@ export class OtpService {
       });
     } catch (err) {
       this.logger.error(`Twilio SMS failed: ${(err as Error).message}`);
+      throw new HttpException('Failed to dispatch SMS. Please try again later.', HttpStatus.SERVICE_UNAVAILABLE);
     }
   }
 }
