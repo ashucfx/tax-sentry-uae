@@ -11,9 +11,9 @@ export const api = axios.create({
 });
 
 // Deduplicates concurrent refresh calls — only one in-flight at a time
-let _refreshPromise: Promise<string | null> | null = null;
+let _refreshPromise: Promise<string> | null = null;
 
-async function doRefresh(): Promise<string | null> {
+export async function doRefresh(): Promise<string> {
   if (_refreshPromise) return _refreshPromise;
 
   _refreshPromise = (async () => {
@@ -25,13 +25,10 @@ async function doRefresh(): Promise<string | null> {
     } catch (err: unknown) {
       const status = (err as { response?: { status?: number } })?.response?.status;
       // Only clear auth on auth-specific failures; network errors should not sign the user out
-      if (!status || status === 401 || status === 403) {
+      if (status === 401 || status === 403) {
         clearStoredAuth();
       }
-      if (process.env.NODE_ENV !== 'production') {
-        // Log stripped for release
-      }
-      return null;
+      throw err;
     } finally {
       _refreshPromise = null;
     }
@@ -60,15 +57,19 @@ api.interceptors.response.use(
     if (status === 401 && !error.config?._retry) {
       error.config._retry = true;
 
-      const newToken = await doRefresh();
-      if (newToken) {
+      try {
+        const newToken = await doRefresh();
         error.config.headers = error.config.headers ?? {};
         error.config.headers.Authorization = `Bearer ${newToken}`;
         return api.request(error.config);
-      }
-
-      if (typeof window !== 'undefined') {
-        window.location.href = '/sign-in';
+      } catch (refreshErr: unknown) {
+        const refreshStatus = (refreshErr as { response?: { status?: number } })?.response?.status;
+        if (refreshStatus === 401 || refreshStatus === 403) {
+          if (typeof window !== 'undefined') {
+            window.location.href = '/sign-in';
+          }
+        }
+        return Promise.reject(refreshErr);
       }
     }
 
