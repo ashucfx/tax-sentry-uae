@@ -27,10 +27,11 @@ function normalizePhone(v: string): string {
 }
 
 function extractError(err: unknown): string {
-  const e = err as { response?: { data?: { message?: string | string[] } } };
+  const e = err as { response?: { data?: { message?: string | string[] } }, message?: string };
   const msg = e?.response?.data?.message;
   if (Array.isArray(msg)) return msg[0];
-  return msg ?? 'Something went wrong — please try again';
+  if (msg) return msg;
+  return e?.message || 'Something went wrong — please try again';
 }
 
 // ─── OTP digit input ──────────────────────────────────────────────────────────
