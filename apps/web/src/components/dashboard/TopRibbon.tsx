@@ -104,7 +104,7 @@ export function TopRibbon() {
         padding: '0 24px',
         height: 72,
         flexShrink: 0,
-        background: 'oklch(0.18 0.035 255 / 0.9)',
+        background: 'rgba(255, 255, 255, 0.9)',
         borderBottom: '1px solid var(--ts-border)',
         backdropFilter: 'blur(16px)',
         fontFamily: 'var(--font-sans)',
@@ -137,16 +137,18 @@ export function TopRibbon() {
             <span
               className="rounded"
               style={{
-                background: 'var(--ts-bg-elevated)',
-                color: 'var(--ts-fg-muted)',
+                background: 'var(--ts-bg-muted)',
+                color: 'var(--ts-fg-secondary)',
                 fontSize: 10,
-                padding: '1px 7px',
+                padding: '2px 8px',
+                border: '1px solid var(--ts-border)',
+                fontWeight: 500,
               }}
             >
               {freeZone}
             </span>
             {licenseNo && (
-              <span style={{ fontSize: 10, color: 'oklch(0.45 0 0)' }}>
+              <span style={{ fontSize: 10, color: 'var(--ts-fg-muted)', fontWeight: 500 }}>
                 License: {licenseNo}
               </span>
             )}
@@ -155,21 +157,21 @@ export function TopRibbon() {
       </div>
 
       {/* Right: Risk score, days remaining, actions */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-4">
         {/* Risk score */}
         {score !== null && (
           <div
-            className="flex items-center gap-2.5 rounded-[10px]"
+            className="flex items-center gap-3 rounded-[10px]"
             style={{
               border: `1px solid ${riskBand.border}`,
               background: riskBand.bg,
-              padding: '8px 14px',
+              padding: '8px 16px',
             }}
           >
             <div>
               <div
                 style={{
-                  fontSize: 22,
+                  fontSize: 24,
                   fontWeight: 700,
                   fontVariantNumeric: 'tabular-nums',
                   color: riskBand.color,
@@ -179,7 +181,7 @@ export function TopRibbon() {
               >
                 {score}
               </div>
-              <div style={{ fontSize: 8, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'oklch(0.45 0 0)' }}>
+              <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--ts-fg-muted)', marginTop: '2px', fontWeight: 600 }}>
                 Risk
               </div>
             </div>
@@ -187,10 +189,10 @@ export function TopRibbon() {
               style={{ width: 1, height: 28, background: 'var(--ts-border)' }}
             />
             <div>
-              <div style={{ fontSize: 11, fontWeight: 600, color: riskBand.color }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: riskBand.color }}>
                 {riskBand.label}
               </div>
-              <div style={{ fontSize: 8, color: 'oklch(0.45 0 0)' }}>of 100</div>
+              <div style={{ fontSize: 9, color: 'var(--ts-fg-muted)', marginTop: '1px', fontWeight: 500 }}>of 100</div>
             </div>
           </div>
         )}
@@ -201,11 +203,11 @@ export function TopRibbon() {
             className="flex items-center gap-2 rounded-[10px]"
             style={{
               border: '1px solid var(--ts-border)',
-              background: 'var(--ts-bg-elevated)',
-              padding: '8px 14px',
+              background: 'var(--ts-bg-base)',
+              padding: '8px 16px',
             }}
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="oklch(0.55 0 0)" strokeWidth="1.5" strokeLinecap="round">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--ts-fg-muted)" strokeWidth="1.5" strokeLinecap="round">
               <circle cx="12" cy="12" r="10" />
               <polyline points="12 6 12 12 16 14" />
             </svg>
@@ -222,14 +224,14 @@ export function TopRibbon() {
               >
                 {daysRemaining}
               </div>
-              <div style={{ fontSize: 8, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'oklch(0.45 0 0)' }}>
+              <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--ts-fg-muted)', marginTop: '1px', fontWeight: 600 }}>
                 Period Ends
               </div>
             </div>
           </div>
         )}
 
-        <div style={{ width: 1, height: 32, background: 'var(--ts-border)' }} />
+        <div style={{ width: 1, height: 32, background: 'var(--ts-border)', margin: '0 4px' }} />
 
         {/* Bell */}
         <button
@@ -237,20 +239,21 @@ export function TopRibbon() {
           style={{
             width: 36,
             height: 36,
-            background: 'var(--ts-bg-elevated)',
-            border: 'none',
+            background: 'var(--ts-bg-base)',
+            border: '1px solid var(--ts-border)',
             cursor: 'pointer',
           }}
         >
-          <Bell size={16} color="var(--ts-blue-500)" strokeWidth={1.5} />
+          <Bell size={16} color="var(--ts-fg-secondary)" strokeWidth={1.5} />
           {pendingCount > 0 && (
             <span
-              className="absolute -top-0.5 -right-0.5 flex items-center justify-center rounded-full text-[8px] font-bold"
+              className="absolute -top-1 -right-1 flex items-center justify-center rounded-full text-[9px] font-bold"
               style={{
-                width: 16,
-                height: 16,
+                width: 18,
+                height: 18,
                 background: 'var(--ts-amber-500)',
-                color: 'oklch(0.20 0.05 85)',
+                color: 'white',
+                border: '2px solid white',
               }}
             >
               {pendingCount}
@@ -264,7 +267,7 @@ export function TopRibbon() {
           style={{
             width: 36,
             height: 36,
-            background: 'oklch(0.55 0.22 260 / 0.15)',
+            background: 'oklch(0.55 0.22 260 / 0.1)',
             border: '1px solid oklch(0.55 0.22 260 / 0.3)',
             cursor: 'pointer',
           }}

@@ -211,15 +211,38 @@ export function DeMinimisRow() {
     return (
       <section>
         <SectionHeader />
-        <div
-          className="rounded-xl p-8 text-center text-[14px]"
-          style={{
-            background: 'var(--ts-bg-card)',
-            border: '1px solid var(--ts-border)',
-            color: 'var(--ts-fg-muted)',
-          }}
-        >
-          No transaction data yet. Upload a CSV to get started.
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="premium-card flex flex-col items-center justify-center py-12 text-center" style={{ minHeight: 340 }}>
+            <div className="w-16 h-16 rounded-full bg-slate-100 dark:bg-navy-800 flex items-center justify-center mb-4 border border-slate-200 dark:border-navy-700">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--ts-fg-muted)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+            </div>
+            <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--ts-fg-primary)', marginBottom: 4 }}>
+              De-Minimis Monitor Pending
+            </h3>
+            <p style={{ fontSize: 13, color: 'var(--ts-fg-muted)', maxWidth: 280, lineHeight: 1.5 }}>
+              Upload your revenue data to begin tracking compliance against the 5% / AED 5M thresholds.
+            </p>
+          </div>
+          <div className="premium-card flex flex-col items-center justify-center py-12 text-center" style={{ minHeight: 340 }}>
+             <div className="w-16 h-16 rounded-full bg-slate-100 dark:bg-navy-800 flex items-center justify-center mb-4 border border-slate-200 dark:border-navy-700">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--ts-fg-muted)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+            </div>
+            <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--ts-fg-primary)', marginBottom: 4 }}>
+              Period Projections Pending
+            </h3>
+            <p style={{ fontSize: 13, color: 'var(--ts-fg-muted)', maxWidth: 280, lineHeight: 1.5 }}>
+              Run-rate projections will populate here as the tax period progresses.
+            </p>
+          </div>
         </div>
       </section>
     );

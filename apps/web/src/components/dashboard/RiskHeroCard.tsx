@@ -83,7 +83,23 @@ export function RiskHeroCard() {
     );
   }
 
-  if (!data) return null;
+  if (!data) {
+    return (
+      <div className="premium-card w-full h-full flex flex-col items-center justify-center py-12" style={{ fontFamily: 'var(--font-sans)', minHeight: 280 }}>
+        <div className="w-16 h-16 rounded-full bg-slate-100 dark:bg-navy-800 flex items-center justify-center mb-4 border border-slate-200 dark:border-navy-700">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--ts-fg-muted)" strokeWidth="1.5" strokeLinecap="round">
+            <path d="M12 2L3 7v7c0 5.25 3.75 10.15 9 11.5C17.25 24.15 21 19.25 21 14V7L12 2z" />
+          </svg>
+        </div>
+        <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--ts-fg-primary)', marginBottom: 4 }}>
+          Risk Assessment Pending
+        </h3>
+        <p style={{ fontSize: 13, color: 'var(--ts-fg-muted)', maxWidth: 280, textAlign: 'center', lineHeight: 1.5 }}>
+          Your compliance risk score will be generated automatically once financial data is uploaded.
+        </p>
+      </div>
+    );
+  }
 
   const band: 'GREEN' | 'AMBER' | 'RED' = data.band ?? 'AMBER';
   const bc = BAND_CONFIG[band];
@@ -158,22 +174,51 @@ export function RiskHeroCard() {
         />
 
         {/* Breakdown */}
-        <div className="flex-1">
-          <p
-            className="mb-2"
-            style={{
-              fontSize: 10,
-              fontWeight: 700,
-              letterSpacing: '0.1em',
-              textTransform: 'uppercase',
-              color: 'oklch(0.58 0 0)',
-            }}
-          >
-            Score Breakdown
-          </p>
-          {factors.map((f) => (
-            <FactorBar key={f.label} {...f} />
-          ))}
+        <div className="flex-1 flex flex-col justify-between">
+          <div>
+            <p
+              className="mb-2"
+              style={{
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: '0.1em',
+                textTransform: 'uppercase',
+                color: 'oklch(0.58 0 0)',
+              }}
+            >
+              Score Breakdown
+            </p>
+            {factors.map((f) => (
+              <FactorBar key={f.label} {...f} />
+            ))}
+          </div>
+          
+          <div className="mt-4 self-end">
+            <button
+              onClick={async () => {
+                try {
+                  const res = await api.get('/reports/fta-pack/pdf', { responseType: 'blob' });
+                  const url = window.URL.createObjectURL(new Blob([res.data]));
+                  const link = document.createElement('a');
+                  link.href = url;
+                  link.setAttribute('download', 'fta-audit-pack.pdf');
+                  document.body.appendChild(link);
+                  link.click();
+                  link.remove();
+                } catch (err) {
+                  console.error('Failed to download PDF', err);
+                }
+              }}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-md shadow-sm hover:bg-blue-500 transition-colors"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              Export Audit PDF
+            </button>
+          </div>
         </div>
       </div>
     </div>

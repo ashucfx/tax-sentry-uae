@@ -47,9 +47,10 @@ export function CsvImportDialog({ onClose, taxPeriodId }: CsvImportDialogProps) 
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       queryClient.invalidateQueries({ queryKey: ['deminimis-status'] });
       queryClient.invalidateQueries({ queryKey: ['risk-score'] });
-    } catch (err) {
+    } catch (err: any) {
       // Intentionally suppressing console error as per release requirements
-      setResult({ imported: 0, errors: [{ row: 0, error: 'Network error or invalid file.' }] });
+      const apiMessage = err.response?.data?.message || 'Network error or invalid file.';
+      setResult({ imported: 0, errors: [{ row: 0, error: apiMessage }] });
     } finally {
       setIsUploading(false);
     }

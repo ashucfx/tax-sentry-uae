@@ -2,7 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api/client';
-import { TrendingUp, TrendingDown } from 'lucide-react';
+import { Lock, TrendingUp, TrendingDown } from 'lucide-react';
 
 type Variant = 'default' | 'success' | 'warning' | 'danger';
 
@@ -42,9 +42,10 @@ interface MetricCard {
   trend?: string;
   trendDir?: 'up' | 'down';
   href?: string;
+  isSensitive?: boolean;
 }
 
-function MetricCard({ label, value, sub, variant, trend, trendDir, href }: MetricCard) {
+function MetricCard({ label, value, sub, variant, trend, trendDir, href, isSensitive }: MetricCard) {
   const vs = VARIANT_STYLES[variant];
   
   const content = (
@@ -52,7 +53,14 @@ function MetricCard({ label, value, sub, variant, trend, trendDir, href }: Metri
       className={`relative overflow-hidden rounded-xl ${href ? 'transition-all hover:opacity-90 hover:scale-[1.02]' : ''}`}
       style={{ border: `1px solid ${vs.border}`, background: vs.bg, padding: '12px 16px', height: '100%', cursor: href ? 'pointer' : 'default' }}
     >
-      <p style={{ fontSize: 12, color: 'var(--ts-fg-muted)', marginBottom: 6, fontWeight: 600 }}>{label}</p>
+      <div className="flex items-center justify-between mb-1.5">
+        <p style={{ fontSize: 12, color: 'var(--ts-fg-muted)', fontWeight: 600 }}>{label}</p>
+        {isSensitive && (
+          <div title="AES-256 Encrypted">
+            <Lock size={12} color="var(--ts-fg-dimmer)" />
+          </div>
+        )}
+      </div>
       <p
         className="ts-metric"
         style={{ color: vs.valueColor, fontSize: 24 }}
@@ -122,6 +130,7 @@ export function MetricsCards() {
       label: 'NQI % of Revenue',
       value: `${nqrPct}%`,
       sub: 'Threshold: 5.00%',
+      isSensitive: true,
       variant:
         parseFloat(nqrPct) >= 5
           ? 'danger'
@@ -133,6 +142,7 @@ export function MetricsCards() {
       label: 'NQI Amount',
       value: nqrAmt,
       sub: 'Threshold: AED 5M',
+      isSensitive: true,
       variant: dm
         ? parseFloat(dm.nqrAmount) >= 5_000_000
           ? 'danger'

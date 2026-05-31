@@ -13,6 +13,7 @@ import {
   LogOut,
   Menu,
   X,
+  Users,
 } from 'lucide-react';
 import { logoutAction } from '@/lib/auth/actions';
 import { useState, useEffect } from 'react';
@@ -29,7 +30,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/revenue',      icon: TrendingUp,      label: 'Revenue',  badge: 1 },
   { href: '/substance',    icon: FileText,        label: 'Substance' },
   { href: '/reports',      icon: BarChart3,       label: 'Reports' },
-  { href: '/settings',     icon: Settings,        label: 'Settings' },
+  { href: '/settings/team', icon: Users,          label: 'Team Settings' },
 ];
 
 export function Sidebar() {
@@ -142,27 +143,27 @@ export function Sidebar() {
                 className={cn(
                   'group relative flex items-center gap-2.5 rounded-[10px] px-3 py-2.5 text-[13px] font-medium transition-all',
                   active
-                    ? 'text-[oklch(0.55_0.22_260)]'
-                    : 'hover:text-[oklch(0.88_0_0)]',
+                    ? 'text-[var(--ts-blue-500)]'
+                    : 'text-[var(--ts-fg-secondary)] hover:text-[var(--ts-fg-primary)]',
                 )}
                 style={{
                   background: active
                     ? 'oklch(0.55 0.22 260 / 0.1)'
                     : 'transparent',
                   color: active
-                    ? 'oklch(0.55 0.22 260)'
-                    : 'oklch(0.60 0 0)',
+                    ? 'var(--ts-blue-600)'
+                    : 'var(--ts-fg-secondary)',
                 }}
                 onMouseEnter={e => {
                   if (!active) {
                     (e.currentTarget as HTMLElement).style.background = 'var(--ts-bg-card)';
-                    (e.currentTarget as HTMLElement).style.color = 'oklch(0.88 0 0)';
+                    (e.currentTarget as HTMLElement).style.color = 'var(--ts-fg-primary)';
                   }
                 }}
                 onMouseLeave={e => {
                   if (!active) {
                     (e.currentTarget as HTMLElement).style.background = 'transparent';
-                    (e.currentTarget as HTMLElement).style.color = 'oklch(0.60 0 0)';
+                    (e.currentTarget as HTMLElement).style.color = 'var(--ts-fg-secondary)';
                   }
                 }}
               >
@@ -201,14 +202,14 @@ export function Sidebar() {
       <div className="px-2.5" style={{ borderTop: '1px solid var(--ts-border-subtle)' }}>
         <button
           className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-[12px] transition-all"
-          style={{ color: 'oklch(0.50 0 0)' }}
+          style={{ color: 'var(--ts-fg-secondary)' }}
           onMouseEnter={e => {
             (e.currentTarget as HTMLElement).style.background = 'var(--ts-bg-card)';
-            (e.currentTarget as HTMLElement).style.color = 'oklch(0.75 0 0)';
+            (e.currentTarget as HTMLElement).style.color = 'var(--ts-fg-primary)';
           }}
           onMouseLeave={e => {
             (e.currentTarget as HTMLElement).style.background = 'transparent';
-            (e.currentTarget as HTMLElement).style.color = 'oklch(0.50 0 0)';
+            (e.currentTarget as HTMLElement).style.color = 'var(--ts-fg-secondary)';
           }}
         >
           <HelpCircle size={15} color="currentColor" />
@@ -216,15 +217,15 @@ export function Sidebar() {
         </button>
         <button
           className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-[12px] transition-all"
-          style={{ color: 'oklch(0.50 0 0)' }}
+          style={{ color: 'var(--ts-fg-secondary)' }}
           onClick={handleSignOut}
           onMouseEnter={e => {
             (e.currentTarget as HTMLElement).style.background = 'var(--ts-bg-card)';
-            (e.currentTarget as HTMLElement).style.color = 'oklch(0.75 0 0)';
+            (e.currentTarget as HTMLElement).style.color = 'var(--ts-fg-primary)';
           }}
           onMouseLeave={e => {
             (e.currentTarget as HTMLElement).style.background = 'transparent';
-            (e.currentTarget as HTMLElement).style.color = 'oklch(0.50 0 0)';
+            (e.currentTarget as HTMLElement).style.color = 'var(--ts-fg-secondary)';
           }}
         >
           <LogOut size={15} color="currentColor" />
