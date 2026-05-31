@@ -5,8 +5,10 @@ import { PdfGeneratorService } from './pdf-generator.service';
 import { SubstanceModule } from '../substance/substance.module';
 import { PrismaModule } from '../prisma/prisma.module';
 
+import { DeMinimisModule } from '../deminimis/deminimis.module';
+
 @Module({
-  imports: [SubstanceModule, PrismaModule],
+  imports: [SubstanceModule, PrismaModule, DeMinimisModule],
   controllers: [ReportsController],
   providers: [ReportsService, PdfGeneratorService],
 })
