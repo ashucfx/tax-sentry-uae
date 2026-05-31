@@ -43,15 +43,36 @@ async function bootstrap() {
       const allowedOrigins = configService
         .get<string>('WEB_URL', 'http://localhost:3000')
         .split(',')
-        .map((url) => url.trim());
+        .map((url) => url.trim().replace(/\/$/, ''));
       
       // Allow requests with no origin (like mobile apps or curl requests)
-      // or if the origin is explicitly listed in the WEB_URL env variable
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(null, false);
+      if (!origin) {
+        return callback(null, true);
       }
+      
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      // Allow apex to www and vice versa
+      try {
+        const originHost = new URL(origin).hostname;
+        const isAllowed = allowedOrigins.some(allowed => {
+          try {
+             const allowedHost = new URL(allowed).hostname;
+             return originHost === allowedHost || 
+                    originHost === `www.${allowedHost}` || 
+                    `www.${originHost}` === allowedHost;
+          } catch { return false; }
+        });
+        
+        if (isAllowed) {
+          return callback(null, true);
+        }
+      } catch {}
+
+      console.warn(`CORS blocked request from origin: ${origin}`);
+      callback(new Error(`Not allowed by CORS`), false);
     },
     credentials: true,
   });
