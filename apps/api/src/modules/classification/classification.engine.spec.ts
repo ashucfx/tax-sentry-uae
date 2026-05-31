@@ -105,6 +105,7 @@ describe('ClassificationEngine', () => {
         counterpartyType: CounterpartyType.THIRD_PARTY,
         amountAed: 200000,
         counterpartyName: 'Another FZ LLC',
+        isFreeZonePerson: true,
       });
 
       expect(result.classification).toBe(Classification.QI);

@@ -20,6 +20,7 @@ export interface ClassificationInput {
   counterpartyName?: string;
   isRelatedParty?: boolean;
   isDesignatedZone?: boolean;
+  isFreeZonePerson?: boolean;
   description?: string;
 }
 
@@ -203,7 +204,7 @@ export class ClassificationEngine {
     }
 
     // Non-FZ counterparty: most service activities = NQI (key rule)
-    if (counterpartyType === CounterpartyType.THIRD_PARTY) {
+    if (!input.isFreeZonePerson && counterpartyType === CounterpartyType.THIRD_PARTY) {
       // Service activities with non-FZ persons are NQI
       const isServiceActivity = !COMMODITY_TRADING_CODES.has(activityCode);
       if (isServiceActivity) {
