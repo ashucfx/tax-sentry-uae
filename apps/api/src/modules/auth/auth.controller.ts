@@ -43,10 +43,8 @@ export class AuthController {
   private cookieOpts() {
     return {
       httpOnly: true,
-      // Secure flag always true in production and staging. Disabled only in local dev
-      // (HTTP localhost) to allow browser to send the cookie without HTTPS.
       secure: this.isProd || this.config.get<string>('NODE_ENV') === 'staging',
-      sameSite: 'lax' as const,
+      sameSite: (this.isProd || this.config.get<string>('NODE_ENV') === 'staging') ? 'none' as const : 'lax' as const,
       path: COOKIE_PATH,
       maxAge: 30 * 24 * 60 * 60,
     };
@@ -56,7 +54,7 @@ export class AuthController {
     return {
       httpOnly: true,
       secure: this.isProd || this.config.get<string>('NODE_ENV') === 'staging',
-      sameSite: 'lax' as const,
+      sameSite: (this.isProd || this.config.get<string>('NODE_ENV') === 'staging') ? 'none' as const : 'lax' as const,
       path: COOKIE_PATH,
     };
   }

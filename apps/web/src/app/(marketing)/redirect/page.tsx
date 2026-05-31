@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { refreshAction } from '@/lib/auth/actions';
 import { api } from '@/lib/api/client';
+import { useAuthStore } from '@/lib/auth/store';
 
 /**
  * Post-login landing pad:
@@ -19,7 +20,10 @@ export default function RedirectPage() {
 
   useEffect(() => {
     async function go() {
-      const token = await refreshAction();
+      let token = useAuthStore.getState().accessToken;
+      if (!token) {
+        token = await refreshAction();
+      }
       if (!token) {
         router.push('/sign-in');
         return;
