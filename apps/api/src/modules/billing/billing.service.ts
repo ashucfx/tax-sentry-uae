@@ -189,6 +189,70 @@ export class BillingService {
     return { url: portal.link };
   }
 
+  // ── Native Invoice Fetching ───────────────────────────────────────────────
+  async getInvoices(orgId: string) {
+    const org = await this.prisma.organization.findUniqueOrThrow({
+      where: { id: orgId },
+      select: { dodoCustomerId: true },
+    });
+
+    if (!org.dodoCustomerId) return [];
+
+    try {
+      // Fetch all payments for this customer
+      const response = await this.dodo.payments.list({ customer_id: org.dodoCustomerId });
+      // In Dodo Payments, the response.items typically contains the payments/invoices
+      // We will map and return them to the frontend
+      return (response as any).items || [];
+    } catch (err) {
+      this.logger.error(`Failed to fetch invoices for org ${orgId}`, (err as Error).stack);
+      return [];
+    }
+  }
+
+  // ── Native Subscription Upgrade/Downgrade ─────────────────────────────────
+  async upgradeSubscription(
+    orgId: string,
+    tier: SubscriptionTier,
+    interval: 'monthly' | 'yearly',
+  ) {
+    const org = await this.prisma.organization.findUniqueOrThrow({
+      where: { id: orgId },
+      select: { dodoSubscriptionId: true },
+    });
+
+    if (!org.dodoSubscriptionId) {
+      throw new BadRequestException('No active subscription found to upgrade.');
+    }
+
+    const newProductId = getPlanId(tier, interval, this.cfg);
+
+    try {
+      this.logger.debug(`[UPGRADE] Calling Dodo API to change plan for sub=${org.dodoSubscriptionId}`);
+      await this.dodo.subscriptions.changePlan(org.dodoSubscriptionId, {
+        product_id: newProductId,
+      });
+
+      // Optimistically update DB
+      await this.prisma.organization.update({
+        where: { id: orgId },
+        data: {
+          subscriptionTier: tier,
+          subscriptionInterval: interval,
+        },
+      });
+
+      this.logger.log(`[UPGRADE] ✓ Plan changed successfully to ${newProductId}`);
+      return { success: true };
+    } catch (err) {
+      this.logger.error(
+        `[UPGRADE] ✗ Failed to change plan: ${(err as Error).message}`,
+        (err as Error).stack,
+      );
+      throw new UnprocessableEntityException('Failed to upgrade subscription. Please contact support.');
+    }
+  }
+
   // ── Webhook handler — called from controller with raw body ──────────────────
   async handleWebhook(
     rawBody: Buffer,

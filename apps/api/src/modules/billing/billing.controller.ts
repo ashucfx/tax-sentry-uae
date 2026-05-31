@@ -104,6 +104,33 @@ export class BillingController {
     return { data: result };
   }
 
+  // ── GET /billing/invoices ──────────────────────────────────────────────────
+  @Get('invoices')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get native invoice history' })
+  async getInvoices(@CurrentUser() user: JwtUser) {
+    const invoices = await this.billingService.getInvoices(user.orgId);
+    return { data: invoices };
+  }
+
+  // ── POST /billing/subscription/upgrade ─────────────────────────────────────
+  @Post('subscription/upgrade')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Natively upgrade subscription plan' })
+  async upgradeSubscription(
+    @Body() dto: CreateCheckoutDto, // Reusing dto since it has tier & interval
+    @CurrentUser() user: JwtUser,
+  ) {
+    const result = await this.billingService.upgradeSubscription(
+      user.orgId,
+      dto.tier,
+      dto.interval,
+    );
+    return { data: result };
+  }
+
   // ── POST /billing/webhook ──────────────────────────────────────────────────
   // Dodo/Svix webhook receiver. NO auth guard — verified by HMAC signature.
   // Fastify rawbody plugin must be registered in main.ts for this to work.

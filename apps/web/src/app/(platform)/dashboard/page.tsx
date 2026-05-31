@@ -5,6 +5,7 @@ import { RevenueMixRow } from '@/components/dashboard/RevenueMixRow';
 import { ActionFeedRow } from '@/components/dashboard/ActionFeedRow';
 import { SubstanceHealthRow } from '@/components/dashboard/SubstanceHealthRow';
 import { TopRibbon } from '@/components/dashboard/TopRibbon';
+import { DashboardBillingBanner } from '@/components/dashboard/DashboardBillingBanner';
 import { Lock, ShieldCheck, BookOpen, Users } from 'lucide-react';
 
 export default function DashboardPage() {
@@ -13,6 +14,8 @@ export default function DashboardPage() {
       <TopRibbon />
 
       <div className="flex-1 w-full max-w-[1200px] mx-auto px-6 py-6 space-y-6">
+        <DashboardBillingBanner />
+        
         {/* 1. KPI strip */}
         <MetricsCards />
 

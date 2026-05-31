@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { api } from '@/lib/api/client';
 import { cn } from '@/lib/utils';
@@ -14,6 +15,8 @@ import {
   Pause,
   RefreshCw,
 } from 'lucide-react';
+import { InvoicesTable } from '@/components/billing/InvoicesTable';
+import { ChangePlanModal } from '@/components/billing/ChangePlanModal';
 
 type SubscriptionStatus =
   | 'TRIALING'
@@ -42,6 +45,8 @@ const TIER_LABELS: Record<string, string> = {
 };
 
 export default function BillingPage() {
+  const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
+
   const { data, isLoading } = useQuery({
     queryKey: ['billing-status'],
     queryFn: () => api.get('/billing/status').then((r) => r.data.data),
@@ -191,7 +196,24 @@ export default function BillingPage() {
             <ArrowUpRight className="w-4 h-4" />
           </a>
         )}
+
+        {/* Change Plan (Active subscriptions only) */}
+        {status === 'ACTIVE' && (
+          <button
+            onClick={() => setIsPlanModalOpen(true)}
+            className="w-full flex items-center justify-between px-4 py-3 rounded-lg border border-border bg-card text-sm font-medium text-foreground hover:bg-muted"
+          >
+            <span className="flex items-center gap-2.5">
+              <ShieldCheck className="w-4 h-4 text-muted-foreground" />
+              Change subscription plan
+            </span>
+            <ArrowUpRight className="w-4 h-4 text-muted-foreground" />
+          </button>
+        )}
       </div>
+
+      {/* Invoice History Native UI */}
+      <InvoicesTable />
 
       {/* Info footer */}
       <p className="text-[11px] text-muted-foreground text-center">
@@ -199,6 +221,14 @@ export default function BillingPage() {
         <span className="font-medium text-foreground">Dodo Payments</span> (Merchant of Record) ·
         AED invoicing · No card data stored by TaxSentry
       </p>
+
+      {/* Modals */}
+      <ChangePlanModal
+        isOpen={isPlanModalOpen}
+        onClose={() => setIsPlanModalOpen(false)}
+        currentTier={data?.subscriptionTier}
+        currentInterval={data?.subscriptionInterval}
+      />
     </div>
   );
 }
