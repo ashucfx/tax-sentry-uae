@@ -8,6 +8,12 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { AuditInterceptor } from './common/interceptors/audit.interceptor';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 
+// Provide WebSocket globally for Supabase realtime client on Node < 22
+if (typeof globalThis.WebSocket === 'undefined') {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  globalThis.WebSocket = require('ws');
+}
+
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
 
