@@ -15,5 +15,55 @@ services:
         value: "3001"
       # All secret vars: set in Render dashboard → Environment
       # DATABASE_URL, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY,
-      # CLERK_SECRET_KEY, CLERK_WEBHOOK_SECRET, JWT_SECRET,
-      # RESEND_API_KEY, STRIPE_SECRET_KEY
+      # JWT_SECRET, RESEND_API_KEY, DODO_API_KEY
+
+  - type: web
+    name: taxsentry-web
+    runtime: node
+    buildCommand: pnpm install && pnpm build:web
+    startCommand: pnpm start:web
+    plan: free          # Upgrade to Starter ($7/mo) for production
+    region: frankfurt
+    branch: main
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          type: web
+          name: qfzp-api
+          property: url
+
+  - type: web
+    name: taxsentry-api-staging
+    runtime: docker
+    dockerfilePath: ./apps/api/Dockerfile
+    dockerContext: .
+    plan: free
+    region: frankfurt
+    branch: staging
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: NODE_ENV
+        value: staging
+      - key: API_PORT
+        value: "3001"
+      - key: SENTRY_DSN
+        sync: false
+
+  - type: web
+    name: taxsentry-web-staging
+    runtime: node
+    buildCommand: pnpm install && pnpm build:web
+    startCommand: pnpm start:web
+    plan: free
+    region: frankfurt
+    branch: staging
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          type: web
+          name: taxsentry-api-staging
+          property: url
