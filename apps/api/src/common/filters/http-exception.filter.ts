@@ -33,6 +33,10 @@ export class HttpExceptionFilter implements ExceptionFilter {
       }
     } else if (exception instanceof Error) {
       this.logger.error(exception.message, exception.stack);
+      // TEMPORARY DIAGNOSTIC: Surface the raw error to the frontend so we can see why it's failing
+      message = exception.message;
+      errors = [exception.stack];
+      
       // Capture unhandled errors in Sentry
       if (process.env.SENTRY_DSN) {
         Sentry.captureException(exception, {
