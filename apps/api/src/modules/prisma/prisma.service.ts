@@ -6,9 +6,13 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   private readonly logger = new Logger(PrismaService.name);
 
   constructor() {
+    let url = process.env.DATABASE_URL;
+    if (url && url.includes('supabase.com:6543') && !url.includes('pgbouncer=true')) {
+      url += (url.includes('?') ? '&' : '?') + 'pgbouncer=true';
+    }
     super({
       datasources: {
-        db: { url: process.env.DATABASE_URL },
+        db: { url },
       },
     });
   }

@@ -78,7 +78,8 @@ async function bootstrap() {
       } catch {}
 
       console.warn(`CORS blocked request from origin: ${origin}`);
-      callback(new Error(`Not allowed by CORS`), false);
+      console.log(`Allowed origins are: ${allowedOrigins.join(', ')}`);
+      callback(null, false);
     },
     credentials: true,
   });
