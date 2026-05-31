@@ -231,6 +231,8 @@ export class BillingService {
       this.logger.debug(`[UPGRADE] Calling Dodo API to change plan for sub=${org.dodoSubscriptionId}`);
       await this.dodo.subscriptions.changePlan(org.dodoSubscriptionId, {
         product_id: newProductId,
+        quantity: 1,
+        proration_billing_mode: 'prorated_immediately',
       });
 
       // Optimistically update DB
