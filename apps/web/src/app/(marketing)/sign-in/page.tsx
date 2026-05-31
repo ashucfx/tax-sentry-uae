@@ -47,7 +47,7 @@ function OtpInput({
 }) {
   const refs = useRef<(HTMLInputElement | null)[]>([]);
 
-  const digits = value.padEnd(6, '').split('').slice(0, 6);
+  const digits = value.padEnd(6, ' ').split('').slice(0, 6);
 
   const handleChange = (idx: number, v: string) => {
     const digit = v.replace(/\D/g, '').slice(-1);
