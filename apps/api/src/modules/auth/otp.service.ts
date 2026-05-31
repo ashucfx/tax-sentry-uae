@@ -222,11 +222,18 @@ export class OtpService {
       });
     }
 
-    // ── Mark verified ────────────────────────────────────────────────────────
-    await this.prisma.otpCode.update({
-      where: { id: record.id },
+    // ── Mark verified (Atomic to prevent concurrent verification) ────────────
+    const updateResult = await this.prisma.otpCode.updateMany({
+      where: { id: record.id, verifiedAt: null },
       data: { verifiedAt: new Date() },
     });
+
+    if (updateResult.count === 0) {
+      throw new BadRequestException({
+        message: 'Code has already been verified or expired',
+        code: 'OTP_ALREADY_VERIFIED',
+      });
+    }
 
     // ── Upsert user + org ────────────────────────────────────────────────────
     const { user, isNewUser } = await this.upsertUser(identifier);
@@ -264,52 +271,58 @@ export class OtpService {
       trialEndsAt: true, currentPeriodEnd: true,
     };
 
-    const existing = await this.prisma.user.findFirst({
-      where: email ? { email } : { phone: phone! },
-      include: { organization: { select: orgSelect } },
-    });
+    return await this.prisma.$transaction(async (tx) => {
+      const existing = await tx.user.findFirst({
+        where: email ? { email } : { phone: phone! },
+        include: { organization: { select: orgSelect } },
+        orderBy: { createdAt: 'asc' }, // If multiple exist, get the primary/oldest one
+      });
 
-    if (existing) {
-      const user = await this.prisma.user.update({
-        where: { id: existing.id },
+      if (existing) {
+        const user = await tx.user.update({
+          where: { id: existing.id },
+          data: {
+            lastLoginAt: new Date(),
+            // Email OTP proves the address is reachable
+            ...(email && !existing.emailVerified ? { emailVerified: true, emailVerifiedAt: new Date() } : {}),
+          },
+          include: { organization: { select: orgSelect } },
+        });
+        return { user, isNewUser: false };
+      }
+
+      // New user — create org first, then user in a transaction
+      const displayName = email ? email.split('@')[0] : phone!;
+      const trialEndsAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+      
+      // Ensure unique tradeLicenseNo by appending a random string
+      const randomSuffix = Math.random().toString(36).substring(2, 8).toUpperCase();
+
+      const org = await tx.organization.create({
         data: {
-          lastLoginAt: new Date(),
-          // Email OTP proves the address is reachable
-          ...(email && !existing.emailVerified ? { emailVerified: true, emailVerifiedAt: new Date() } : {}),
+          name: displayName,
+          tradeLicenseNo: `PENDING-${Date.now().toString(36).toUpperCase()}-${randomSuffix}`,
+          freeZone: FreeZone.OTHER,
+          trialEndsAt,
+          currentPeriodEnd: trialEndsAt,
+        },
+      });
+
+      const user = await tx.user.create({
+        data: {
+          orgId: org.id,
+          email: email ?? null,
+          phone: phone ?? null,
+          role: UserRole.OWNER,
+          // Email OTP = address verified; phone OTP = email still unverified (no email yet)
+          emailVerified: !!email,
+          emailVerifiedAt: email ? new Date() : null,
         },
         include: { organization: { select: orgSelect } },
       });
-      return { user, isNewUser: false };
-    }
 
-    // New user — create org first, then user in a transaction
-    const displayName = email ? email.split('@')[0] : phone!;
-    const trialEndsAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
-
-    const org = await this.prisma.organization.create({
-      data: {
-        name: displayName,
-        tradeLicenseNo: `PENDING-${Date.now().toString(36).toUpperCase()}`,
-        freeZone: FreeZone.OTHER,
-        trialEndsAt,
-        currentPeriodEnd: trialEndsAt,
-      },
+      return { user, isNewUser: true };
     });
-
-    const user = await this.prisma.user.create({
-      data: {
-        orgId: org.id,
-        email: email ?? null,
-        phone: phone ?? null,
-        role: UserRole.OWNER,
-        // Email OTP = address verified; phone OTP = email still unverified (no email yet)
-        emailVerified: !!email,
-        emailVerifiedAt: email ? new Date() : null,
-      },
-      include: { organization: { select: orgSelect } },
-    });
-
-    return { user, isNewUser: true };
   }
 
   // ── Private: token issuance (mirrors AuthService.issueTokenPair) ────────────

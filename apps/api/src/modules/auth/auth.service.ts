@@ -43,15 +43,24 @@ export class AuthService {
     const tokenHash = sha256(rawRefreshToken);
     const session = await this.prisma.session.findUnique({ where: { tokenHash } });
 
-    if (!session || session.isRevoked || session.expiresAt < new Date()) {
+    if (!session || session.expiresAt < new Date()) {
       throw new UnauthorizedException('Invalid or expired refresh token');
     }
 
-    // Rotate: revoke old, issue new — two separate writes (acceptable; old token immediately invalid)
-    await this.prisma.session.update({
-      where: { id: session.id },
-      data: { isRevoked: true, revokedAt: new Date() },
-    });
+    if (session.isRevoked) {
+      // 30-second grace period for concurrent requests (e.g., multiple tabs refreshing simultaneously)
+      if (session.revokedAt && Date.now() - session.revokedAt.getTime() < 30 * 1000) {
+        this.logger.warn(`Grace period refresh granted for user ${session.userId} (concurrent requests)`);
+      } else {
+        throw new UnauthorizedException('Invalid or expired refresh token');
+      }
+    } else {
+      // Rotate: revoke old, issue new — two separate writes (acceptable; old token immediately invalid)
+      await this.prisma.session.update({
+        where: { id: session.id },
+        data: { isRevoked: true, revokedAt: new Date() },
+      });
+    }
 
     const { accessToken, refreshToken } = await this.issueTokenPair(session.userId, meta);
 
@@ -215,11 +224,12 @@ export class AuthService {
     });
 
     if (lastSession) {
-      const isNewIp = meta.ipAddress && lastSession.ipAddress !== meta.ipAddress;
-      const isNewDevice = meta.userAgent && lastSession.userAgent !== meta.userAgent;
+      // Harden against missing headers to prevent false positive security alerts
+      const isNewIp = meta.ipAddress && lastSession.ipAddress && lastSession.ipAddress !== meta.ipAddress;
+      const isNewDevice = meta.userAgent && lastSession.userAgent && lastSession.userAgent !== meta.userAgent;
       
       if (isNewIp || isNewDevice) {
-        this.logger.warn(`Security Alert: User ${userId} signed in from a new context. IP: ${meta.ipAddress}, Device: ${meta.userAgent}`);
+        this.logger.warn(`Security Alert: User ${userId} signed in from a new context. IP: ${meta.ipAddress || 'unknown'}, Device: ${meta.userAgent || 'unknown'}`);
         await this.prisma.auditLog.create({
           data: {
             orgId: user.orgId,
