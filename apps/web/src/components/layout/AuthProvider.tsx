@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/auth/store';
-import { refreshAction } from '@/lib/auth/actions';
+import { doRefresh } from '@/lib/api/client';
 
 /**
  * Restores the session on every platform page load by calling /auth/refresh.
@@ -16,12 +16,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    refreshAction().then((token) => {
-      if (!token) {
-        router.push('/sign-in');
+    let mounted = true;
+
+    const performRefresh = async () => {
+      try {
+        await doRefresh();
+      } catch (err: unknown) {
+        const status = (err as { response?: { status?: number } })?.response?.status;
+        if (mounted && (status === 401 || status === 403)) {
+          router.push('/sign-in');
+        }
       }
-    });
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    };
+
+    // Initial load: restore session if missing in this tab
+    if (!accessToken) {
+      performRefresh();
+    }
+
+    // Proactive refresh: automatically renew token 1 minute before 15m expiry
+    const interval = setInterval(() => {
+      performRefresh();
+    }, 14 * 60 * 1000);
+
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+    };
+  }, [accessToken, router]);
 
   if (isLoading) {
     return (
