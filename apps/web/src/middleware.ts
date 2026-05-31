@@ -19,24 +19,10 @@ const PROTECTED_PREFIXES = [
 const AUTH_ROUTES = ['/sign-in'];
 
 export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-
-  // Presence of the refresh token cookie = active session.
-  // Actual session validity is verified by AuthProvider calling /auth/refresh.
-  const hasSession = !!request.cookies.get('refreshToken');
-
-  // Signed-in user on auth routes or home page → send to redirect
-  if (hasSession && (AUTH_ROUTES.some((p) => pathname.startsWith(p)) || pathname === '/')) {
-    return NextResponse.redirect(new URL('/redirect', request.url));
-  }
-
-  // Protected platform routes without a session → send to sign-in
-  if (!hasSession && PROTECTED_PREFIXES.some((p) => pathname.startsWith(p))) {
-    const url = new URL('/sign-in', request.url);
-    url.searchParams.set('next', pathname);
-    return NextResponse.redirect(url);
-  }
-
+  // In cross-domain deployments (e.g. Vercel frontend, Render backend),
+  // the Next.js middleware cannot read the backend's httpOnly cookies.
+  // Therefore, we bypass middleware auth checks and rely on client-side
+  // interceptors (client.ts) and AuthProvider to protect routes and handle 401s.
   return NextResponse.next();
 }
 
