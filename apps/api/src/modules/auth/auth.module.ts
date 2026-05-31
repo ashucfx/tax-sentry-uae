@@ -13,7 +13,8 @@ import { JwtStrategy } from './jwt.strategy';
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => {
-        let expiresIn: string = configService.get<string>('JWT_EXPIRY') || '15m';
+        const rawExpiry = configService.get('JWT_EXPIRY');
+        let expiresIn: string = rawExpiry ? String(rawExpiry) : '15m';
         if (/^\d+$/.test(expiresIn.trim())) {
           // If user provided a raw number like "15", jsonwebtoken treats it as seconds.
           // Append 'm' to treat it as minutes to prevent instant 401 expiration.
