@@ -1,0 +1,2830 @@
+﻿
+
+=== D:\Ripple Nexus\Taxsentry\TaxsentryUAE\apps\web\src\app\(platform)\accounting\page.tsx ===
+
+'use client';
+
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { api } from '@/lib/api/client';
+import { TopRibbon } from '@/components/dashboard/TopRibbon';
+import { Blocks, RefreshCw, CheckCircle2, AlertCircle } from 'lucide-react';
+
+export default function IntegrationsPage() {
+  const queryClient = useQueryClient();
+
+  const { data: status, isLoading } = useQuery({
+    queryKey: ['integrations-status'],
+    queryFn: () => api.get('/integrations/status').then(r => r.data),
+  });
+
+  const connectMutation = useMutation({
+    mutationFn: (provider: string) => api.post('/integrations/connect/mock', { provider }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['integrations-status'] });
+    }
+  });
+
+  const syncMutation = useMutation({
+    mutationFn: (provider: string) => api.post('/integrations/sync', { provider }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['integrations-status'] });
+    }
+  });
+
+  return (
+    <div className="flex min-h-screen flex-col" style={{ background: 'var(--ts-bg-base)' }}>
+      <TopRibbon />
+
+      <div className="flex-1 w-full max-w-[1000px] mx-auto px-6 py-6">
+        <div className="flex items-center gap-2 mb-6">
+          <Blocks size={18} color="var(--ts-blue-500)" />
+          <h1 style={{ fontSize: 20, fontWeight: 700, color: 'var(--ts-fg-primary)', margin: 0 }}>
+            Accounting Integrations
+          </h1>
+        </div>
+
+        <p style={{ fontSize: 13, color: 'var(--ts-fg-muted)', marginBottom: 24 }}>
+          Connect your accounting software to automatically sync ledgers and classify revenue.
+        </p>
+
+        {isLoading ? (
+          <div className="animate-pulse h-32 bg-[var(--ts-bg-card)] rounded-xl border border-[var(--ts-border)]" />
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Xero */}
+            <div className="premium-card p-6 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--ts-fg-primary)', margin: 0 }}>Xero</h3>
+                  {status?.xero?.connected ? (
+                    <span className="flex items-center gap-1 text-[11px] font-bold text-[var(--ts-green-500)] bg-[oklch(0.70_0.20_155_/_0.1)] px-2 py-1 rounded-full">
+                      <CheckCircle2 size={12} /> Connected
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1 text-[11px] font-bold text-[var(--ts-amber-500)] bg-[oklch(0.70_0.20_85_/_0.1)] px-2 py-1 rounded-full">
+                      <AlertCircle size={12} /> Disconnected
+                    </span>
+                  )}
+                </div>
+                <p style={{ fontSize: 12, color: 'var(--ts-fg-muted)' }}>
+                  Continuous two-way sync for revenue transactions and chart of accounts mapping.
+                </p>
+              </div>
+
+              <div className="mt-6 flex items-center gap-3">
+                {!status?.xero?.connected ? (
+                  <button
+                    onClick={() => connectMutation.mutate('xero')}
+                    disabled={connectMutation.isPending}
+                    className="w-full py-2 rounded-lg text-[13px] font-semibold text-white bg-[var(--ts-blue-500)] hover:bg-[var(--ts-blue-600)] transition-colors disabled:opacity-50"
+                  >
+                    {connectMutation.isPending ? 'Connecting...' : 'Connect Xero'}
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => syncMutation.mutate('xero')}
+                    disabled={syncMutation.isPending}
+                    className="w-full py-2 flex justify-center items-center gap-2 rounded-lg text-[13px] font-semibold text-[var(--ts-fg-primary)] bg-[var(--ts-bg-elevated)] border border-[var(--ts-border)] hover:bg-[var(--ts-bg-muted)] transition-colors disabled:opacity-50"
+                  >
+                    <RefreshCw size={14} className={syncMutation.isPending ? 'animate-spin' : ''} />
+                    {syncMutation.isPending ? 'Syncing...' : 'Sync Now'}
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Zoho */}
+            <div className="premium-card p-6 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--ts-fg-primary)', margin: 0 }}>Zoho Books</h3>
+                  {status?.zoho?.connected ? (
+                    <span className="flex items-center gap-1 text-[11px] font-bold text-[var(--ts-green-500)] bg-[oklch(0.70_0.20_155_/_0.1)] px-2 py-1 rounded-full">
+                      <CheckCircle2 size={12} /> Connected
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1 text-[11px] font-bold text-[var(--ts-amber-500)] bg-[oklch(0.70_0.20_85_/_0.1)] px-2 py-1 rounded-full">
+                      <AlertCircle size={12} /> Disconnected
+                    </span>
+                  )}
+                </div>
+                <p style={{ fontSize: 12, color: 'var(--ts-fg-muted)' }}>
+                  Continuous two-way sync for revenue transactions and chart of accounts mapping.
+                </p>
+              </div>
+
+              <div className="mt-6 flex items-center gap-3">
+                {!status?.zoho?.connected ? (
+                  <button
+                    onClick={() => connectMutation.mutate('zoho')}
+                    disabled={connectMutation.isPending}
+                    className="w-full py-2 rounded-lg text-[13px] font-semibold text-white bg-[var(--ts-blue-500)] hover:bg-[var(--ts-blue-600)] transition-colors disabled:opacity-50"
+                  >
+                    {connectMutation.isPending ? 'Connecting...' : 'Connect Zoho Books'}
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => syncMutation.mutate('zoho')}
+                    disabled={syncMutation.isPending}
+                    className="w-full py-2 flex justify-center items-center gap-2 rounded-lg text-[13px] font-semibold text-[var(--ts-fg-primary)] bg-[var(--ts-bg-elevated)] border border-[var(--ts-border)] hover:bg-[var(--ts-bg-muted)] transition-colors disabled:opacity-50"
+                  >
+                    <RefreshCw size={14} className={syncMutation.isPending ? 'animate-spin' : ''} />
+                    {syncMutation.isPending ? 'Syncing...' : 'Sync Now'}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
+=== D:\Ripple Nexus\Taxsentry\TaxsentryUAE\apps\web\src\app\(platform)\alerts\page.tsx ===
+
+'use client';
+
+import { useQuery } from '@tanstack/react-query';
+import { api } from '@/lib/api/client';
+import { cn } from '@/lib/utils';
+import { AlertOctagon, AlertTriangle, CheckCircle2, Info } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
+
+type Severity = 'RED' | 'AMBER' | 'INFO';
+
+const SEVERITY: Record<Severity, { icon: React.ElementType; cls: string; label: string }> = {
+  RED: { icon: AlertOctagon, cls: 'bg-red-50 text-red-800 border-red-200', label: 'Critical' },
+  AMBER: { icon: AlertTriangle, cls: 'bg-amber-50 text-amber-800 border-amber-200', label: 'Warning' },
+  INFO: { icon: Info, cls: 'bg-blue-50 text-blue-800 border-blue-200', label: 'Notice' },
+};
+
+export default function AlertsPage() {
+  const { data, isLoading } = useQuery({
+    queryKey: ['alerts-page'],
+    queryFn: () => api.get('/alerts?limit=50').then((r) => r.data.data),
+  });
+
+  const alerts = data?.alerts ?? [];
+
+  return (
+    <main className="mx-auto max-w-4xl px-6 py-10">
+      <div>
+        <h1 className="text-xl font-bold text-foreground">Alerts</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Active and recent compliance alerts for your organization.
+        </p>
+      </div>
+
+      <div className="mt-6 space-y-3">
+        {isLoading ? (
+          <div className="h-40 rounded-lg border bg-card animate-pulse" />
+        ) : alerts.length === 0 ? (
+          <div className="rounded-lg border bg-card p-8 text-center shadow-card">
+            <CheckCircle2 className="mx-auto h-8 w-8 text-emerald-600" />
+            <p className="mt-3 text-sm font-semibold text-foreground">No alerts found</p>
+            <p className="mt-1 text-sm text-muted-foreground">TaxSentry will list threshold, document, and risk alerts here.</p>
+          </div>
+        ) : (
+          alerts.map((alert: any) => {
+            const config = SEVERITY[alert.severity as Severity] ?? SEVERITY.INFO;
+            const Icon = config.icon;
+            return (
+              <article key={alert.id} className="rounded-lg border bg-card p-4 shadow-card">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <span className={cn('inline-flex items-center gap-1.5 rounded-full border px-2 py-1 text-xs font-semibold', config.cls)}>
+                      <Icon className="h-3.5 w-3.5" />
+                      {config.label}
+                    </span>
+                    <h2 className="mt-3 text-sm font-semibold text-foreground">{alert.title}</h2>
+                    <p className="mt-1 text-sm leading-6 text-muted-foreground">{alert.message}</p>
+                  </div>
+                  <p className="shrink-0 text-xs text-muted-foreground">
+                    {formatDistanceToNow(new Date(alert.triggeredAt), { addSuffix: true })}
+                  </p>
+                </div>
+              </article>
+            );
+          })
+        )}
+      </div>
+    </main>
+  );
+}
+
+
+=== D:\Ripple Nexus\Taxsentry\TaxsentryUAE\apps\web\src\app\(platform)\audit-log\page.tsx ===
+
+'use client';
+
+import { useQuery } from '@tanstack/react-query';
+import { api } from '@/lib/api/client';
+import { TopRibbon } from '@/components/dashboard/TopRibbon';
+import { ShieldCheck } from 'lucide-react';
+
+interface AuditEntry {
+  id: string;
+  actorEmail: string | null;
+  action: string;
+  entity: string;
+  entityId: string;
+  timestamp: string;
+}
+
+export default function AuditLogPage() {
+  const { data, isLoading } = useQuery({
+    queryKey: ['audit-log'],
+    queryFn: () => api.get('/audit-log?limit=50').then((r) => r.data.data ?? r.data),
+    retry: false,
+  });
+
+  const entries: AuditEntry[] = Array.isArray(data) ? data : data?.items ?? [];
+
+  return (
+    <div className="flex min-h-screen flex-col" style={{ background: 'var(--ts-bg-base)' }}>
+      <TopRibbon />
+
+      <div className="w-full max-w-5xl mx-auto px-6 py-6">
+        <div className="flex items-center gap-2 mb-6">
+          <ShieldCheck size={18} color="var(--ts-blue-500)" />
+          <h1 style={{ fontSize: 20, fontWeight: 700, color: 'var(--ts-fg-primary)', margin: 0 }}>
+            Audit Log
+          </h1>
+        </div>
+
+        <div className="premium-card" style={{ padding: 0, overflow: 'hidden' }}>
+          {/* Table header */}
+          <div
+            className="grid grid-cols-4 gap-3 px-5 py-3"
+            style={{ background: 'var(--ts-bg-elevated)', borderBottom: '1px solid var(--ts-border)', fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--ts-fg-muted)' }}
+          >
+            <span>Timestamp</span>
+            <span>Actor</span>
+            <span>Action</span>
+            <span>Entity</span>
+          </div>
+
+          {isLoading ? (
+            <div style={{ height: 200 }} className="animate-pulse" />
+          ) : entries.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16" style={{ fontSize: 13, color: 'var(--ts-fg-muted)' }}>
+              <ShieldCheck size={32} color="oklch(0.48 0 0)" style={{ marginBottom: 12 }} />
+              <p style={{ fontWeight: 600, color: 'var(--ts-fg-secondary)', marginBottom: 4 }}>No audit entries yet</p>
+              <p>Actions taken in TaxSentry will appear here.</p>
+            </div>
+          ) : (
+            <div>
+              {entries.map((entry) => {
+                const ts = new Date(entry.timestamp);
+                const dateStr = ts.toLocaleDateString('en-AE', { day: '2-digit', month: 'short', year: 'numeric' });
+                const timeStr = ts.toLocaleTimeString('en-AE', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+
+                return (
+                  <div
+                    key={entry.id}
+                    className="grid grid-cols-4 gap-3 px-5 py-3"
+                    style={{ borderBottom: '1px solid var(--ts-border-subtle)', fontSize: 12 }}
+                  >
+                    <span className="ts-mono" style={{ color: 'var(--ts-fg-muted)', fontSize: 11 }}>
+                      {dateStr} {timeStr}
+                    </span>
+                    <span className="truncate" style={{ color: 'var(--ts-fg-secondary)' }}>
+                      {entry.actorEmail ?? 'System'}
+                    </span>
+                    <span style={{ color: 'var(--ts-fg-primary)', fontWeight: 500 }}>
+                      {entry.action}
+                    </span>
+                    <span style={{ color: 'var(--ts-fg-muted)' }}>
+                      {entry.entity} <span className="ts-mono" style={{ fontSize: 10 }}>{entry.entityId?.slice(-8)}</span>
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+=== D:\Ripple Nexus\Taxsentry\TaxsentryUAE\apps\web\src\app\(platform)\billing\page.tsx ===
+
+'use client';
+
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { api } from '@/lib/api/client';
+import { cn } from '@/lib/utils';
+import {
+  ShieldCheck,
+  CreditCard,
+  Clock,
+  ArrowUpRight,
+  AlertTriangle,
+  CheckCircle2,
+  XCircle,
+  Pause,
+  RefreshCw,
+} from 'lucide-react';
+
+type SubscriptionStatus =
+  | 'TRIALING'
+  | 'ACTIVE'
+  | 'PAST_DUE'
+  | 'CANCELLED'
+  | 'EXPIRED'
+  | 'PAUSED';
+
+const STATUS_CONFIG: Record<
+  SubscriptionStatus,
+  { label: string; icon: React.ElementType; cls: string; badgeCls: string }
+> = {
+  TRIALING:   { label: 'Free Trial',   icon: Clock,         cls: 'bg-blue-50 border-blue-200',   badgeCls: 'bg-blue-100 text-blue-800 border-blue-200' },
+  ACTIVE:     { label: 'Active',       icon: CheckCircle2,  cls: 'bg-emerald-50 border-emerald-200', badgeCls: 'bg-emerald-100 text-emerald-800 border-emerald-200' },
+  PAST_DUE:   { label: 'Past Due',     icon: AlertTriangle, cls: 'bg-amber-50 border-amber-200', badgeCls: 'bg-amber-100 text-amber-800 border-amber-200' },
+  CANCELLED:  { label: 'Cancelled',    icon: XCircle,       cls: 'bg-muted border-border',        badgeCls: 'bg-muted text-muted-foreground border-border' },
+  EXPIRED:    { label: 'Expired',      icon: XCircle,       cls: 'bg-red-50 border-red-200',      badgeCls: 'bg-red-100 text-red-800 border-red-200' },
+  PAUSED:     { label: 'Paused',       icon: Pause,         cls: 'bg-muted border-border',        badgeCls: 'bg-muted text-muted-foreground border-border' },
+};
+
+const TIER_LABELS: Record<string, string> = {
+  STARTER: 'Starter',
+  GROWTH: 'Growth',
+  ENTERPRISE: 'Enterprise',
+};
+
+export default function BillingPage() {
+  const { data, isLoading } = useQuery({
+    queryKey: ['billing-status'],
+    queryFn: () => api.get('/billing/status').then((r) => r.data.data),
+    staleTime: 30_000,
+  });
+
+  const portalMutation = useMutation({
+    mutationFn: () => api.get('/billing/portal').then((r) => r.data.data),
+    onSuccess: (d) => {
+      window.location.href = d.url;
+    },
+  });
+
+  if (isLoading) return <BillingPageSkeleton />;
+
+  const status: SubscriptionStatus = data?.subscriptionStatus ?? 'TRIALING';
+  const config = STATUS_CONFIG[status];
+  const StatusIcon = config.icon;
+
+  const periodEnd = data?.currentPeriodEnd
+    ? new Date(data.currentPeriodEnd).toLocaleDateString('en-AE', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      })
+    : null;
+
+  const isCancelPending = data?.cancelAtPeriodEnd && status === 'ACTIVE';
+  const needsAction = status === 'PAST_DUE' || status === 'EXPIRED';
+
+  return (
+    <div className="max-w-2xl mx-auto px-6 py-10 space-y-6">
+      <div>
+        <h1 className="text-xl font-bold text-foreground">Subscription & Billing</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">
+          Manage your plan, payment method, and invoices
+        </p>
+      </div>
+
+      {/* Current plan card */}
+      <div className={cn('rounded-xl border p-6 space-y-4', config.cls)}>
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-navy-900 flex items-center justify-center flex-shrink-0">
+              <ShieldCheck className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <p className="font-semibold text-foreground text-sm">
+                TaxSentry {TIER_LABELS[data?.subscriptionTier] ?? 'Starter'}
+              </p>
+              <p className="text-xs text-muted-foreground capitalize">
+                {data?.subscriptionInterval === 'yearly' ? 'Annual billing' : 'Monthly billing'}
+              </p>
+            </div>
+          </div>
+
+          {/* Status badge */}
+          <span
+            className={cn(
+              'flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-semibold flex-shrink-0',
+              config.badgeCls,
+            )}
+          >
+            <StatusIcon className="w-3 h-3" />
+            {config.label}
+          </span>
+        </div>
+
+        {/* Renewal / expiry line */}
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <Clock className="w-3.5 h-3.5" />
+          {isCancelPending
+            ? `Access ends on ${periodEnd} (cancelled)`
+            : status === 'ACTIVE' || status === 'TRIALING'
+            ? `Renews on ${periodEnd ?? 'â€”'}`
+            : `${config.label} since ${periodEnd ?? 'â€”'}`}
+        </div>
+
+        {/* Grace period warning */}
+        {status === 'PAST_DUE' && (
+          <div className="flex items-start gap-2.5 p-3 bg-amber-100 border border-amber-200 rounded-lg text-xs text-amber-800">
+            <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+            <span>
+              Your last payment failed. Update your payment method within the 7-day grace period
+              to avoid losing access.
+            </span>
+          </div>
+        )}
+
+        {/* Expired warning */}
+        {status === 'EXPIRED' && (
+          <div className="flex items-start gap-2.5 p-3 bg-red-100 border border-red-200 rounded-lg text-xs text-red-800">
+            <XCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+            <span>
+              Your subscription has expired. Renew now to restore access to your compliance dashboard.
+            </span>
+          </div>
+        )}
+
+        {/* Days remaining for trial */}
+        {status === 'TRIALING' && data?.daysUntilExpiry !== null && (
+          <div className="flex items-center gap-2 p-3 bg-blue-100 border border-blue-200 rounded-lg text-xs text-blue-800">
+            <Clock className="w-3.5 h-3.5 flex-shrink-0" />
+            {data.daysUntilExpiry > 0
+              ? `${data.daysUntilExpiry} days remaining in your free trial`
+              : 'Your trial has ended â€” please subscribe to continue'}
+          </div>
+        )}
+      </div>
+
+      {/* Actions */}
+      <div className="bg-card rounded-xl border shadow-card p-6 space-y-3">
+        <h2 className="text-sm font-semibold text-foreground">Billing Actions</h2>
+
+        {/* Manage via portal */}
+        <button
+          onClick={() => portalMutation.mutate()}
+          disabled={portalMutation.isPending || !data?.dodoCustomerId}
+          className={cn(
+            'w-full flex items-center justify-between px-4 py-3 rounded-lg border text-sm font-medium',
+            data?.dodoCustomerId
+              ? 'bg-card hover:bg-muted border-border text-foreground'
+              : 'bg-muted border-border text-muted-foreground cursor-not-allowed',
+          )}
+        >
+          <span className="flex items-center gap-2.5">
+            <CreditCard className="w-4 h-4 text-muted-foreground" />
+            {needsAction ? 'Update payment method' : 'Manage plan, invoices & payment method'}
+          </span>
+          {portalMutation.isPending ? (
+            <RefreshCw className="w-4 h-4 animate-spin text-muted-foreground" />
+          ) : (
+            <ArrowUpRight className="w-4 h-4 text-muted-foreground" />
+          )}
+        </button>
+
+        {/* Upgrade / choose plan */}
+        {(status === 'TRIALING' || status === 'EXPIRED') && (
+          <a
+            href="/pricing"
+            className="w-full flex items-center justify-between px-4 py-3 rounded-lg border border-primary/30 bg-blue-50 text-sm font-medium text-primary hover:bg-blue-100"
+          >
+            <span className="flex items-center gap-2.5">
+              <ShieldCheck className="w-4 h-4" />
+              {status === 'EXPIRED' ? 'Reactivate subscription' : 'View all plans'}
+            </span>
+            <ArrowUpRight className="w-4 h-4" />
+          </a>
+        )}
+      </div>
+
+      {/* Info footer */}
+      <p className="text-[11px] text-muted-foreground text-center">
+        Payments processed by{' '}
+        <span className="font-medium text-foreground">Dodo Payments</span> (Merchant of Record) Â·
+        AED invoicing Â· No card data stored by TaxSentry
+      </p>
+    </div>
+  );
+}
+
+function BillingPageSkeleton() {
+  return (
+    <div className="max-w-2xl mx-auto px-6 py-10 space-y-6 animate-pulse">
+      <div className="space-y-1.5">
+        <div className="h-5 bg-muted rounded w-48" />
+        <div className="h-3.5 bg-muted rounded w-72" />
+      </div>
+      <div className="bg-card rounded-xl border p-6 h-36" />
+      <div className="bg-card rounded-xl border p-6 h-28" />
+    </div>
+  );
+}
+
+
+=== D:\Ripple Nexus\Taxsentry\TaxsentryUAE\apps\web\src\app\(platform)\billing\success\page.tsx ===
+
+'use client';
+
+import { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
+import { api } from '@/lib/api/client';
+import { ShieldCheck, Clock, ArrowRight, CheckCircle2 } from 'lucide-react';
+
+const MAX_POLL_ATTEMPTS = 12;
+
+export default function BillingSuccessPage() {
+  const router = useRouter();
+  // Use a ref for the raw count so refetchInterval closure reads current value without stale capture
+  const attemptsRef = useRef(0);
+  const [attempts, setAttempts] = useState(0); // mirrors ref for render
+
+  // Poll subscription status until it's ACTIVE (webhook may take a few seconds)
+  const { data, isError } = useQuery({
+    queryKey: ['billing-status-poll'],
+    queryFn: async () => {
+      const res = await api.get('/billing/status');
+      return res.data.data;
+    },
+    refetchInterval: (query) => {
+      const status = query.state.data?.subscriptionStatus;
+      // Stop polling once active or after max attempts (~60s total)
+      if (status === 'ACTIVE' || attemptsRef.current >= MAX_POLL_ATTEMPTS) {
+        return false;
+      }
+      return 5000;
+    },
+    enabled: true,
+    retry: false,
+  });
+
+  useEffect(() => {
+    attemptsRef.current += 1;
+    setAttempts(attemptsRef.current);
+  }, [data]);
+
+  const isActive = data?.subscriptionStatus === 'ACTIVE';
+  const isPolling = !isActive && attempts < 12;
+  const hasTimedOut = !isActive && attempts >= 12;
+
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center px-6">
+      <div className="max-w-md w-full bg-card border rounded-xl shadow-card-md p-8 text-center">
+        {/* Icon */}
+        <div className="w-14 h-14 rounded-full mx-auto mb-5 flex items-center justify-center">
+          {isActive ? (
+            <div className="w-14 h-14 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center">
+              <CheckCircle2 className="w-7 h-7 text-emerald-600" />
+            </div>
+          ) : (
+            <div className="w-14 h-14 rounded-full bg-blue-50 border border-blue-200 flex items-center justify-center">
+              {isPolling ? (
+                <span className="w-7 h-7 border-2 border-blue-200 border-t-blue-500 rounded-full animate-spin" />
+              ) : (
+                <ShieldCheck className="w-7 h-7 text-blue-600" />
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Heading */}
+        {isActive ? (
+          <>
+            <h1 className="text-xl font-bold text-foreground">You&apos;re protected.</h1>
+            <p className="text-sm text-muted-foreground mt-2">
+              Your subscription is active. TaxSentry is now monitoring your QFZP status.
+            </p>
+          </>
+        ) : isPolling ? (
+          <>
+            <h1 className="text-xl font-bold text-foreground">Confirming your paymentâ€¦</h1>
+            <p className="text-sm text-muted-foreground mt-2">
+              Your payment was received. We&apos;re activating your subscription â€” this takes a few
+              seconds.
+            </p>
+            <p className="text-xs text-muted-foreground mt-3 opacity-70">
+              Attempt {attempts}/12
+            </p>
+          </>
+        ) : hasTimedOut ? (
+          <>
+            <h1 className="text-xl font-bold text-amber-700">Payment received</h1>
+            <p className="text-sm text-amber-600 mt-2">
+              We're still processing your subscription. Usually this takes a few seconds, but can
+              take up to 2 minutes.
+            </p>
+            <p className="text-xs text-muted-foreground mt-3">
+              If your dashboard doesn&apos;t reflect the change soon, please contact{' '}
+              <a href="mailto:hello@gettaxsentry.com" className="text-primary hover:underline">
+                hello@gettaxsentry.com
+              </a>
+            </p>
+          </>
+        ) : (
+          <>
+            <h1 className="text-xl font-bold text-red-700">Error checking subscription</h1>
+            <p className="text-sm text-red-600 mt-2">
+              Unable to verify your subscription status. Your payment may still be processing.
+            </p>
+            <p className="text-xs text-muted-foreground mt-3">
+              Please contact{' '}
+              <a href="mailto:hello@gettaxsentry.com" className="text-primary hover:underline">
+                hello@gettaxsentry.com
+              </a>
+              {' '}and we'll activate your account manually.
+            </p>
+          </>
+        )}
+
+        {/* Tier badge */}
+        {data?.subscriptionTier && (
+          <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-navy-900 text-white text-xs font-semibold">
+            <ShieldCheck className="w-3.5 h-3.5" />
+            {data.subscriptionTier} Plan Â· {data.subscriptionInterval === 'yearly' ? 'Annual' : 'Monthly'} billing
+          </div>
+        )}
+
+        {/* Period end info */}
+        {isActive && data?.currentPeriodEnd && (
+          <div className="mt-4 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
+            <Clock className="w-3.5 h-3.5" />
+            Next renewal:{' '}
+            {new Date(data.currentPeriodEnd).toLocaleDateString('en-AE', {
+              day: 'numeric',
+              month: 'long',
+              year: 'numeric',
+            })}
+          </div>
+        )}
+
+        {/* CTA */}
+        <div className="mt-6 space-y-2">
+          {isActive && (
+            <>
+              <button
+                onClick={() => router.push('/dashboard')}
+                className="w-full bg-primary text-primary-foreground py-2.5 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 hover:bg-primary/90"
+              >
+                Go to Dashboard <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => router.push('/billing')}
+                className="w-full bg-muted text-foreground py-2.5 rounded-lg text-sm font-medium hover:bg-muted/80"
+              >
+                View billing details
+              </button>
+            </>
+          )}
+          {(isPolling || hasTimedOut) && (
+            <button
+              onClick={() => router.push('/dashboard')}
+              className="w-full bg-muted text-foreground py-2.5 rounded-lg text-sm font-medium hover:bg-muted/80"
+            >
+              Go to Dashboard
+            </button>
+          )}
+          {isError && !isActive && (
+            <>
+              <button
+                onClick={() => window.location.reload()}
+                className="w-full bg-primary text-primary-foreground py-2.5 rounded-lg text-sm font-semibold hover:bg-primary/90"
+              >
+                Retry
+              </button>
+              <button
+                onClick={() => router.push('/billing')}
+                className="w-full bg-muted text-foreground py-2.5 rounded-lg text-sm font-medium hover:bg-muted/80"
+              >
+                Go to Billing
+              </button>
+            </>
+          )}
+        </div>
+
+        <p className="mt-5 text-[11px] text-muted-foreground">
+          A receipt has been sent to your email by Dodo Payments.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+
+=== D:\Ripple Nexus\Taxsentry\TaxsentryUAE\apps\web\src\app\(platform)\dashboard\page.tsx ===
+
+import { RiskHeroCard } from '@/components/dashboard/RiskHeroCard';
+import { MetricsCards } from '@/components/dashboard/MetricsCards';
+import { DeMinimisRow } from '@/components/dashboard/DeMinimisRow';
+import { RevenueMixRow } from '@/components/dashboard/RevenueMixRow';
+import { ActionFeedRow } from '@/components/dashboard/ActionFeedRow';
+import { SubstanceHealthRow } from '@/components/dashboard/SubstanceHealthRow';
+import { TopRibbon } from '@/components/dashboard/TopRibbon';
+import { Lock, ShieldCheck, BookOpen, Users } from 'lucide-react';
+
+export default function DashboardPage() {
+  return (
+    <div className="flex min-h-screen flex-col" style={{ background: 'var(--ts-bg-base)' }}>
+      <TopRibbon />
+
+      <div className="flex-1 w-full max-w-[1200px] mx-auto px-6 py-6 space-y-6">
+        {/* 1. KPI strip */}
+        <MetricsCards />
+
+        {/* 2. De-Minimis threshold monitor â€” primary QFZP risk */}
+        <DeMinimisRow />
+
+        {/* 3. Risk score + Action feed */}
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+          <div className="lg:col-span-3">
+            <RiskHeroCard />
+          </div>
+          <div className="lg:col-span-2">
+            <ActionFeedRow />
+          </div>
+        </div>
+
+        {/* 4. Revenue mix chart */}
+        <RevenueMixRow />
+
+        {/* 5. Substance health */}
+        <SubstanceHealthRow />
+      </div>
+
+      {/* Trust footer */}
+      <footer
+        className="mt-auto"
+        style={{
+          borderTop: '1px solid var(--ts-border)',
+          background: 'var(--ts-bg-deepest)',
+        }}
+      >
+        <div
+          className="max-w-[1200px] mx-auto px-6 py-3 flex items-center justify-between"
+          style={{ fontSize: 12, color: 'var(--ts-fg-dimmer)' }}
+        >
+          <div className="flex items-center gap-5">
+            <span className="flex items-center gap-1.5">
+              <Lock size={12} />
+              AES-256 encrypted
+            </span>
+            <span className="hidden sm:flex items-center gap-1.5">
+              <ShieldCheck size={12} />
+              Audit log enabled
+            </span>
+            <span className="hidden md:flex items-center gap-1.5">
+              <BookOpen size={12} />
+              Cabinet Decision 100/2023
+            </span>
+            <span className="hidden lg:flex items-center gap-1.5">
+              <Users size={12} />
+              Role-based access
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            <a href="/audit-log" style={{ color: 'inherit' }} className="hover:text-white transition-colors">Audit Log</a>
+            <span style={{ color: 'var(--ts-border)' }}>Â·</span>
+            <a href="/status" style={{ color: 'inherit' }} className="hover:text-white transition-colors">System Status</a>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}
+
+
+=== D:\Ripple Nexus\Taxsentry\TaxsentryUAE\apps\web\src\app\(platform)\onboarding\page.tsx ===
+
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useMutation } from '@tanstack/react-query';
+import { api } from '@/lib/api/client';
+import { TaxSentryLogo } from '@/components/marketing/MarketingNav';
+import { ArrowRight, Building2, Calendar, FileText, MapPin } from 'lucide-react';
+
+const FREE_ZONES = [
+  'DMCC', 'JAFZA', 'IFZA', 'DIFC', 'ADGM', 'RAKEZ', 'DWC', 'SHAMS', 'MEYDAN', 'OTHER',
+] as const;
+
+export default function OnboardingPage() {
+  const router = useRouter();
+  const [form, setForm] = useState({
+    name: '',
+    tradeLicenseNo: '',
+    freeZone: 'DMCC',
+    taxRegistrationNo: '',
+    taxPeriodStart: '',
+    taxPeriodEnd: '',
+  });
+
+  const setupMutation = useMutation({
+    mutationFn: (data: typeof form) => api.post('/organizations/me/setup', data).then((r) => r.data),
+    onSuccess: () => router.push('/dashboard'),
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.name || !form.tradeLicenseNo || !form.taxPeriodStart || !form.taxPeriodEnd) return;
+    setupMutation.mutate(form);
+  };
+
+  const field = (
+    label: string,
+    key: keyof typeof form,
+    opts?: { type?: string; placeholder?: string; required?: boolean },
+  ) => (
+    <div>
+      <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--ts-fg-secondary)', marginBottom: 6 }}>
+        {label} {opts?.required !== false && <span style={{ color: 'var(--ts-red-500)' }}>*</span>}
+      </label>
+      <input
+        type={opts?.type ?? 'text'}
+        value={form[key]}
+        placeholder={opts?.placeholder ?? ''}
+        onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
+        style={{
+          width: '100%', padding: '10px 14px', borderRadius: 10, fontSize: 14,
+          background: 'var(--ts-bg-elevated)', border: '1px solid var(--ts-border)',
+          color: 'var(--ts-fg-primary)', outline: 'none', boxSizing: 'border-box',
+        }}
+      />
+    </div>
+  );
+
+  return (
+    <div
+      className="min-h-screen flex items-center justify-center"
+      style={{ background: 'var(--ts-bg-deepest)', padding: '40px 20px' }}
+    >
+      <div style={{ width: '100%', maxWidth: 520 }}>
+        {/* Header */}
+        <div className="flex flex-col items-center mb-8">
+          <TaxSentryLogo size={40} />
+          <h1 style={{ fontSize: 22, fontWeight: 800, color: 'var(--ts-fg-primary)', marginTop: 16, marginBottom: 6 }}>
+            Set up your organization
+          </h1>
+          <p style={{ fontSize: 14, color: 'var(--ts-fg-muted)', textAlign: 'center' }}>
+            We need a few details to configure your QFZP compliance monitoring.
+          </p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="premium-card" style={{ padding: 32, display: 'flex', flexDirection: 'column', gap: 20 }}>
+          {/* Company Name */}
+          <div className="flex items-center gap-2" style={{ color: 'var(--ts-fg-muted)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+            <Building2 size={12} /> Company Details
+          </div>
+          {field('Company Name', 'name', { placeholder: 'Acme Trading DMCC' })}
+          {field('Trade License Number', 'tradeLicenseNo', { placeholder: 'DMCC-123456' })}
+
+          <div>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--ts-fg-secondary)', marginBottom: 6 }}>
+              Free Zone <span style={{ color: 'var(--ts-red-500)' }}>*</span>
+            </label>
+            <select
+              value={form.freeZone}
+              onChange={(e) => setForm((f) => ({ ...f, freeZone: e.target.value }))}
+              style={{
+                width: '100%', padding: '10px 14px', borderRadius: 10, fontSize: 14,
+                background: 'var(--ts-bg-elevated)', border: '1px solid var(--ts-border)',
+                color: 'var(--ts-fg-primary)', outline: 'none',
+              }}
+            >
+              {FREE_ZONES.map((z) => <option key={z} value={z}>{z}</option>)}
+            </select>
+          </div>
+
+          {field('Tax Registration Number (TRN)', 'taxRegistrationNo', {
+            placeholder: '100-XXXXXXXXX-X (optional)',
+            required: false,
+          })}
+
+          {/* Tax Period */}
+          <div className="flex items-center gap-2" style={{ color: 'var(--ts-fg-muted)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', marginTop: 4 }}>
+            <Calendar size={12} /> Tax Period
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            {field('Period Start', 'taxPeriodStart', { type: 'date' })}
+            {field('Period End', 'taxPeriodEnd', { type: 'date' })}
+          </div>
+
+          <div style={{ padding: '10px 14px', borderRadius: 10, background: 'oklch(0.55 0.22 260 / 0.07)', border: '1px solid oklch(0.55 0.22 260 / 0.15)', fontSize: 12, color: 'var(--ts-fg-muted)', lineHeight: 1.6 }}>
+            <FileText size={12} style={{ display: 'inline', marginRight: 6 }} />
+            Most UAE QFZP entities use a 1 January â€“ 31 December tax year. Your first period may be shorter if you registered mid-year.
+          </div>
+
+          {setupMutation.isError && (
+            <p style={{ fontSize: 13, color: 'var(--ts-red-500)', textAlign: 'center' }}>
+              Setup failed â€” please check your details and try again.
+            </p>
+          )}
+
+          <button
+            type="submit"
+            disabled={setupMutation.isPending || !form.name || !form.tradeLicenseNo || !form.taxPeriodStart || !form.taxPeriodEnd}
+            className="flex items-center justify-center gap-2 rounded-xl font-bold transition-all"
+            style={{
+              padding: '13px 24px', fontSize: 15, background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+              color: '#fff', border: 'none', cursor: 'pointer', opacity: setupMutation.isPending ? 0.7 : 1,
+            }}
+          >
+            {setupMutation.isPending ? 'Setting upâ€¦' : 'Go to Dashboard'}
+            {!setupMutation.isPending && <ArrowRight size={16} />}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+
+=== D:\Ripple Nexus\Taxsentry\TaxsentryUAE\apps\web\src\app\(platform)\reports\page.tsx ===
+
+'use client';
+
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { api } from '@/lib/api/client';
+import { TopRibbon } from '@/components/dashboard/TopRibbon';
+import { BarChart3, Download, FileCheck, Clock, CheckCircle2, Lock, RefreshCw } from 'lucide-react';
+
+interface Report {
+  id: string;
+  title: string;
+  type: 'COMPLIANCE' | 'AUDIT' | 'DE_MINIMIS' | 'SUBSTANCE';
+  period: string;
+  generatedAt: string;
+  status: 'READY' | 'GENERATING' | 'PENDING';
+  sizeKb?: number;
+  endpoint?: string;
+  taxPeriodId?: string | null;
+}
+
+const TYPE_CONFIG: Record<string, { color: string; bg: string; border: string; label: string }> = {
+  COMPLIANCE: { color: 'var(--ts-blue-400)', bg: 'oklch(0.55 0.22 260 / 0.1)', border: 'oklch(0.55 0.22 260 / 0.25)', label: 'Compliance Report' },
+  AUDIT: { color: 'var(--ts-green-500)', bg: 'oklch(0.70 0.20 155 / 0.1)', border: 'oklch(0.70 0.20 155 / 0.25)', label: 'Audit Pack' },
+  DE_MINIMIS: { color: 'var(--ts-amber-500)', bg: 'oklch(0.80 0.18 85 / 0.1)', border: 'oklch(0.80 0.18 85 / 0.25)', label: 'De-Minimis' },
+  SUBSTANCE: { color: 'var(--ts-fg-muted)', bg: 'var(--ts-bg-elevated)', border: 'var(--ts-border)', label: 'Substance' },
+};
+
+const SAMPLE_REPORTS: Report[] = [
+  { id: '1', title: 'Q1 2026 FTA-Ready Compliance Pack', type: 'AUDIT', period: 'Janâ€“Mar 2026', generatedAt: '2026-04-01T09:00:00Z', status: 'READY', sizeKb: 840 },
+  { id: '2', title: 'Q1 2026 De-Minimis Threshold Report', type: 'DE_MINIMIS', period: 'Janâ€“Mar 2026', generatedAt: '2026-04-01T09:15:00Z', status: 'READY', sizeKb: 212 },
+  { id: '3', title: 'FY 2025 Annual Compliance Summary', type: 'COMPLIANCE', period: 'Full Year 2025', generatedAt: '2026-01-15T11:00:00Z', status: 'READY', sizeKb: 1840 },
+  { id: '4', title: 'FY 2025 Substance Requirements Report', type: 'SUBSTANCE', period: 'Full Year 2025', generatedAt: '2026-01-15T11:20:00Z', status: 'READY', sizeKb: 430 },
+];
+
+async function downloadReport(report: Report) {
+  const { api } = await import('@/lib/api/client');
+  const url = report.endpoint + (report.taxPeriodId ? `?taxPeriodId=${report.taxPeriodId}` : '');
+  try {
+    const res = await api.get(url, { responseType: 'blob' });
+    const blob = new Blob([res.data], { type: 'application/pdf' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `taxsentry-${report.id}-${new Date().toISOString().slice(0, 10)}.pdf`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  } catch {
+    alert('Report generation failed. Please try again.');
+  }
+}
+
+function ReportRow({ report }: { report: Report }) {
+  const tc = TYPE_CONFIG[report.type];
+  const date = new Date(report.generatedAt);
+  const dateStr = date.toLocaleDateString('en-AE', { day: '2-digit', month: 'short', year: 'numeric' });
+  const timeStr = date.toLocaleTimeString('en-AE', { hour: '2-digit', minute: '2-digit', hour12: false });
+
+  return (
+    <div
+      className="flex items-center gap-4 rounded-[10px] transition-all"
+      style={{ padding: '14px 16px', border: '1px solid var(--ts-border)', background: 'var(--ts-bg-card)' }}
+      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'oklch(0.55 0.22 260 / 0.3)'; }}
+      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--ts-border)'; }}
+    >
+      <div
+        className="flex items-center justify-center flex-shrink-0 rounded-lg"
+        style={{ width: 40, height: 40, background: tc.bg, border: `1px solid ${tc.border}` }}
+      >
+        {report.type === 'AUDIT' ? (
+          <FileCheck size={18} color={tc.color} />
+        ) : (
+          <BarChart3 size={18} color={tc.color} />
+        )}
+      </div>
+
+      <div className="flex-1 min-w-0">
+        <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--ts-fg-primary)', margin: 0, marginBottom: 2 }}>
+          {report.title}
+        </p>
+        <div className="flex items-center gap-3">
+          <span
+            className="rounded-full px-2 py-0.5 text-[10px] font-semibold"
+            style={{ background: tc.bg, color: tc.color, border: `1px solid ${tc.border}` }}
+          >
+            {tc.label}
+          </span>
+          <span style={{ fontSize: 11, color: 'var(--ts-fg-muted)' }}>{report.period}</span>
+          <span style={{ fontSize: 11, color: 'oklch(0.40 0 0)' }}>
+            Generated {dateStr} at {timeStr}
+          </span>
+          {report.sizeKb && (
+            <span style={{ fontSize: 11, color: 'oklch(0.40 0 0)' }}>
+              {report.sizeKb >= 1000 ? `${(report.sizeKb / 1024).toFixed(1)} MB` : `${report.sizeKb} KB`}
+            </span>
+          )}
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 flex-shrink-0">
+        {report.status === 'READY' ? (
+          <button
+            onClick={() => downloadReport(report)}
+            className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12px] font-medium transition-all"
+            style={{ background: 'var(--ts-bg-elevated)', color: 'var(--ts-fg-secondary)', border: '1px solid var(--ts-border)' }}
+            onMouseEnter={e => {
+              (e.currentTarget as HTMLElement).style.background = 'oklch(0.55 0.22 260 / 0.1)';
+              (e.currentTarget as HTMLElement).style.color = 'var(--ts-blue-400)';
+              (e.currentTarget as HTMLElement).style.borderColor = 'oklch(0.55 0.22 260 / 0.3)';
+            }}
+            onMouseLeave={e => {
+              (e.currentTarget as HTMLElement).style.background = 'var(--ts-bg-elevated)';
+              (e.currentTarget as HTMLElement).style.color = 'var(--ts-fg-secondary)';
+              (e.currentTarget as HTMLElement).style.borderColor = 'var(--ts-border)';
+            }}
+          >
+            <Download size={13} />
+            Download PDF
+          </button>
+        ) : report.status === 'GENERATING' ? (
+          <div className="flex items-center gap-1.5" style={{ fontSize: 12, color: 'var(--ts-amber-500)' }}>
+            <RefreshCw size={13} className="animate-spin" />
+            Generatingâ€¦
+          </div>
+        ) : (
+          <div className="flex items-center gap-1.5" style={{ fontSize: 12, color: 'var(--ts-fg-muted)' }}>
+            <Clock size={13} />
+            Pending data
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default function ReportsPage() {
+  const [generating, setGenerating] = useState(false);
+
+  const { data: reportsData } = useQuery({
+    queryKey: ['reports'],
+    queryFn: () => api.get('/reports').then((r) => r.data.data).catch(() => null),
+  });
+
+  const reports: Report[] = reportsData?.reports ?? SAMPLE_REPORTS;
+
+  return (
+    <div className="flex min-h-screen flex-col" style={{ background: 'var(--ts-bg-base)' }}>
+      <TopRibbon />
+
+      <div className="flex-1 w-full max-w-[1200px] mx-auto px-6 py-6 space-y-6">
+        {/* Header */}
+        <div className="flex items-start justify-between">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <BarChart3 size={18} color="var(--ts-blue-500)" />
+              <h1 style={{ fontSize: 20, fontWeight: 700, color: 'var(--ts-fg-primary)', margin: 0 }}>
+                Compliance Reports
+              </h1>
+            </div>
+            <p style={{ fontSize: 13, color: 'var(--ts-fg-muted)', margin: 0 }}>
+              FTA-ready audit packs and compliance summaries for UAE QFZP requirements.
+            </p>
+          </div>
+
+          <button
+            onClick={() => {
+            const pack = reports.find((r) => r.id === 'classification-pack');
+            if (pack && pack.status === 'READY') {
+              setGenerating(true);
+              downloadReport(pack).finally(() => setGenerating(false));
+            }
+          }}
+            className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-[13px] font-bold transition-all"
+            style={{
+              background: generating ? 'var(--ts-bg-elevated)' : 'var(--ts-blue-500)',
+              color: generating ? 'var(--ts-fg-muted)' : 'white',
+              border: 'none',
+              cursor: generating ? 'default' : 'pointer',
+            }}
+          >
+            {generating ? (
+              <><RefreshCw size={14} className="animate-spin" /> Generatingâ€¦</>
+            ) : (
+              <><FileCheck size={14} /> Generate New Report</>
+            )}
+          </button>
+        </div>
+
+        {/* Report types info */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {Object.entries(TYPE_CONFIG).map(([type, tc]) => (
+            <div
+              key={type}
+              className="rounded-xl"
+              style={{ background: tc.bg, border: `1px solid ${tc.border}`, padding: '14px 16px' }}
+            >
+              <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: tc.color, marginBottom: 4 }}>
+                {tc.label}
+              </p>
+              <p style={{ fontSize: 11, color: 'var(--ts-fg-muted)', lineHeight: 1.4, margin: 0 }}>
+                {type === 'AUDIT' && 'Complete FTA audit documentation package.'}
+                {type === 'COMPLIANCE' && 'Quarterly QFZP compliance summary report.'}
+                {type === 'DE_MINIMIS' && 'De-minimis threshold analysis and projections.'}
+                {type === 'SUBSTANCE' && 'Economic substance requirements assessment.'}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        {/* Report list */}
+        <div className="premium-card" style={{ padding: 24 }}>
+          <div className="flex items-center justify-between mb-4">
+            <h2 style={{ fontSize: 15, fontWeight: 600, color: 'var(--ts-fg-primary)', margin: 0 }}>
+              Available Reports
+            </h2>
+            <div className="flex items-center gap-1.5" style={{ fontSize: 11, color: 'oklch(0.40 0 0)' }}>
+              <Lock size={11} />
+              Encrypted Â· Immutable audit log
+            </div>
+          </div>
+
+          <div className="space-y-2.5">
+            {reports.map((r) => (
+              <ReportRow key={r.id} report={r} />
+            ))}
+          </div>
+
+          {reports.length === 0 && (
+            <div
+              className="flex flex-col items-center justify-center py-12"
+              style={{ fontSize: 13, color: 'var(--ts-fg-muted)' }}
+            >
+              <CheckCircle2 size={32} color="oklch(0.48 0 0)" style={{ marginBottom: 12 }} />
+              <p style={{ fontWeight: 600, color: 'var(--ts-fg-secondary)', marginBottom: 4 }}>No reports yet</p>
+              <p>Upload transactions and generate your first compliance pack.</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+=== D:\Ripple Nexus\Taxsentry\TaxsentryUAE\apps\web\src\app\(platform)\revenue\page.tsx ===
+
+'use client';
+
+import { useQuery } from '@tanstack/react-query';
+import { api } from '@/lib/api/client';
+import { TopRibbon } from '@/components/dashboard/TopRibbon';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+} from 'recharts';
+import { TrendingUp, AlertTriangle, CheckCircle2, ArrowUpRight } from 'lucide-react';
+import Link from 'next/link';
+
+function formatAed(v: number) {
+  if (v >= 1_000_000) return `AED ${(v / 1_000_000).toFixed(2)}M`;
+  if (v >= 1_000) return `AED ${(v / 1_000).toFixed(0)}K`;
+  return `AED ${v}`;
+}
+
+function PageHeader() {
+  return (
+    <div style={{ marginBottom: 24 }}>
+      <div className="flex items-center gap-2 mb-1">
+        <TrendingUp size={18} color="var(--ts-blue-500)" />
+        <h1 style={{ fontSize: 20, fontWeight: 700, color: 'var(--ts-fg-primary)', margin: 0 }}>
+          Revenue Classification
+        </h1>
+      </div>
+      <p style={{ fontSize: 13, color: 'var(--ts-fg-muted)', margin: 0 }}>
+        Real-time breakdown of Qualifying Income, Non-Qualifying Income, and Excluded Income.
+      </p>
+    </div>
+  );
+}
+
+function KpiCard({
+  label,
+  value,
+  sub,
+  color,
+  border,
+  bg,
+}: {
+  label: string;
+  value: string;
+  sub: string;
+  color: string;
+  border: string;
+  bg: string;
+}) {
+  return (
+    <div
+      className="relative overflow-hidden rounded-xl"
+      style={{ border: `1px solid ${border}`, background: bg, padding: '18px 20px' }}
+    >
+      <div
+        className="absolute top-0 left-0 right-0"
+        style={{ height: 1, background: `linear-gradient(90deg, transparent, ${border}, transparent)` }}
+      />
+      <p style={{ fontSize: 11, color: 'var(--ts-fg-muted)', marginBottom: 6 }}>{label}</p>
+      <p className="ts-mono" style={{ fontSize: 22, fontWeight: 700, color, lineHeight: 1 }}>{value}</p>
+      <p style={{ fontSize: 11, color: 'oklch(0.45 0 0)', marginTop: 4 }}>{sub}</p>
+    </div>
+  );
+}
+
+function CustomTooltip({ active, payload, label }: any) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div
+      className="rounded-lg px-3 py-2.5"
+      style={{
+        background: 'var(--ts-bg-elevated)',
+        border: '1px solid var(--ts-border)',
+        fontSize: 12,
+        fontFamily: 'var(--font-sans)',
+        minWidth: 160,
+      }}
+    >
+      <p style={{ fontWeight: 600, color: 'var(--ts-fg-primary)', marginBottom: 6 }}>{label}</p>
+      {payload.map((entry: any) => (
+        <div key={entry.dataKey} className="flex justify-between gap-4 items-center mb-1">
+          <span className="flex items-center gap-1.5" style={{ color: 'var(--ts-fg-muted)' }}>
+            <span
+              className="inline-block rounded-sm"
+              style={{ width: 8, height: 8, background: entry.fill, flexShrink: 0 }}
+            />
+            {entry.name}
+          </span>
+          <span className="ts-mono" style={{ fontWeight: 600, color: 'var(--ts-fg-primary)' }}>
+            {formatAed(entry.value)}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export default function RevenuePage() {
+  const { data: dmData } = useQuery({
+    queryKey: ['deminimis-status'],
+    queryFn: () => api.get('/deminimis/status').then((r) => r.data.data),
+  });
+
+  const { data: historyData, isLoading } = useQuery({
+    queryKey: ['deminimis-history'],
+    queryFn: () => api.get('/deminimis/history').then((r) => r.data.data),
+  });
+
+  const dm = dmData?.deMinimis;
+  const monthlyMap: Record<string, Record<string, number>> = {};
+  (historyData?.monthly ?? []).forEach(
+    (row: { month: string; classification: string; total: number }) => {
+      if (!monthlyMap[row.month]) monthlyMap[row.month] = {};
+      monthlyMap[row.month][row.classification] = Number(row.total);
+    },
+  );
+  const chartData = Object.entries(monthlyMap)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([month, vals]) => ({ month, ...vals }));
+
+  const totalQi = historyData?.totals?.QI ?? 0;
+  const totalNqi = historyData?.totals?.NQI ?? 0;
+  const totalExcluded = historyData?.totals?.EXCLUDED ?? 0;
+  const totalRevenue = totalQi + totalNqi + totalExcluded;
+
+  return (
+    <div className="flex min-h-screen flex-col" style={{ background: 'var(--ts-bg-base)' }}>
+      <TopRibbon />
+
+      <div className="flex-1 w-full max-w-[1200px] mx-auto px-6 py-6 space-y-6">
+        <PageHeader />
+
+        {/* KPI Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <KpiCard
+            label="Total Revenue (YTD)"
+            value={formatAed(totalRevenue)}
+            sub="Excl. exempt income"
+            color="var(--ts-fg-primary)"
+            border="var(--ts-border)"
+            bg="var(--ts-bg-card)"
+          />
+          <KpiCard
+            label="Qualifying Income"
+            value={formatAed(totalQi)}
+            sub="0% corporate tax"
+            color="var(--ts-green-500)"
+            border="oklch(0.70 0.20 155 / 0.3)"
+            bg="oklch(0.70 0.20 155 / 0.05)"
+          />
+          <KpiCard
+            label="Non-Qualifying Income"
+            value={formatAed(totalNqi)}
+            sub={`${dm ? parseFloat(dm.nqrPercentage).toFixed(2) : 'â€”'}% of revenue`}
+            color="var(--ts-amber-500)"
+            border="oklch(0.80 0.18 85 / 0.3)"
+            bg="oklch(0.80 0.18 85 / 0.05)"
+          />
+          <KpiCard
+            label="Excluded Income"
+            value={formatAed(totalExcluded)}
+            sub="Not counted for de-minimis"
+            color="var(--ts-fg-muted)"
+            border="var(--ts-border)"
+            bg="var(--ts-bg-card)"
+          />
+        </div>
+
+        {/* Monthly bar chart */}
+        <div
+          className="premium-card"
+          style={{ padding: 24 }}
+        >
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <h2 style={{ fontSize: 15, fontWeight: 600, color: 'var(--ts-fg-primary)', margin: 0 }}>
+                Monthly Revenue Breakdown
+              </h2>
+              <p style={{ fontSize: 12, color: 'var(--ts-fg-muted)', margin: 0, marginTop: 3 }}>
+                Classification by income type across tax period
+              </p>
+            </div>
+            <Link
+              href="/transactions"
+              className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-[12px] font-medium"
+              style={{ background: 'var(--ts-bg-elevated)', color: 'var(--ts-fg-muted)', border: '1px solid var(--ts-border)' }}
+            >
+              Import Transactions <ArrowUpRight size={12} />
+            </Link>
+          </div>
+
+          {isLoading ? (
+            <div
+              className="animate-pulse rounded-lg"
+              style={{ height: 240, background: 'var(--ts-bg-elevated)' }}
+            />
+          ) : chartData.length === 0 ? (
+            <div
+              className="flex items-center justify-center rounded-lg"
+              style={{ height: 200, background: 'var(--ts-bg-elevated)', fontSize: 13, color: 'var(--ts-fg-muted)' }}
+            >
+              No monthly data. Upload a CSV to see your revenue breakdown.
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={280}>
+              <BarChart data={chartData} barGap={2} barCategoryGap="30%">
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--ts-border-subtle)" vertical={false} />
+                <XAxis
+                  dataKey="month"
+                  tick={{ fill: 'oklch(0.45 0 0)', fontSize: 11, fontFamily: 'var(--font-sans)' }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <YAxis
+                  tickFormatter={(v) => `${(v / 1000).toFixed(0)}K`}
+                  tick={{ fill: 'oklch(0.45 0 0)', fontSize: 11, fontFamily: 'var(--font-mono)' }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'oklch(0.98 0 0 / 0.03)' }} />
+                <Bar dataKey="QI" name="Qualifying Income" fill="var(--ts-green-500)" radius={[3, 3, 0, 0]} />
+                <Bar dataKey="NQI" name="Non-Qualifying" fill="var(--ts-amber-500)" radius={[3, 3, 0, 0]} />
+                <Bar dataKey="EXCLUDED" name="Excluded" fill="oklch(0.35 0.02 255)" radius={[3, 3, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+
+          {/* Legend */}
+          <div className="flex items-center gap-5 mt-3">
+            {[
+              { color: 'var(--ts-green-500)', label: 'Qualifying Income (QI)' },
+              { color: 'var(--ts-amber-500)', label: 'Non-Qualifying (NQI)' },
+              { color: 'oklch(0.35 0.02 255)', label: 'Excluded' },
+            ].map(({ color, label }) => (
+              <div key={label} className="flex items-center gap-1.5" style={{ fontSize: 11, color: 'var(--ts-fg-muted)' }}>
+                <span className="inline-block rounded-sm" style={{ width: 10, height: 10, background: color, flexShrink: 0 }} />
+                {label}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* NQI warning */}
+        {dm && parseFloat(dm.nqrPercentage) >= 3.5 && (
+          <div
+            className="flex items-start gap-3 rounded-xl p-4"
+            style={{
+              border: '1px solid oklch(0.80 0.18 85 / 0.3)',
+              background: 'oklch(0.80 0.18 85 / 0.08)',
+            }}
+          >
+            <AlertTriangle size={16} color="var(--ts-amber-500)" style={{ flexShrink: 0, marginTop: 1 }} />
+            <div>
+              <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--ts-amber-500)', margin: 0, marginBottom: 3 }}>
+                Approaching De-Minimis Threshold
+              </p>
+              <p style={{ fontSize: 12, color: 'var(--ts-fg-muted)', margin: 0, lineHeight: 1.5 }}>
+                NQI is at {parseFloat(dm.nqrPercentage).toFixed(2)}% â€” only {(5 - parseFloat(dm.nqrPercentage)).toFixed(2)}% headroom remaining.
+                Review unclassified transactions to avoid exceeding the 5% limit.
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
+=== D:\Ripple Nexus\Taxsentry\TaxsentryUAE\apps\web\src\app\(platform)\settings\page.tsx ===
+
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { api } from '@/lib/api/client';
+import { TopRibbon } from '@/components/dashboard/TopRibbon';
+import { Settings, Building2, Bell, Shield, Users, Save, ChevronRight, CheckCircle2, UserPlus, X, Trash2, Clock } from 'lucide-react';
+
+type TabId = 'company' | 'notifications' | 'security' | 'team';
+
+type Invitation = {
+  id: string;
+  email: string;
+  role: string;
+  expiresAt: string;
+};
+
+const ROLE_LABELS: Record<string, string> = {
+  OWNER: 'Owner',
+  FINANCE: 'Finance',
+  VIEWER: 'Viewer',
+  AUDITOR: 'Auditor',
+};
+
+const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
+  { id: 'company', label: 'Company', icon: Building2 },
+  { id: 'notifications', label: 'Notifications', icon: Bell },
+  { id: 'security', label: 'Security', icon: Shield },
+  { id: 'team', label: 'Team', icon: Users },
+];
+
+const FREE_ZONES = [
+  'DMCC', 'DIFC', 'JAFZA', 'ADGM', 'Sharjah Media City',
+  'Fujairah Creative City', 'IFZA', 'RAKEZ', 'Other',
+];
+
+function SettingRow({
+  label,
+  description,
+  children,
+}: {
+  label: string;
+  description?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      className="flex items-start justify-between gap-4 py-4"
+      style={{ borderBottom: '1px solid var(--ts-border-subtle)' }}
+    >
+      <div>
+        <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--ts-fg-primary)', margin: 0 }}>{label}</p>
+        {description && (
+          <p style={{ fontSize: 12, color: 'var(--ts-fg-muted)', margin: 0, marginTop: 2 }}>{description}</p>
+        )}
+      </div>
+      <div className="flex-shrink-0">{children}</div>
+    </div>
+  );
+}
+
+function Toggle({ enabled, onChange }: { enabled: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <button
+      onClick={() => onChange(!enabled)}
+      className="relative flex-shrink-0 rounded-full transition-all"
+      style={{
+        width: 44,
+        height: 24,
+        background: enabled ? 'var(--ts-blue-500)' : 'var(--ts-bg-elevated)',
+        border: `1px solid ${enabled ? 'var(--ts-blue-500)' : 'var(--ts-border)'}`,
+        cursor: 'pointer',
+      }}
+    >
+      <span
+        className="absolute top-0.5 rounded-full transition-all"
+        style={{
+          width: 20,
+          height: 20,
+          background: 'white',
+          left: enabled ? 22 : 2,
+        }}
+      />
+    </button>
+  );
+}
+
+function StyledInput({ value, onChange, type = 'text', placeholder }: { value: string; onChange: (v: string) => void; type?: string; placeholder?: string }) {
+  return (
+    <input
+      type={type}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      className="rounded-lg px-3 py-2 text-[13px] outline-none transition-all"
+      style={{
+        background: 'var(--ts-bg-elevated)',
+        border: '1px solid var(--ts-border)',
+        color: 'var(--ts-fg-primary)',
+        minWidth: 220,
+        fontFamily: 'var(--font-sans)',
+      }}
+      onFocus={e => { (e.target as HTMLElement).style.borderColor = 'var(--ts-blue-500)'; }}
+      onBlur={e => { (e.target as HTMLElement).style.borderColor = 'var(--ts-border)'; }}
+    />
+  );
+}
+
+function StyledSelect({ value, onChange, options }: { value: string; onChange: (v: string) => void; options: string[] }) {
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="rounded-lg px-3 py-2 text-[13px] outline-none transition-all"
+      style={{
+        background: 'var(--ts-bg-elevated)',
+        border: '1px solid var(--ts-border)',
+        color: 'var(--ts-fg-primary)',
+        minWidth: 180,
+        fontFamily: 'var(--font-sans)',
+        cursor: 'pointer',
+      }}
+    >
+      {options.map((o) => (
+        <option key={o} value={o} style={{ background: 'var(--ts-bg-elevated)' }}>
+          {o}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+export default function SettingsPage() {
+  const queryClient = useQueryClient();
+  const [activeTab, setActiveTab] = useState<TabId>('company');
+  const [saved, setSaved] = useState(false);
+
+  const [companyName, setCompanyName] = useState('');
+  const [freeZone, setFreeZone] = useState('DMCC');
+  const [licenseNo, setLicenseNo] = useState('');
+  const [taxRegNo, setTaxRegNo] = useState('');
+
+  const { data: orgData } = useQuery({
+    queryKey: ['org-me'],
+    queryFn: () => api.get('/organizations/me').then((r) => r.data.data ?? r.data),
+    retry: false,
+  });
+
+  useEffect(() => {
+    if (orgData) {
+      setCompanyName(orgData.name ?? '');
+      setFreeZone(orgData.freeZone ?? 'DMCC');
+      setLicenseNo(orgData.tradeLicenseNo ?? '');
+      setTaxRegNo(orgData.taxRegistrationNo ?? '');
+    }
+  }, [orgData]);
+
+  const saveMutation = useMutation({
+    mutationFn: () =>
+      api.patch('/organizations/me', { name: companyName, taxRegistrationNo: taxRegNo }).then((r) => r.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['org-me'] });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    },
+  });
+
+  const [emailAlerts, setEmailAlerts] = useState(true);
+  const [breachAlerts, setBreachAlerts] = useState(true);
+  const [weeklyDigest, setWeeklyDigest] = useState(false);
+  const [thresholdWarnings, setThresholdWarnings] = useState(true);
+
+  // Team tab state
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteRole, setInviteRole] = useState('VIEWER');
+  const [inviteError, setInviteError] = useState('');
+  const [inviteSuccess, setInviteSuccess] = useState(false);
+
+  const { data: invitations, refetch: refetchInvitations } = useQuery<Invitation[]>({
+    queryKey: ['org-invitations'],
+    queryFn: () => api.get('/organizations/me/invitations').then((r) => r.data.data ?? r.data),
+    enabled: activeTab === 'team',
+    retry: false,
+  });
+
+  const inviteMutation = useMutation({
+    mutationFn: () => api.post('/organizations/me/invite', { email: inviteEmail, role: inviteRole }),
+    onSuccess: () => {
+      setInviteSuccess(true);
+      setInviteEmail('');
+      refetchInvitations();
+      setTimeout(() => {
+        setInviteSuccess(false);
+        setShowInviteModal(false);
+      }, 2000);
+    },
+    onError: (err: unknown) => {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+        'Could not send invitation.';
+      setInviteError(msg);
+    },
+  });
+
+  const revokeMutation = useMutation({
+    mutationFn: (id: string) => api.delete(`/organizations/me/invitations/${id}`),
+    onSuccess: () => refetchInvitations(),
+  });
+
+  return (
+    <div className="flex min-h-screen flex-col" style={{ background: 'var(--ts-bg-base)' }}>
+      <TopRibbon />
+
+      <div className="flex-1 w-full max-w-[1000px] mx-auto px-6 py-6">
+        {/* Header */}
+        <div className="flex items-center gap-2 mb-6">
+          <Settings size={18} color="var(--ts-blue-500)" />
+          <h1 style={{ fontSize: 20, fontWeight: 700, color: 'var(--ts-fg-primary)', margin: 0 }}>
+            Settings
+          </h1>
+        </div>
+
+        <div className="flex gap-6">
+          {/* Tab nav */}
+          <div
+            className="flex-shrink-0 rounded-xl"
+            style={{ background: 'var(--ts-bg-card)', border: '1px solid var(--ts-border)', padding: 8, width: 200, height: 'fit-content' }}
+          >
+            {TABS.map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                onClick={() => setActiveTab(id)}
+                className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-all"
+                style={{
+                  background: activeTab === id ? 'oklch(0.55 0.22 260 / 0.1)' : 'transparent',
+                  color: activeTab === id ? 'var(--ts-blue-400)' : 'var(--ts-fg-muted)',
+                  border: 'none',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                }}
+                onMouseEnter={e => {
+                  if (activeTab !== id) {
+                    (e.currentTarget as HTMLElement).style.background = 'var(--ts-bg-elevated)';
+                    (e.currentTarget as HTMLElement).style.color = 'var(--ts-fg-secondary)';
+                  }
+                }}
+                onMouseLeave={e => {
+                  if (activeTab !== id) {
+                    (e.currentTarget as HTMLElement).style.background = 'transparent';
+                    (e.currentTarget as HTMLElement).style.color = 'var(--ts-fg-muted)';
+                  }
+                }}
+              >
+                <Icon size={15} color="currentColor" />
+                {label}
+                {activeTab === id && <ChevronRight size={13} style={{ marginLeft: 'auto' }} />}
+              </button>
+            ))}
+          </div>
+
+          {/* Tab panel */}
+          <div className="flex-1 premium-card" style={{ padding: 28 }}>
+            {activeTab === 'company' && (
+              <div>
+                <h2 style={{ fontSize: 15, fontWeight: 600, color: 'var(--ts-fg-primary)', margin: 0, marginBottom: 4 }}>
+                  Company Details
+                </h2>
+                <p style={{ fontSize: 12, color: 'var(--ts-fg-muted)', marginBottom: 20 }}>
+                  These details appear in your compliance reports and the dashboard header.
+                </p>
+
+                <SettingRow label="Company Name" description="Legal registered name of your Free Zone entity">
+                  <StyledInput value={companyName} onChange={setCompanyName} placeholder="Horizon Trading FZE" />
+                </SettingRow>
+                <SettingRow label="Free Zone" description="Your registered free zone authority">
+                  <StyledSelect value={freeZone} onChange={setFreeZone} options={FREE_ZONES} />
+                </SettingRow>
+                <SettingRow label="Trade License Number" description="Your current active trade license number (read-only â€” contact support to change)">
+                  <StyledInput value={licenseNo} onChange={() => {}} placeholder="DMCC-123456" />
+                </SettingRow>
+                <SettingRow label="Tax Registration Number (TRN)" description="UAE FTA tax registration number (optional)">
+                  <StyledInput value={taxRegNo} onChange={setTaxRegNo} placeholder="100-XXXXXXXXX-X" />
+                </SettingRow>
+                <div style={{ marginTop: 24, display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <button
+                    onClick={() => saveMutation.mutate()}
+                    disabled={saveMutation.isPending}
+                    className="flex items-center gap-2 rounded-xl px-5 py-2.5 text-[13px] font-bold transition-all"
+                    style={{ background: 'var(--ts-blue-500)', color: 'white', border: 'none', cursor: saveMutation.isPending ? 'default' : 'pointer', opacity: saveMutation.isPending ? 0.7 : 1 }}
+                  >
+                    <Save size={14} />
+                    {saveMutation.isPending ? 'Savingâ€¦' : 'Save Changes'}
+                  </button>
+                  {saved && (
+                    <span className="flex items-center gap-1.5" style={{ fontSize: 13, color: 'var(--ts-green-500)' }}>
+                      <CheckCircle2 size={14} /> Saved
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'notifications' && (
+              <div>
+                <h2 style={{ fontSize: 15, fontWeight: 600, color: 'var(--ts-fg-primary)', margin: 0, marginBottom: 4 }}>
+                  Notification Preferences
+                </h2>
+                <p style={{ fontSize: 12, color: 'var(--ts-fg-muted)', marginBottom: 20 }}>
+                  Configure how and when TaxSentry alerts you about compliance events.
+                </p>
+
+                <SettingRow label="Email Alerts" description="Receive alerts via email for all compliance events">
+                  <Toggle enabled={emailAlerts} onChange={setEmailAlerts} />
+                </SettingRow>
+                <SettingRow label="Breach Imminent Alerts" description="Immediate notification when de-minimis exceeds 80%">
+                  <Toggle enabled={breachAlerts} onChange={setBreachAlerts} />
+                </SettingRow>
+                <SettingRow label="Weekly Digest" description="Summary email every Monday with compliance status">
+                  <Toggle enabled={weeklyDigest} onChange={setWeeklyDigest} />
+                </SettingRow>
+                <SettingRow label="Threshold Warnings" description="Warnings at 50%, 70%, and 90% of de-minimis limits">
+                  <Toggle enabled={thresholdWarnings} onChange={setThresholdWarnings} />
+                </SettingRow>
+
+                <div style={{ marginTop: 24 }}>
+                  <span style={{ fontSize: 12, color: 'var(--ts-fg-muted)', padding: '8px 12px', background: 'var(--ts-bg-elevated)', borderRadius: 8, border: '1px solid var(--ts-border)' }}>
+                    Notification preferences â€” coming soon
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'security' && (
+              <div>
+                <h2 style={{ fontSize: 15, fontWeight: 600, color: 'var(--ts-fg-primary)', margin: 0, marginBottom: 4 }}>
+                  Security
+                </h2>
+                <p style={{ fontSize: 12, color: 'var(--ts-fg-muted)', marginBottom: 20 }}>
+                  TaxSentry security configuration and data protection settings.
+                </p>
+
+                {[
+                  { label: 'AES-256 Data Encryption', desc: 'All data at rest encrypted with AES-256-GCM', status: 'ACTIVE' },
+                  { label: 'TLS 1.3 in Transit', desc: 'All API communication over TLS 1.3', status: 'ACTIVE' },
+                  { label: 'Immutable Audit Log', desc: 'All actions logged and tamper-proof', status: 'ACTIVE' },
+                  { label: 'Two-Factor Authentication', desc: 'TOTP-based 2FA â€” coming soon', status: 'CONFIGURE' },
+                  { label: 'Session Timeout', desc: 'Auto-sign-out after 8 hours of inactivity', status: 'ACTIVE' },
+                ].map(({ label, desc, status }) => (
+                  <div
+                    key={label}
+                    className="flex items-center justify-between py-4"
+                    style={{ borderBottom: '1px solid var(--ts-border-subtle)' }}
+                  >
+                    <div>
+                      <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--ts-fg-primary)', margin: 0 }}>{label}</p>
+                      <p style={{ fontSize: 12, color: 'var(--ts-fg-muted)', margin: 0, marginTop: 2 }}>{desc}</p>
+                    </div>
+                    <span
+                      className="rounded-full px-3 py-1 text-[11px] font-bold tracking-wide"
+                      style={{
+                        background: status === 'ACTIVE' ? 'oklch(0.70 0.20 155 / 0.1)' : 'oklch(0.55 0.22 260 / 0.1)',
+                        color: status === 'ACTIVE' ? 'var(--ts-green-500)' : 'var(--ts-blue-400)',
+                        border: `1px solid ${status === 'ACTIVE' ? 'oklch(0.70 0.20 155 / 0.25)' : 'oklch(0.55 0.22 260 / 0.25)'}`,
+                      }}
+                    >
+                      {status === 'ACTIVE' ? 'âœ“ Active' : 'Configure â†’'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {activeTab === 'team' && (
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <h2 style={{ fontSize: 15, fontWeight: 600, color: 'var(--ts-fg-primary)', margin: 0 }}>
+                    Team Access
+                  </h2>
+                  <button
+                    onClick={() => { setShowInviteModal(true); setInviteError(''); setInviteSuccess(false); }}
+                    className="flex items-center gap-2 rounded-xl px-3 py-2 text-[12px] font-medium"
+                    style={{ background: 'var(--ts-blue-600)', color: 'white', border: 'none', cursor: 'pointer' }}
+                  >
+                    <UserPlus size={13} />
+                    Invite member
+                  </button>
+                </div>
+                <p style={{ fontSize: 12, color: 'var(--ts-fg-muted)', marginBottom: 20 }}>
+                  Manage role-based access for CFOs, accountants, and auditors.
+                </p>
+
+                {/* Pending invitations */}
+                {invitations && invitations.length > 0 && (
+                  <div style={{ marginBottom: 20 }}>
+                    <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--ts-fg-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
+                      Pending Invitations
+                    </p>
+                    {invitations.map((inv) => (
+                      <div
+                        key={inv.id}
+                        className="flex items-center justify-between py-3"
+                        style={{ borderBottom: '1px solid var(--ts-border-subtle)' }}
+                      >
+                        <div className="flex items-center gap-3">
+                          <Clock size={14} style={{ color: 'var(--ts-fg-muted)', flexShrink: 0 }} />
+                          <div>
+                            <p style={{ fontSize: 13, color: 'var(--ts-fg-primary)', margin: 0 }}>{inv.email}</p>
+                            <p style={{ fontSize: 11, color: 'var(--ts-fg-muted)', margin: 0 }}>
+                              {ROLE_LABELS[inv.role] ?? inv.role} Â· Expires {new Date(inv.expiresAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => revokeMutation.mutate(inv.id)}
+                          disabled={revokeMutation.isPending}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ts-fg-muted)', padding: 4 }}
+                          title="Revoke invitation"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {invitations && invitations.length === 0 && (
+                  <p style={{ fontSize: 13, color: 'var(--ts-fg-muted)', marginBottom: 16 }}>
+                    No pending invitations.
+                  </p>
+                )}
+
+                {/* Invite modal */}
+                {showInviteModal && (
+                  <div
+                    className="fixed inset-0 flex items-center justify-center z-50"
+                    style={{ background: 'rgba(0,0,0,0.6)' }}
+                    onClick={(e) => { if (e.target === e.currentTarget) setShowInviteModal(false); }}
+                  >
+                    <div
+                      className="rounded-2xl p-6 w-full max-w-sm"
+                      style={{ background: 'var(--ts-bg-card)', border: '1px solid var(--ts-border)' }}
+                    >
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 style={{ fontSize: 15, fontWeight: 600, color: 'var(--ts-fg-primary)', margin: 0 }}>
+                          Invite team member
+                        </h3>
+                        <button
+                          onClick={() => setShowInviteModal(false)}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ts-fg-muted)', padding: 2 }}
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+
+                      {inviteSuccess ? (
+                        <div className="text-center py-4">
+                          <CheckCircle2 size={28} style={{ color: 'var(--ts-green-500)', margin: '0 auto 8px' }} />
+                          <p style={{ fontSize: 13, color: 'var(--ts-fg-primary)' }}>Invitation sent!</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          <div>
+                            <label style={{ fontSize: 12, fontWeight: 500, color: 'var(--ts-fg-secondary)', display: 'block', marginBottom: 6 }}>
+                              Email address
+                            </label>
+                            <input
+                              type="email"
+                              value={inviteEmail}
+                              onChange={(e) => setInviteEmail(e.target.value)}
+                              placeholder="colleague@company.ae"
+                              className="w-full px-3.5 py-2.5 rounded-lg text-sm outline-none"
+                              style={{
+                                background: 'var(--ts-bg-elevated)',
+                                border: '1px solid var(--ts-border)',
+                                color: 'var(--ts-fg-primary)',
+                              }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ fontSize: 12, fontWeight: 500, color: 'var(--ts-fg-secondary)', display: 'block', marginBottom: 6 }}>
+                              Role
+                            </label>
+                            <select
+                              value={inviteRole}
+                              onChange={(e) => setInviteRole(e.target.value)}
+                              className="w-full px-3.5 py-2.5 rounded-lg text-sm outline-none"
+                              style={{
+                                background: 'var(--ts-bg-elevated)',
+                                border: '1px solid var(--ts-border)',
+                                color: 'var(--ts-fg-primary)',
+                                cursor: 'pointer',
+                              }}
+                            >
+                              <option value="FINANCE">Finance</option>
+                              <option value="VIEWER">Viewer</option>
+                              <option value="AUDITOR">Auditor</option>
+                            </select>
+                          </div>
+
+                          {inviteError && (
+                            <p style={{ fontSize: 12, color: 'var(--ts-red-400)' }}>{inviteError}</p>
+                          )}
+
+                          <button
+                            onClick={() => { setInviteError(''); inviteMutation.mutate(); }}
+                            disabled={!inviteEmail || inviteMutation.isPending}
+                            className="w-full py-2.5 rounded-lg text-sm font-semibold transition-opacity disabled:opacity-60"
+                            style={{ background: 'var(--ts-blue-600)', color: '#fff', border: 'none', cursor: 'pointer' }}
+                          >
+                            {inviteMutation.isPending ? 'Sendingâ€¦' : 'Send invitation'}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+=== D:\Ripple Nexus\Taxsentry\TaxsentryUAE\apps\web\src\app\(platform)\substance\page.tsx ===
+
+'use client';
+
+import { useQuery } from '@tanstack/react-query';
+import { api } from '@/lib/api/client';
+import { TopRibbon } from '@/components/dashboard/TopRibbon';
+import { FileText, CheckCircle2, AlertCircle, Clock, Users, Building2, Briefcase, Upload, Trash2, Download, X } from 'lucide-react';
+import { useState } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+
+type RequirementStatus = 'PASS' | 'FAIL' | 'PARTIAL' | 'PENDING';
+
+interface Requirement {
+  id: string;
+  category: string;
+  label: string;
+  description: string;
+  status: RequirementStatus;
+  detail?: string;
+  docType?: string;
+  document?: any;
+}
+
+const STATUS_CONFIG: Record<RequirementStatus, { icon: React.ElementType; color: string; bg: string; border: string; label: string }> = {
+  PASS: {
+    icon: CheckCircle2,
+    color: 'var(--ts-green-500)',
+    bg: 'oklch(0.70 0.20 155 / 0.1)',
+    border: 'oklch(0.70 0.20 155 / 0.25)',
+    label: 'Satisfied',
+  },
+  PARTIAL: {
+    icon: Clock,
+    color: 'var(--ts-amber-500)',
+    bg: 'oklch(0.80 0.18 85 / 0.1)',
+    border: 'oklch(0.80 0.18 85 / 0.25)',
+    label: 'Partial',
+  },
+  FAIL: {
+    icon: AlertCircle,
+    color: 'var(--ts-red-500)',
+    bg: 'oklch(0.62 0.24 25 / 0.1)',
+    border: 'oklch(0.62 0.24 25 / 0.25)',
+    label: 'Not Met',
+  },
+  PENDING: {
+    icon: Clock,
+    color: 'var(--ts-fg-muted)',
+    bg: 'var(--ts-bg-elevated)',
+    border: 'var(--ts-border)',
+    label: 'Pending',
+  },
+};
+
+function RequirementRow({ 
+  req, 
+  onUploadClick,
+  onDownloadDocument,
+  onDeleteDocument
+}: { 
+  req: Requirement;
+  onUploadClick: (docType: string) => void;
+  onDownloadDocument: (docId: string) => void;
+  onDeleteDocument: (docId: string) => void;
+}) {
+  const sc = STATUS_CONFIG[req.status];
+  const Icon = sc.icon;
+
+  return (
+    <div
+      className="flex items-start gap-3 rounded-[10px] transition-all"
+      style={{ padding: '14px 16px', border: `1px solid ${sc.border}`, background: sc.bg, marginBottom: 8 }}
+    >
+      <Icon size={16} color={sc.color} style={{ flexShrink: 0, marginTop: 1 }} />
+      <div className="flex-1 min-w-0">
+        <div className="flex items-start justify-between gap-2">
+          <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--ts-fg-primary)', margin: 0 }}>
+            {req.label}
+          </p>
+          <span
+            className="flex-shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wide"
+            style={{ background: sc.bg, color: sc.color, border: `1px solid ${sc.border}` }}
+          >
+            {sc.label}
+          </span>
+        </div>
+        <p style={{ fontSize: 12, color: 'var(--ts-fg-muted)', margin: 0, marginTop: 3, lineHeight: 1.5 }}>
+          {req.description}
+        </p>
+        {req.detail && (
+          <p style={{ fontSize: 11, color: sc.color, margin: 0, marginTop: 4 }}>{req.detail}</p>
+        )}
+        
+        {req.docType && (
+          <div className="mt-3 flex items-center gap-3">
+            {req.document ? (
+              <div className="flex items-center gap-3 rounded-lg px-3 py-2 bg-[var(--ts-bg-base)] border border-[var(--ts-border-subtle)] w-full">
+                <FileText size={14} className="text-gray-400" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-[var(--ts-fg-primary)] truncate">{req.document.fileName}</p>
+                  <p className="text-[10px] text-[var(--ts-fg-muted)]">
+                    {(req.document.fileSize / 1024).toFixed(1)} KB â€¢ Uploaded {new Date(req.document.uploadedAt).toLocaleDateString()}
+                    {req.document.expiresAt && ` â€¢ Expires ${new Date(req.document.expiresAt).toLocaleDateString()}`}
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => onDownloadDocument(req.document.id)}
+                    className="p-1.5 text-gray-400 hover:text-blue-500 rounded bg-white border border-gray-200"
+                    title="Download"
+                  >
+                    <Download size={14} />
+                  </button>
+                  <button
+                    onClick={() => onDeleteDocument(req.document.id)}
+                    className="p-1.5 text-gray-400 hover:text-red-500 rounded bg-white border border-gray-200"
+                    title="Delete"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={() => onUploadClick(req.docType!)}
+                className="flex items-center gap-1.5 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg border border-blue-200 transition-colors"
+              >
+                <Upload size={12} /> Upload Document
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function UploadDocumentDialog({
+  docType,
+  onClose,
+}: {
+  docType: string;
+  onClose: () => void;
+}) {
+  const queryClient = useQueryClient();
+  const [file, setFile] = useState<File | null>(null);
+  const [expiresAt, setExpiresAt] = useState('');
+
+  const uploadMutation = useMutation({
+    mutationFn: async (f: File) => {
+      const form = new FormData();
+      form.append('file', f);
+      const url = `/substance/documents?docType=${docType}${expiresAt ? `&expiresAt=${expiresAt}` : ''}`;
+      const res = await api.post(url, form, { headers: { 'Content-Type': 'multipart/form-data' } });
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['substance-health'] });
+      queryClient.invalidateQueries({ queryKey: ['risk-score'] });
+      onClose();
+    },
+  });
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="premium-card w-full max-w-lg" style={{ padding: 32, margin: 20 }}>
+        <div className="flex items-center justify-between mb-6">
+          <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--ts-fg-primary)', margin: 0 }}>
+            Upload Document
+          </h2>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ts-fg-muted)' }}>
+            <X size={18} />
+          </button>
+        </div>
+
+        <div
+          className="rounded-xl text-center"
+          style={{
+            padding: '32px 20px', border: '2px dashed var(--ts-border)', background: 'var(--ts-bg-elevated)',
+            cursor: 'pointer', marginBottom: 20,
+          }}
+          onClick={() => document.getElementById('doc-input')?.click()}
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => {
+            e.preventDefault();
+            const f = e.dataTransfer.files[0];
+            if (f) setFile(f);
+          }}
+        >
+          <Upload size={28} color="var(--ts-fg-muted)" style={{ margin: '0 auto 12px' }} />
+          <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--ts-fg-primary)', marginBottom: 4 }}>
+            {file ? file.name : 'Drop file here or click to browse'}
+          </p>
+          <p style={{ fontSize: 12, color: 'var(--ts-fg-muted)', margin: 0 }}>
+            PDF, JPEG, PNG, Excel, Word (Max 50MB)
+          </p>
+          <input id="doc-input" type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" style={{ display: 'none' }}
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) setFile(f); }} />
+        </div>
+
+        <div style={{ marginBottom: 20 }}>
+          <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--ts-fg-primary)', marginBottom: 8 }}>
+            Expiry Date (Optional)
+          </label>
+          <input
+            type="date"
+            value={expiresAt}
+            onChange={(e) => setExpiresAt(e.target.value)}
+            className="w-full rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
+            style={{ padding: '10px 12px', background: 'var(--ts-bg-elevated)', border: '1px solid var(--ts-border)', color: 'var(--ts-fg-primary)', fontSize: 14 }}
+          />
+        </div>
+
+        {uploadMutation.isError && (
+          <p style={{ fontSize: 12, color: 'var(--ts-red-500)', marginBottom: 12 }}>
+            Upload failed. Please try again.
+          </p>
+        )}
+
+        <button
+          disabled={!file || uploadMutation.isPending}
+          onClick={() => file && uploadMutation.mutate(file)}
+          className="w-full rounded-xl font-bold transition-all"
+          style={{
+            padding: '12px 24px', fontSize: 14,
+            background: !file ? 'var(--ts-bg-elevated)' : 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+            color: !file ? 'var(--ts-fg-muted)' : 'white',
+            border: 'none', cursor: !file ? 'not-allowed' : 'pointer',
+            opacity: uploadMutation.isPending ? 0.7 : 1,
+          }}
+        >
+          {uploadMutation.isPending ? 'Uploadingâ€¦' : 'Upload Document'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+const SUBSTANCE_REQUIREMENTS: Requirement[] = [
+  {
+    id: 'ciga-1',
+    category: 'Core Income Generating Activity',
+    label: 'Board Minutes (UAE Decision-Making)',
+    description: 'Key management and commercial decisions must be made by qualified employees in the UAE Free Zone.',
+    status: 'PENDING',
+    docType: 'BOARD_MINUTES',
+  },
+  {
+    id: 'ciga-2',
+    category: 'Core Income Generating Activity',
+    label: 'Payroll Register',
+    description: 'Adequate number of qualified full-time employees must be present in the free zone.',
+    status: 'PENDING',
+    docType: 'PAYROLL_REGISTER',
+  },
+  {
+    id: 'ciga-2-1',
+    category: 'Core Income Generating Activity',
+    label: 'Emirates IDs of Qualified Employees',
+    description: 'Evidence of qualified full-time employees.',
+    status: 'PENDING',
+    docType: 'EMIRATES_IDS',
+  },
+  {
+    id: 'ciga-3',
+    category: 'Core Income Generating Activity',
+    label: 'OpEx Split Demonstrating UAE Substance',
+    description: 'Adequate operating expenditure must be incurred in the free zone.',
+    status: 'PENDING',
+    docType: 'OPEX_SPLIT',
+  },
+  {
+    id: 'premises',
+    category: 'Physical Presence',
+    label: 'Office Lease Agreement',
+    description: 'Active registered office or physical premises in the free zone must be maintained.',
+    status: 'PENDING',
+    docType: 'LEASE_AGREEMENT',
+  },
+  {
+    id: 'trade-license',
+    category: 'Physical Presence',
+    label: 'Trade License',
+    description: 'Valid trade license issued by the free zone authority.',
+    status: 'PENDING',
+    docType: 'TRADE_LICENSE',
+  },
+  {
+    id: 'org-chart',
+    category: 'Core Income Generating Activity',
+    label: 'Organisation Chart',
+    description: 'Demonstrating structure and roles within the free zone.',
+    status: 'PENDING',
+    docType: 'ORG_CHART',
+  },
+  {
+    id: 'audit',
+    category: 'Core Income Generating Activity',
+    label: 'Audited Financial Statements',
+    description: 'Required to demonstrate compliance and arm\'s length pricing.',
+    status: 'PENDING',
+    docType: 'AUDITED_FINANCIAL_STATEMENTS',
+  },
+];
+
+export default function SubstancePage() {
+  const queryClient = useQueryClient();
+  const [uploadingDocType, setUploadingDocType] = useState<string | null>(null);
+
+  const { data: substanceData } = useQuery({
+    queryKey: ['substance-health'],
+    queryFn: () => api.get('/substance/health').then((r) => r.data.data).catch(() => null),
+  });
+  
+  const checklistMap = new Map((substanceData?.checklist ?? []).map((c: any) => [c.docType, c]));
+
+  const requirements: Requirement[] = SUBSTANCE_REQUIREMENTS.map(req => {
+    if (req.docType) {
+      const cl = checklistMap.get(req.docType) as any;
+      if (cl) {
+        let mappedStatus: RequirementStatus = 'PENDING';
+        if (cl.status === 'ACTIVE') mappedStatus = 'PASS';
+        if (cl.status === 'EXPIRING_SOON') mappedStatus = 'PARTIAL';
+        if (cl.status === 'EXPIRED') mappedStatus = 'FAIL';
+        if (cl.status === 'MISSING') mappedStatus = 'PENDING';
+        return { ...req, status: mappedStatus, document: cl.document };
+      }
+    }
+    return req;
+  });
+
+  const categories = Array.from(new Set(requirements.map((r) => r.category)));
+  const passCount = requirements.filter((r) => r.status === 'PASS').length;
+  const failCount = requirements.filter((r) => r.status === 'FAIL').length;
+  const partialCount = requirements.filter((r) => r.status === 'PARTIAL').length;
+  const score = Math.round((passCount / requirements.length) * 100);
+
+  const overallBand =
+    failCount > 0 ? 'FAIL' : partialCount > 0 ? 'PARTIAL' : 'PASS';
+  const overallSc = STATUS_CONFIG[overallBand];
+
+  const handleDownload = async (docId: string) => {
+    try {
+      const res = await api.get(`/substance/documents/${docId}/download`);
+      window.open(res.data.url, '_blank');
+    } catch (e) {
+      alert('Failed to get download link');
+    }
+  };
+
+  const handleDelete = async (docId: string) => {
+    if (confirm('Are you sure you want to delete this document?')) {
+      await api.delete(`/substance/documents/${docId}`);
+      queryClient.invalidateQueries({ queryKey: ['substance-health'] });
+      queryClient.invalidateQueries({ queryKey: ['risk-score'] });
+    }
+  };
+
+  return (
+    <div className="flex min-h-screen flex-col" style={{ background: 'var(--ts-bg-base)' }}>
+      <TopRibbon />
+
+      <div className="flex-1 w-full max-w-[1200px] mx-auto px-6 py-6 space-y-6">
+        {/* Header */}
+        <div style={{ marginBottom: 8 }}>
+          <div className="flex items-center gap-2 mb-1">
+            <FileText size={18} color="var(--ts-blue-500)" />
+            <h1 style={{ fontSize: 20, fontWeight: 700, color: 'var(--ts-fg-primary)', margin: 0 }}>
+              Substance Requirements
+            </h1>
+          </div>
+          <p style={{ fontSize: 13, color: 'var(--ts-fg-muted)', margin: 0 }}>
+            QFZP economic substance checklist. All requirements must be satisfied to maintain 0% tax status.
+          </p>
+        </div>
+
+        {/* Summary cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            { label: 'Overall Score', value: `${score}%`, color: score >= 80 ? 'var(--ts-green-500)' : score >= 60 ? 'var(--ts-amber-500)' : 'var(--ts-red-500)' },
+            { label: 'Satisfied', value: String(passCount), color: 'var(--ts-green-500)' },
+            { label: 'Partial', value: String(partialCount), color: 'var(--ts-amber-500)' },
+            { label: 'Not Met', value: String(failCount), color: failCount > 0 ? 'var(--ts-red-500)' : 'var(--ts-fg-muted)' },
+          ].map(({ label, value, color }) => (
+            <div
+              key={label}
+              className="relative overflow-hidden rounded-xl"
+              style={{ background: 'var(--ts-bg-card)', border: '1px solid var(--ts-border)', padding: '16px 20px' }}
+            >
+              <p style={{ fontSize: 11, color: 'var(--ts-fg-muted)', marginBottom: 6 }}>{label}</p>
+              <p className="ts-metric" style={{ color }}>{value}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Requirements by category */}
+        {categories.map((category) => {
+          const catReqs = requirements.filter((r) => r.category === category);
+          const catIcon =
+            category === 'Physical Presence' ? Building2 :
+            category === 'Core Income Generating Activity' ? Briefcase :
+            Users;
+          const CatIcon = catIcon;
+
+          return (
+            <div key={category} className="premium-card" style={{ padding: 24 }}>
+              <div className="flex items-center gap-2 mb-4">
+                <CatIcon size={16} color="var(--ts-blue-500)" />
+                <h2 style={{ fontSize: 14, fontWeight: 600, color: 'var(--ts-fg-primary)', margin: 0 }}>
+                  {category}
+                </h2>
+                <span
+                  className="rounded-full px-2 py-0.5 text-[10px] font-semibold"
+                  style={{ background: 'var(--ts-bg-elevated)', color: 'var(--ts-fg-muted)' }}
+                >
+                  {catReqs.length} items
+                </span>
+              </div>
+              {catReqs.map((req) => (
+                <RequirementRow 
+                  key={req.id} 
+                  req={req} 
+                  onUploadClick={setUploadingDocType}
+                  onDownloadDocument={handleDownload}
+                  onDeleteDocument={handleDelete}
+                />
+              ))}
+            </div>
+          );
+        })}
+
+        {/* Legal note */}
+        <div
+          className="rounded-xl p-4"
+          style={{ background: 'var(--ts-bg-card)', border: '1px solid var(--ts-border)', fontSize: 12, color: 'var(--ts-fg-muted)', lineHeight: 1.6 }}
+        >
+          <strong style={{ color: 'var(--ts-fg-secondary)' }}>Legal Reference:</strong> Economic substance requirements are governed by the UAE Corporate Tax Law (Federal Decree-Law No. 47/2022) and Cabinet Decision No. 100/2023.
+          Non-compliance results in loss of QFZP status and 9% corporate tax liability for a minimum of 5 years.
+          Consult your tax advisor for entity-specific substance assessments.
+        </div>
+      </div>
+
+      {uploadingDocType && (
+        <UploadDocumentDialog docType={uploadingDocType} onClose={() => setUploadingDocType(null)} />
+      )}
+    </div>
+  );
+}
+
+
+=== D:\Ripple Nexus\Taxsentry\TaxsentryUAE\apps\web\src\app\(platform)\transactions\page.tsx ===
+
+'use client';
+
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { api } from '@/lib/api/client';
+import { TopRibbon } from '@/components/dashboard/TopRibbon';
+import { ArrowUpDown, Upload, X, CheckCircle2, AlertCircle, Edit2 } from 'lucide-react';
+
+const CLASS_COLORS: Record<string, string> = {
+  QI: 'var(--ts-green-500)',
+  NQI: 'var(--ts-amber-500)',
+  EXCLUDED: 'oklch(0.55 0.22 260)',
+  UNCLASSIFIED: 'var(--ts-fg-muted)',
+};
+
+function CsvImportDialog({
+  taxPeriodId,
+  onClose,
+}: {
+  taxPeriodId: string | null;
+  onClose: () => void;
+}) {
+  const queryClient = useQueryClient();
+  const [file, setFile] = useState<File | null>(null);
+  const [result, setResult] = useState<{ imported: number; errors: any[] } | null>(null);
+
+  const importMutation = useMutation({
+    mutationFn: async (f: File) => {
+      const form = new FormData();
+      form.append('file', f);
+      const url = `/revenue/transactions/csv-import${taxPeriodId ? `?taxPeriodId=${taxPeriodId}` : ''}`;
+      const res = await api.post(url, form, { headers: { 'Content-Type': 'multipart/form-data' } });
+      return res.data?.data ?? res.data;
+    },
+    onSuccess: (data) => {
+      setResult(data);
+      queryClient.invalidateQueries({ queryKey: ['transactions-page'] });
+      queryClient.invalidateQueries({ queryKey: ['deminimis-status'] });
+      queryClient.invalidateQueries({ queryKey: ['risk-score'] });
+    },
+  });
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="premium-card w-full max-w-lg" style={{ padding: 32, margin: 20 }}>
+        <div className="flex items-center justify-between mb-6">
+          <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--ts-fg-primary)', margin: 0 }}>
+            Import CSV Transactions
+          </h2>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ts-fg-muted)' }}>
+            <X size={18} />
+          </button>
+        </div>
+
+        {!result ? (
+          <>
+            <div
+              className="rounded-xl text-center"
+              style={{
+                padding: '32px 20px', border: '2px dashed var(--ts-border)', background: 'var(--ts-bg-elevated)',
+                cursor: 'pointer', marginBottom: 20,
+              }}
+              onClick={() => document.getElementById('csv-input')?.click()}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => {
+                e.preventDefault();
+                const f = e.dataTransfer.files[0];
+                if (f?.name.endsWith('.csv')) setFile(f);
+              }}
+            >
+              <Upload size={28} color="var(--ts-fg-muted)" style={{ margin: '0 auto 12px' }} />
+              <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--ts-fg-primary)', marginBottom: 4 }}>
+                {file ? file.name : 'Drop CSV file here or click to browse'}
+              </p>
+              <p style={{ fontSize: 12, color: 'var(--ts-fg-muted)', margin: 0 }}>
+                Required columns: date, amount_aed, counterparty<br />
+                Optional: activity_code, counterparty_type, invoice_no, description
+              </p>
+              <input id="csv-input" type="file" accept=".csv" style={{ display: 'none' }}
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) setFile(f); }} />
+            </div>
+
+            {!taxPeriodId && (
+              <div style={{ padding: '10px 14px', borderRadius: 8, background: 'oklch(0.80 0.18 85 / 0.1)', border: '1px solid oklch(0.80 0.18 85 / 0.3)', fontSize: 12, color: 'var(--ts-amber-500)', marginBottom: 16 }}>
+                No active tax period found. Complete onboarding first.
+              </div>
+            )}
+
+            {importMutation.isError && (
+              <p style={{ fontSize: 12, color: 'var(--ts-red-500)', marginBottom: 12 }}>
+                Import failed. Please check your file format and try again.
+              </p>
+            )}
+
+            <button
+              disabled={!file || !taxPeriodId || importMutation.isPending}
+              onClick={() => file && importMutation.mutate(file)}
+              className="w-full rounded-xl font-bold transition-all"
+              style={{
+                padding: '12px 24px', fontSize: 14,
+                background: !file || !taxPeriodId ? 'var(--ts-bg-elevated)' : 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+                color: !file || !taxPeriodId ? 'var(--ts-fg-muted)' : 'white',
+                border: 'none', cursor: !file || !taxPeriodId ? 'not-allowed' : 'pointer',
+                opacity: importMutation.isPending ? 0.7 : 1,
+              }}
+            >
+              {importMutation.isPending ? 'Importingâ€¦' : 'Import Transactions'}
+            </button>
+          </>
+        ) : (
+          <div className="text-center">
+            <CheckCircle2 size={40} color="var(--ts-green-500)" style={{ margin: '0 auto 12px' }} />
+            <p style={{ fontSize: 16, fontWeight: 700, color: 'var(--ts-fg-primary)', marginBottom: 4 }}>
+              {result.imported} transactions imported
+            </p>
+            {result.errors?.length > 0 && (
+              <div style={{ marginTop: 12, padding: '10px 14px', borderRadius: 8, background: 'oklch(0.62 0.24 25 / 0.08)', border: '1px solid oklch(0.62 0.24 25 / 0.2)', textAlign: 'left' }}>
+                <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--ts-red-500)', marginBottom: 6 }}>
+                  {result.errors.length} rows skipped:
+                </p>
+                {result.errors.slice(0, 5).map((e: any, i: number) => (
+                  <p key={i} style={{ fontSize: 11, color: 'var(--ts-fg-muted)', margin: '2px 0' }}>
+                    Row {e.row}: {e.error}
+                  </p>
+                ))}
+              </div>
+            )}
+            <button
+              onClick={onClose}
+              className="mt-4 rounded-xl px-6 py-2.5 text-sm font-bold"
+              style={{ background: 'var(--ts-blue-500)', color: 'white', border: 'none', cursor: 'pointer' }}
+            >
+              Done
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ClassifyDialog({
+  transaction,
+  onClose,
+}: {
+  transaction: any;
+  onClose: () => void;
+}) {
+  const queryClient = useQueryClient();
+  const [classification, setClassification] = useState<'QI' | 'NQI' | 'EXCLUDED'>('QI');
+  const [reasonCode, setReasonCode] = useState('MANUAL_REVIEW');
+  const [reasonText, setReasonText] = useState('');
+
+  const classifyMutation = useMutation({
+    mutationFn: async () => {
+      const url = `/revenue/transactions/${transaction.id}/classification`;
+      const payload = { newClassification: classification, reasonCode, reasonText };
+      const res = await api.patch(url, payload);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['transactions-page'] });
+      queryClient.invalidateQueries({ queryKey: ['deminimis-status'] });
+      queryClient.invalidateQueries({ queryKey: ['risk-score'] });
+      onClose();
+    },
+  });
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="premium-card w-full max-w-md" style={{ padding: 32, margin: 20 }}>
+        <div className="flex items-center justify-between mb-6">
+          <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--ts-fg-primary)', margin: 0 }}>
+            Classify Transaction
+          </h2>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ts-fg-muted)' }}>
+            <X size={18} />
+          </button>
+        </div>
+
+        <div style={{ marginBottom: 16 }}>
+          <p style={{ fontSize: 12, color: 'var(--ts-fg-muted)', marginBottom: 4 }}>Counterparty</p>
+          <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--ts-fg-primary)' }}>{transaction.counterparty}</p>
+        </div>
+        <div style={{ marginBottom: 20 }}>
+          <p style={{ fontSize: 12, color: 'var(--ts-fg-muted)', marginBottom: 4 }}>Amount (AED)</p>
+          <p className="ts-mono" style={{ fontSize: 14, fontWeight: 600, color: 'var(--ts-fg-primary)' }}>
+            {Number(transaction.amountAed).toLocaleString('en-AE', { maximumFractionDigits: 0 })}
+          </p>
+        </div>
+
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--ts-fg-primary)', marginBottom: 8 }}>
+            Classification
+          </label>
+          <select
+            value={classification}
+            onChange={(e) => setClassification(e.target.value as 'QI' | 'NQI' | 'EXCLUDED')}
+            className="w-full rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
+            style={{ padding: '10px 12px', background: 'var(--ts-bg-elevated)', border: '1px solid var(--ts-border)', color: 'var(--ts-fg-primary)', fontSize: 14 }}
+          >
+            <option value="QI">Qualifying Income (QI)</option>
+            <option value="NQI">Non-Qualifying Income (NQI)</option>
+            <option value="EXCLUDED">Excluded (EXCLUDED)</option>
+          </select>
+        </div>
+
+        <div style={{ marginBottom: 20 }}>
+          <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--ts-fg-primary)', marginBottom: 8 }}>
+            Reason (Required for audit, min 20 chars)
+          </label>
+          <textarea
+            value={reasonText}
+            onChange={(e) => setReasonText(e.target.value)}
+            placeholder="Explain why this classification was chosen..."
+            className="w-full rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
+            style={{ padding: '10px 12px', background: 'var(--ts-bg-elevated)', border: '1px solid var(--ts-border)', color: 'var(--ts-fg-primary)', fontSize: 13, minHeight: 80, resize: 'none' }}
+          />
+        </div>
+
+        {classifyMutation.isError && (
+          <p style={{ fontSize: 12, color: 'var(--ts-red-500)', marginBottom: 12 }}>
+            Classification failed. Check audit reason length.
+          </p>
+        )}
+
+        <button
+          disabled={classifyMutation.isPending || reasonText.length < 20}
+          onClick={() => classifyMutation.mutate()}
+          className="w-full rounded-xl font-bold transition-all"
+          style={{
+            padding: '12px 24px', fontSize: 14,
+            background: reasonText.length < 20 ? 'var(--ts-bg-elevated)' : 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+            color: reasonText.length < 20 ? 'var(--ts-fg-muted)' : 'white',
+            border: 'none', cursor: reasonText.length < 20 ? 'not-allowed' : 'pointer',
+            opacity: classifyMutation.isPending ? 0.7 : 1,
+          }}
+        >
+          {classifyMutation.isPending ? 'Savingâ€¦' : 'Save Classification'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export default function TransactionsPage() {
+  const [showImport, setShowImport] = useState(false);
+  const [classifyingTx, setClassifyingTx] = useState<any>(null);
+
+  const { data: orgData } = useQuery({
+    queryKey: ['org-me'],
+    queryFn: () => api.get('/organizations/me').then((r) => r.data.data ?? r.data),
+    retry: false,
+  });
+
+  const taxPeriodId: string | null = orgData?.taxPeriods?.[0]?.id ?? null;
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['transactions-page'],
+    queryFn: () => api.get('/revenue/transactions?limit=25').then((r) => r.data.data ?? r.data),
+    retry: false,
+  });
+
+  const transactions: any[] = data?.transactions ?? data?.items ?? data ?? [];
+
+  return (
+    <div className="flex min-h-screen flex-col" style={{ background: 'var(--ts-bg-base)' }}>
+      <TopRibbon />
+
+      <div className="w-full max-w-5xl mx-auto px-6 py-6">
+        <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
+          <div>
+            <h1 style={{ fontSize: 20, fontWeight: 700, color: 'var(--ts-fg-primary)', margin: 0, marginBottom: 4 }}>
+              Transactions
+            </h1>
+            <p style={{ fontSize: 13, color: 'var(--ts-fg-muted)', margin: 0 }}>
+              Revenue classifications and Non-Qualifying Income exposure.
+            </p>
+          </div>
+          <button
+            onClick={() => setShowImport(true)}
+            className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-[13px] font-bold transition-all"
+            style={{ background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', color: 'white', border: 'none', cursor: 'pointer' }}
+          >
+            <Upload size={14} />
+            Import CSV
+          </button>
+        </div>
+
+        <div className="premium-card" style={{ padding: 0, overflow: 'hidden' }}>
+          {isLoading ? (
+            <div style={{ height: 200, background: 'var(--ts-bg-card)' }} className="animate-pulse rounded-xl" />
+          ) : transactions.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <ArrowUpDown size={32} color="oklch(0.48 0 0)" style={{ marginBottom: 12 }} />
+              <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--ts-fg-secondary)', marginBottom: 4 }}>
+                No transactions yet
+              </p>
+              <p style={{ fontSize: 13, color: 'var(--ts-fg-muted)', maxWidth: 340, lineHeight: 1.5 }}>
+                Import a CSV from your accounting system to start QFZP classification and de-minimis monitoring.
+              </p>
+              <button
+                onClick={() => setShowImport(true)}
+                className="mt-4 flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold"
+                style={{ background: 'oklch(0.55 0.22 260 / 0.1)', color: 'var(--ts-blue-400)', border: '1px solid oklch(0.55 0.22 260 / 0.2)', cursor: 'pointer' }}
+              >
+                <Upload size={13} /> Import CSV
+              </button>
+            </div>
+          ) : (
+            <>
+              <div
+                className="grid grid-cols-5 gap-2 px-4 py-2.5"
+                style={{ background: 'var(--ts-bg-elevated)', borderBottom: '1px solid var(--ts-border)', fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--ts-fg-muted)' }}
+              >
+                <span>Counterparty</span>
+                <span>Activity</span>
+                <span>Amount (AED)</span>
+                <span>Classification</span>
+                <span className="text-right">Action</span>
+              </div>
+              <div>
+                {transactions.map((tx: any) => (
+                  <div
+                    key={tx.id}
+                    className="grid grid-cols-5 gap-2 px-4 py-3 items-center"
+                    style={{ borderBottom: '1px solid var(--ts-border-subtle)', fontSize: 13 }}
+                  >
+                    <span style={{ color: 'var(--ts-fg-primary)', fontWeight: 500 }}>{tx.counterparty}</span>
+                    <span style={{ color: 'var(--ts-fg-muted)' }}>{tx.activityCode ?? 'â€”'}</span>
+                    <span className="ts-mono" style={{ color: 'var(--ts-fg-primary)', fontWeight: 600 }}>
+                      {Number(tx.amountAed).toLocaleString('en-AE', { maximumFractionDigits: 0 })}
+                    </span>
+                    <span style={{ color: CLASS_COLORS[tx.classification] ?? 'var(--ts-fg-muted)', fontWeight: 600, fontSize: 11, letterSpacing: '0.06em' }}>
+                      {tx.classification}
+                    </span>
+                    <div className="flex justify-end">
+                      {tx.classification === 'UNCLASSIFIED' && (
+                        <button
+                          onClick={() => setClassifyingTx(tx)}
+                          className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all hover:bg-blue-500/10 hover:text-blue-500"
+                          style={{ background: 'var(--ts-bg-elevated)', border: '1px solid var(--ts-border)', color: 'var(--ts-fg-primary)', cursor: 'pointer' }}
+                        >
+                          <Edit2 size={12} /> Classify
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
+      {showImport && (
+        <CsvImportDialog taxPeriodId={taxPeriodId} onClose={() => setShowImport(false)} />
+      )}
+      {classifyingTx && (
+        <ClassifyDialog transaction={classifyingTx} onClose={() => setClassifyingTx(null)} />
+      )}
+    </div>
+  );
+}

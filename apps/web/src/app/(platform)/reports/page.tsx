@@ -25,12 +25,7 @@ const TYPE_CONFIG: Record<string, { color: string; bg: string; border: string; l
   SUBSTANCE: { color: 'var(--ts-fg-muted)', bg: 'var(--ts-bg-elevated)', border: 'var(--ts-border)', label: 'Substance' },
 };
 
-const SAMPLE_REPORTS: Report[] = [
-  { id: '1', title: 'Q1 2026 FTA-Ready Compliance Pack', type: 'AUDIT', period: 'Jan–Mar 2026', generatedAt: '2026-04-01T09:00:00Z', status: 'READY', sizeKb: 840 },
-  { id: '2', title: 'Q1 2026 De-Minimis Threshold Report', type: 'DE_MINIMIS', period: 'Jan–Mar 2026', generatedAt: '2026-04-01T09:15:00Z', status: 'READY', sizeKb: 212 },
-  { id: '3', title: 'FY 2025 Annual Compliance Summary', type: 'COMPLIANCE', period: 'Full Year 2025', generatedAt: '2026-01-15T11:00:00Z', status: 'READY', sizeKb: 1840 },
-  { id: '4', title: 'FY 2025 Substance Requirements Report', type: 'SUBSTANCE', period: 'Full Year 2025', generatedAt: '2026-01-15T11:20:00Z', status: 'READY', sizeKb: 430 },
-];
+
 
 async function downloadReport(report: Report) {
   const { api } = await import('@/lib/api/client');
@@ -139,7 +134,7 @@ export default function ReportsPage() {
     queryFn: () => api.get('/reports').then((r) => r.data.data).catch(() => null),
   });
 
-  const reports: Report[] = reportsData?.reports ?? SAMPLE_REPORTS;
+  const reports: Report[] = reportsData?.reports ?? [];
 
   return (
     <div className="flex min-h-screen flex-col" style={{ background: 'var(--ts-bg-base)' }}>

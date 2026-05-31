@@ -32,6 +32,8 @@ const VARIANT_STYLES: Record<
   },
 };
 
+import Link from 'next/link';
+
 interface MetricCard {
   label: string;
   value: string;
@@ -39,14 +41,16 @@ interface MetricCard {
   variant: Variant;
   trend?: string;
   trendDir?: 'up' | 'down';
+  href?: string;
 }
 
-function MetricCard({ label, value, sub, variant, trend, trendDir }: MetricCard) {
+function MetricCard({ label, value, sub, variant, trend, trendDir, href }: MetricCard) {
   const vs = VARIANT_STYLES[variant];
-  return (
+  
+  const content = (
     <div
-      className="relative overflow-hidden rounded-xl"
-      style={{ border: `1px solid ${vs.border}`, background: vs.bg, padding: '12px 16px' }}
+      className={`relative overflow-hidden rounded-xl ${href ? 'transition-all hover:opacity-90 hover:scale-[1.02]' : ''}`}
+      style={{ border: `1px solid ${vs.border}`, background: vs.bg, padding: '12px 16px', height: '100%', cursor: href ? 'pointer' : 'default' }}
     >
       <p style={{ fontSize: 12, color: 'var(--ts-fg-muted)', marginBottom: 6, fontWeight: 600 }}>{label}</p>
       <p
@@ -77,6 +81,12 @@ function MetricCard({ label, value, sub, variant, trend, trendDir }: MetricCard)
       )}
     </div>
   );
+
+  if (href) {
+    return <Link href={href} style={{ textDecoration: 'none' }}>{content}</Link>;
+  }
+  
+  return content;
 }
 
 export function MetricsCards() {
@@ -136,6 +146,7 @@ export function MetricsCards() {
       value: pendingCount > 0 ? String(pendingCount) : '0',
       sub: pendingCount > 0 ? 'Require your attention' : 'All clear',
       variant: pendingCount > 2 ? 'danger' : pendingCount > 0 ? 'warning' : 'success',
+      href: '/transactions?filter=UNCLASSIFIED'
     },
   ];
 

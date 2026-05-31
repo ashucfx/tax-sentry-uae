@@ -49,19 +49,13 @@ export default function IntegrationsPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Xero */}
-            <div className="premium-card p-6 flex flex-col justify-between">
+            <div className="premium-card p-6 flex flex-col justify-between relative overflow-hidden">
+              <div className="absolute top-4 right-4 bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-widest border border-amber-200">
+                Beta (Q3)
+              </div>
               <div>
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center justify-between mb-4 mt-2">
                   <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--ts-fg-primary)', margin: 0 }}>Xero</h3>
-                  {status?.xero?.connected ? (
-                    <span className="flex items-center gap-1 text-[11px] font-bold text-[var(--ts-green-500)] bg-[oklch(0.70_0.20_155_/_0.1)] px-2 py-1 rounded-full">
-                      <CheckCircle2 size={12} /> Connected
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-1 text-[11px] font-bold text-[var(--ts-amber-500)] bg-[oklch(0.70_0.20_85_/_0.1)] px-2 py-1 rounded-full">
-                      <AlertCircle size={12} /> Disconnected
-                    </span>
-                  )}
                 </div>
                 <p style={{ fontSize: 12, color: 'var(--ts-fg-muted)' }}>
                   Continuous two-way sync for revenue transactions and chart of accounts mapping.
@@ -69,41 +63,23 @@ export default function IntegrationsPage() {
               </div>
 
               <div className="mt-6 flex items-center gap-3">
-                {!status?.xero?.connected ? (
                   <button
-                    onClick={() => connectMutation.mutate('xero')}
-                    disabled={connectMutation.isPending}
-                    className="w-full py-2 rounded-lg text-[13px] font-semibold text-white bg-[var(--ts-blue-500)] hover:bg-[var(--ts-blue-600)] transition-colors disabled:opacity-50"
+                    disabled
+                    className="w-full py-2 rounded-lg text-[13px] font-semibold text-white bg-[var(--ts-blue-500)] hover:bg-[var(--ts-blue-600)] transition-colors opacity-50 cursor-not-allowed"
                   >
-                    {connectMutation.isPending ? 'Connecting...' : 'Connect Xero'}
+                    Join Waitlist
                   </button>
-                ) : (
-                  <button
-                    onClick={() => syncMutation.mutate('xero')}
-                    disabled={syncMutation.isPending}
-                    className="w-full py-2 flex justify-center items-center gap-2 rounded-lg text-[13px] font-semibold text-[var(--ts-fg-primary)] bg-[var(--ts-bg-elevated)] border border-[var(--ts-border)] hover:bg-[var(--ts-bg-muted)] transition-colors disabled:opacity-50"
-                  >
-                    <RefreshCw size={14} className={syncMutation.isPending ? 'animate-spin' : ''} />
-                    {syncMutation.isPending ? 'Syncing...' : 'Sync Now'}
-                  </button>
-                )}
               </div>
             </div>
 
             {/* Zoho */}
-            <div className="premium-card p-6 flex flex-col justify-between">
+            <div className="premium-card p-6 flex flex-col justify-between relative overflow-hidden">
+              <div className="absolute top-4 right-4 bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-widest border border-amber-200">
+                Beta (Q3)
+              </div>
               <div>
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center justify-between mb-4 mt-2">
                   <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--ts-fg-primary)', margin: 0 }}>Zoho Books</h3>
-                  {status?.zoho?.connected ? (
-                    <span className="flex items-center gap-1 text-[11px] font-bold text-[var(--ts-green-500)] bg-[oklch(0.70_0.20_155_/_0.1)] px-2 py-1 rounded-full">
-                      <CheckCircle2 size={12} /> Connected
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-1 text-[11px] font-bold text-[var(--ts-amber-500)] bg-[oklch(0.70_0.20_85_/_0.1)] px-2 py-1 rounded-full">
-                      <AlertCircle size={12} /> Disconnected
-                    </span>
-                  )}
                 </div>
                 <p style={{ fontSize: 12, color: 'var(--ts-fg-muted)' }}>
                   Continuous two-way sync for revenue transactions and chart of accounts mapping.
@@ -111,24 +87,12 @@ export default function IntegrationsPage() {
               </div>
 
               <div className="mt-6 flex items-center gap-3">
-                {!status?.zoho?.connected ? (
                   <button
-                    onClick={() => connectMutation.mutate('zoho')}
-                    disabled={connectMutation.isPending}
-                    className="w-full py-2 rounded-lg text-[13px] font-semibold text-white bg-[var(--ts-blue-500)] hover:bg-[var(--ts-blue-600)] transition-colors disabled:opacity-50"
+                    disabled
+                    className="w-full py-2 rounded-lg text-[13px] font-semibold text-white bg-[var(--ts-blue-500)] hover:bg-[var(--ts-blue-600)] transition-colors opacity-50 cursor-not-allowed"
                   >
-                    {connectMutation.isPending ? 'Connecting...' : 'Connect Zoho Books'}
+                    Join Waitlist
                   </button>
-                ) : (
-                  <button
-                    onClick={() => syncMutation.mutate('zoho')}
-                    disabled={syncMutation.isPending}
-                    className="w-full py-2 flex justify-center items-center gap-2 rounded-lg text-[13px] font-semibold text-[var(--ts-fg-primary)] bg-[var(--ts-bg-elevated)] border border-[var(--ts-border)] hover:bg-[var(--ts-bg-muted)] transition-colors disabled:opacity-50"
-                  >
-                    <RefreshCw size={14} className={syncMutation.isPending ? 'animate-spin' : ''} />
-                    {syncMutation.isPending ? 'Syncing...' : 'Sync Now'}
-                  </button>
-                )}
               </div>
             </div>
           </div>

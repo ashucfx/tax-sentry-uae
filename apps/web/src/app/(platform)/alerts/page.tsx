@@ -1,9 +1,9 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api/client';
 import { cn } from '@/lib/utils';
-import { AlertOctagon, AlertTriangle, CheckCircle2, Info } from 'lucide-react';
+import { AlertOctagon, AlertTriangle, CheckCircle2, Info, Check } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 type Severity = 'RED' | 'AMBER' | 'INFO';
@@ -15,9 +15,19 @@ const SEVERITY: Record<Severity, { icon: React.ElementType; cls: string; label: 
 };
 
 export default function AlertsPage() {
+  const queryClient = useQueryClient();
+
   const { data, isLoading } = useQuery({
     queryKey: ['alerts-page'],
     queryFn: () => api.get('/alerts?limit=50').then((r) => r.data.data),
+  });
+
+  const acknowledgeMutation = useMutation({
+    mutationFn: (id: string) => api.patch(`/alerts/${id}/acknowledge`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['alerts-page'] });
+      queryClient.invalidateQueries({ queryKey: ['alerts-count'] });
+    },
   });
 
   const alerts = data?.alerts ?? [];
@@ -55,9 +65,19 @@ export default function AlertsPage() {
                     <h2 className="mt-3 text-sm font-semibold text-foreground">{alert.title}</h2>
                     <p className="mt-1 text-sm leading-6 text-muted-foreground">{alert.message}</p>
                   </div>
-                  <p className="shrink-0 text-xs text-muted-foreground">
-                    {formatDistanceToNow(new Date(alert.triggeredAt), { addSuffix: true })}
-                  </p>
+                  <div className="flex flex-col items-end gap-3 shrink-0">
+                    <p className="text-xs text-muted-foreground">
+                      {formatDistanceToNow(new Date(alert.triggeredAt), { addSuffix: true })}
+                    </p>
+                    <button
+                      onClick={() => acknowledgeMutation.mutate(alert.id)}
+                      disabled={acknowledgeMutation.isPending}
+                      className="flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+                    >
+                      <Check className="h-3.5 w-3.5" />
+                      Acknowledge
+                    </button>
+                  </div>
                 </div>
               </article>
             );

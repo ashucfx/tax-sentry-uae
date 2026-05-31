@@ -251,9 +251,19 @@ function ClassifyDialog({
   );
 }
 
+import { useSearchParams } from 'next/navigation';
+
 export default function TransactionsPage() {
+  const searchParams = useSearchParams();
+  const initialFilter = searchParams.get('filter') || 'ALL';
+
   const [showImport, setShowImport] = useState(false);
   const [classifyingTx, setClassifyingTx] = useState<any>(null);
+  
+  // New state for pagination and filtering
+  const [page, setPage] = useState(1);
+  const [classificationFilter, setClassificationFilter] = useState<string>(initialFilter);
+  const limit = 25;
 
   const { data: orgData } = useQuery({
     queryKey: ['org-me'],
@@ -264,12 +274,33 @@ export default function TransactionsPage() {
   const taxPeriodId: string | null = orgData?.taxPeriods?.[0]?.id ?? null;
 
   const { data, isLoading } = useQuery({
-    queryKey: ['transactions-page'],
-    queryFn: () => api.get('/revenue/transactions?limit=25').then((r) => r.data.data ?? r.data),
+    queryKey: ['transactions-page', page, classificationFilter, taxPeriodId],
+    queryFn: () => {
+      let url = `/revenue/transactions?page=${page}&limit=${limit}`;
+      if (taxPeriodId) url += `&taxPeriodId=${taxPeriodId}`;
+      if (classificationFilter !== 'ALL') url += `&classification=${classificationFilter}`;
+      return api.get(url).then((r) => r.data.data ?? r.data);
+    },
     retry: false,
   });
 
   const transactions: any[] = data?.transactions ?? data?.items ?? data ?? [];
+  const totalPages = data?.pagination?.totalPages ?? 1;
+
+  const handleExport = async () => {
+    if (!taxPeriodId) return;
+    try {
+      const res = await api.get(`/revenue/transactions/export?taxPeriodId=${taxPeriodId}`, { responseType: 'blob' });
+      const blob = new Blob([res.data], { type: 'text/csv' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `transactions-export-${new Date().toISOString().slice(0, 10)}.csv`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+    } catch (e) {
+      alert('Failed to export transactions.');
+    }
+  };
 
   return (
     <div className="flex min-h-screen flex-col" style={{ background: 'var(--ts-bg-base)' }}>
@@ -285,14 +316,42 @@ export default function TransactionsPage() {
               Revenue classifications and Non-Qualifying Income exposure.
             </p>
           </div>
-          <button
-            onClick={() => setShowImport(true)}
-            className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-[13px] font-bold transition-all"
-            style={{ background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', color: 'white', border: 'none', cursor: 'pointer' }}
-          >
-            <Upload size={14} />
-            Import CSV
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleExport}
+              disabled={!taxPeriodId || transactions.length === 0}
+              className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-[13px] font-bold transition-all"
+              style={{ background: 'var(--ts-bg-elevated)', color: 'var(--ts-fg-secondary)', border: '1px solid var(--ts-border)', cursor: 'pointer' }}
+            >
+              Export CSV
+            </button>
+            <button
+              onClick={() => setShowImport(true)}
+              className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-[13px] font-bold transition-all"
+              style={{ background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', color: 'white', border: 'none', cursor: 'pointer' }}
+            >
+              <Upload size={14} />
+              Import CSV
+            </button>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 mb-4">
+          {['ALL', 'UNCLASSIFIED', 'QI', 'NQI', 'EXCLUDED'].map((c) => (
+            <button
+              key={c}
+              onClick={() => { setClassificationFilter(c); setPage(1); }}
+              className="rounded-lg px-3 py-1.5 text-xs font-semibold transition-all"
+              style={{
+                background: classificationFilter === c ? 'var(--ts-blue-500)' : 'var(--ts-bg-elevated)',
+                color: classificationFilter === c ? 'white' : 'var(--ts-fg-secondary)',
+                border: `1px solid ${classificationFilter === c ? 'var(--ts-blue-500)' : 'var(--ts-border)'}`,
+                cursor: 'pointer',
+              }}
+            >
+              {c === 'ALL' ? 'All Transactions' : c}
+            </button>
+          ))}
         </div>
 
         <div className="premium-card" style={{ padding: 0, overflow: 'hidden' }}>
@@ -356,6 +415,32 @@ export default function TransactionsPage() {
                   </div>
                 ))}
               </div>
+              
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between px-4 py-3" style={{ borderTop: '1px solid var(--ts-border)', background: 'var(--ts-bg-elevated)' }}>
+                  <p style={{ fontSize: 13, color: 'var(--ts-fg-muted)', margin: 0 }}>
+                    Page {page} of {totalPages}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setPage(p => Math.max(1, p - 1))}
+                      disabled={page === 1}
+                      className="px-3 py-1.5 rounded-lg text-[13px] font-semibold transition-all disabled:opacity-50"
+                      style={{ background: 'var(--ts-bg-card)', color: 'var(--ts-fg-primary)', border: '1px solid var(--ts-border)', cursor: page === 1 ? 'not-allowed' : 'pointer' }}
+                    >
+                      Previous
+                    </button>
+                    <button
+                      onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                      disabled={page === totalPages}
+                      className="px-3 py-1.5 rounded-lg text-[13px] font-semibold transition-all disabled:opacity-50"
+                      style={{ background: 'var(--ts-bg-card)', color: 'var(--ts-fg-primary)', border: '1px solid var(--ts-border)', cursor: page === totalPages ? 'not-allowed' : 'pointer' }}
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>
