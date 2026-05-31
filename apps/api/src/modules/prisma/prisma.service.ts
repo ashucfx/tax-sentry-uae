@@ -7,8 +7,13 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
 
   constructor() {
     let url = process.env.DATABASE_URL;
-    if (url && url.includes('supabase.com:6543') && !url.includes('pgbouncer=true')) {
-      url += (url.includes('?') ? '&' : '?') + 'pgbouncer=true';
+    if (url) {
+      if (url.includes('supabase.com:6543') && !url.includes('pgbouncer=true')) {
+        url += (url.includes('?') ? '&' : '?') + 'pgbouncer=true';
+      }
+      if (!url.includes('connection_limit=')) {
+        url += (url.includes('?') ? '&' : '?') + 'connection_limit=20&pool_timeout=10';
+      }
     }
     super({
       datasources: {
