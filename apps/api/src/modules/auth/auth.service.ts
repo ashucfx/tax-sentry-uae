@@ -173,37 +173,7 @@ export class AuthService {
     };
   }
 
-  // ── Me ───────────────────────────────────────────────────────────────────────
-  async getMe(userId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        role: true,
-        orgId: true,
-        emailVerified: true,
-        createdAt: true,
-        organization: {
-          select: {
-            id: true,
-            name: true,
-            tradeLicenseNo: true,
-            freeZone: true,
-            subscriptionTier: true,
-            subscriptionStatus: true,
-            trialEndsAt: true,
-            currentPeriodEnd: true,
-          },
-        },
-      },
-    });
 
-    if (!user) throw new UnauthorizedException('User not found');
-    return user;
-  }
 
   // ── Private helpers ─────────────────────────────────────────────────────────
 

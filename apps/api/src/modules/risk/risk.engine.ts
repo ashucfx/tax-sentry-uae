@@ -8,6 +8,7 @@
  */
 
 import { Injectable, Logger } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { DeMinimisEngine, DeMinimisBreakdown } from '../deminimis/deminimis.engine';
 import Decimal from 'decimal.js';
@@ -448,5 +449,63 @@ export class RiskEngine {
     const primaryRisk = topRisks[0] ? ` Primary risk: ${topRisks[0]}` : '';
 
     return `Risk score: ${score}/100${deltaText}. ${bandText}${primaryRisk}`;
+  }
+
+  // ─── CRON JOB: AUTOMATIC WEEKLY SNAPSHOTS ──────────────────────────────────
+  @Cron(CronExpression.EVERY_WEEK)
+  async runWeeklySnapshots() {
+    this.logger.log('Starting automatic weekly risk snapshots for all active organizations...');
+    const orgs = await this.prisma.organization.findMany({ where: { isActive: true } });
+    
+    for (const org of orgs) {
+      try {
+        await this.createSnapshotForOrg(org.id);
+      } catch (e) {
+        this.logger.error(`Failed to create risk snapshot for org ${org.id}: ${(e as Error).message}`);
+      }
+    }
+    this.logger.log('Finished weekly risk snapshots.');
+  }
+
+  async createSnapshotForOrg(orgId: string) {
+    const period = await this.prisma.taxPeriod.findFirst({
+      where: { orgId, status: 'OPEN' },
+      orderBy: { startDate: 'desc' },
+    });
+
+    if (!period) return; // Silent skip
+
+    const priorSnapshot = await this.prisma.riskSnapshot.findFirst({
+      where: { orgId },
+      orderBy: { snapshotDate: 'desc' },
+    });
+
+    const breakdown = await this.calculate({
+      orgId,
+      taxPeriodId: period.id,
+      periodStart: period.startDate,
+      periodEnd: period.endDate,
+      priorScore: priorSnapshot?.score ?? null,
+    });
+
+    await this.prisma.riskSnapshot.create({
+      data: {
+        orgId,
+        snapshotDate: new Date(),
+        score: breakdown.total,
+        bandColor: breakdown.band,
+        deMinimisScore: breakdown.components.deMinimis.score,
+        substanceScore: breakdown.components.substance.score,
+        auditReadinessScore: breakdown.components.auditReadiness.score,
+        relatedPartyScore: breakdown.components.relatedParty.score,
+        classificationScore: breakdown.components.classificationConfidence.score,
+        breakdownJson: breakdown.components as object,
+        explanationText: breakdown.plainEnglishSummary,
+        deltaVsPrior: breakdown.deltaVsPrior,
+        nqrAmount: 0,
+        totalRevenue: 0,
+        nqrPercentage: 0,
+      },
+    });
   }
 }

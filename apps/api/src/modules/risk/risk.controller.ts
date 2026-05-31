@@ -72,49 +72,5 @@ export class RiskController {
     });
   }
 
-  @Post('snapshot')
-  @ApiOperation({ summary: 'Persist a risk score snapshot (run weekly via cron)' })
-  async createSnapshot(@CurrentUser('orgId') orgId: string) {
-    const period = await this.prisma.taxPeriod.findFirst({
-      where: { orgId, status: 'OPEN' },
-      orderBy: { startDate: 'desc' },
-    });
 
-    if (!period) throw new NotFoundException('No open tax period found');
-
-    const priorSnapshot = await this.prisma.riskSnapshot.findFirst({
-      where: { orgId },
-      orderBy: { snapshotDate: 'desc' },
-    });
-
-    const breakdown = await this.riskEngine.calculate({
-      orgId,
-      taxPeriodId: period.id,
-      periodStart: period.startDate,
-      periodEnd: period.endDate,
-      priorScore: priorSnapshot?.score ?? null,
-    });
-
-    const snapshot = await this.prisma.riskSnapshot.create({
-      data: {
-        orgId,
-        snapshotDate: new Date(),
-        score: breakdown.total,
-        bandColor: breakdown.band,
-        deMinimisScore: breakdown.components.deMinimis.score,
-        substanceScore: breakdown.components.substance.score,
-        auditReadinessScore: breakdown.components.auditReadiness.score,
-        relatedPartyScore: breakdown.components.relatedParty.score,
-        classificationScore: breakdown.components.classificationConfidence.score,
-        breakdownJson: breakdown.components as object,
-        explanationText: breakdown.plainEnglishSummary,
-        deltaVsPrior: breakdown.deltaVsPrior,
-        nqrAmount: 0,
-        totalRevenue: 0,
-        nqrPercentage: 0,
-      },
-    });
-
-    return snapshot;
-  }
 }

@@ -168,13 +168,5 @@ export class AuthController {
     return { accessToken: result.accessToken, user: result.user, isNewUser: result.isNewUser };
   }
 
-  // ── Me ───────────────────────────────────────────────────────────────────────
 
-  @Get('me')
-  @SkipSubscriptionCheck()
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Get authenticated user profile' })
-  async getMe(@CurrentUser('id') userId: string) {
-    return this.authService.getMe(userId);
-  }
 }

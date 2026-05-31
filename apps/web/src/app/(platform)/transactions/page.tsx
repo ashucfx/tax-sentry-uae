@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api/client';
 import { TopRibbon } from '@/components/dashboard/TopRibbon';
-import { ArrowUpDown, Upload, X, CheckCircle2, AlertCircle } from 'lucide-react';
+import { ArrowUpDown, Upload, X, CheckCircle2, AlertCircle, Edit2 } from 'lucide-react';
 
 const CLASS_COLORS: Record<string, string> = {
   QI: 'var(--ts-green-500)',
@@ -143,8 +143,117 @@ function CsvImportDialog({
   );
 }
 
+function ClassifyDialog({
+  transaction,
+  onClose,
+}: {
+  transaction: any;
+  onClose: () => void;
+}) {
+  const queryClient = useQueryClient();
+  const [classification, setClassification] = useState<'QI' | 'NQI' | 'EXCLUDED'>('QI');
+  const [reasonCode, setReasonCode] = useState('MANUAL_REVIEW');
+  const [reasonText, setReasonText] = useState('');
+
+  const classifyMutation = useMutation({
+    mutationFn: async () => {
+      const url = `/revenue/transactions/${transaction.id}/classification`;
+      const payload = { newClassification: classification, reasonCode, reasonText };
+      const res = await api.patch(url, payload);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['transactions-page'] });
+      queryClient.invalidateQueries({ queryKey: ['deminimis-status'] });
+      queryClient.invalidateQueries({ queryKey: ['risk-score'] });
+      onClose();
+    },
+  });
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="premium-card w-full max-w-md" style={{ padding: 32, margin: 20 }}>
+        <div className="flex items-center justify-between mb-6">
+          <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--ts-fg-primary)', margin: 0 }}>
+            Classify Transaction
+          </h2>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ts-fg-muted)' }}>
+            <X size={18} />
+          </button>
+        </div>
+
+        <div style={{ marginBottom: 16 }}>
+          <p style={{ fontSize: 12, color: 'var(--ts-fg-muted)', marginBottom: 4 }}>Counterparty</p>
+          <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--ts-fg-primary)' }}>{transaction.counterparty}</p>
+        </div>
+        <div style={{ marginBottom: 20 }}>
+          <p style={{ fontSize: 12, color: 'var(--ts-fg-muted)', marginBottom: 4 }}>Amount (AED)</p>
+          <p className="ts-mono" style={{ fontSize: 14, fontWeight: 600, color: 'var(--ts-fg-primary)' }}>
+            {Number(transaction.amountAed).toLocaleString('en-AE', { maximumFractionDigits: 0 })}
+          </p>
+        </div>
+
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--ts-fg-primary)', marginBottom: 8 }}>
+            Classification
+          </label>
+          <select
+            value={classification}
+            onChange={(e) => setClassification(e.target.value as 'QI' | 'NQI' | 'EXCLUDED')}
+            className="w-full rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
+            style={{ padding: '10px 12px', background: 'var(--ts-bg-elevated)', border: '1px solid var(--ts-border)', color: 'var(--ts-fg-primary)', fontSize: 14 }}
+          >
+            <option value="QI">Qualifying Income (QI)</option>
+            <option value="NQI">Non-Qualifying Income (NQI)</option>
+            <option value="EXCLUDED">Excluded (EXCLUDED)</option>
+          </select>
+        </div>
+
+        <div style={{ marginBottom: 20 }}>
+          <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--ts-fg-primary)', marginBottom: 8 }}>
+            Reason (Required for audit, min 20 chars)
+          </label>
+          <textarea
+            value={reasonText}
+            onChange={(e) => setReasonText(e.target.value)}
+            placeholder="Explain why this classification was chosen..."
+            className="w-full rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
+            style={{ padding: '10px 12px', background: 'var(--ts-bg-elevated)', border: '1px solid var(--ts-border)', color: 'var(--ts-fg-primary)', fontSize: 13, minHeight: 80, resize: 'none' }}
+          />
+        </div>
+
+        {classifyMutation.isError && (
+          <p style={{ fontSize: 12, color: 'var(--ts-red-500)', marginBottom: 12 }}>
+            Classification failed. Check audit reason length.
+          </p>
+        )}
+
+        <button
+          disabled={classifyMutation.isPending || reasonText.length < 20}
+          onClick={() => classifyMutation.mutate()}
+          className="w-full rounded-xl font-bold transition-all"
+          style={{
+            padding: '12px 24px', fontSize: 14,
+            background: reasonText.length < 20 ? 'var(--ts-bg-elevated)' : 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+            color: reasonText.length < 20 ? 'var(--ts-fg-muted)' : 'white',
+            border: 'none', cursor: reasonText.length < 20 ? 'not-allowed' : 'pointer',
+            opacity: classifyMutation.isPending ? 0.7 : 1,
+          }}
+        >
+          {classifyMutation.isPending ? 'Saving…' : 'Save Classification'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function TransactionsPage() {
   const [showImport, setShowImport] = useState(false);
+  const [classifyingTx, setClassifyingTx] = useState<any>(null);
 
   const { data: orgData } = useQuery({
     queryKey: ['org-me'],
@@ -209,19 +318,20 @@ export default function TransactionsPage() {
           ) : (
             <>
               <div
-                className="grid grid-cols-4 gap-2 px-4 py-2.5"
+                className="grid grid-cols-5 gap-2 px-4 py-2.5"
                 style={{ background: 'var(--ts-bg-elevated)', borderBottom: '1px solid var(--ts-border)', fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--ts-fg-muted)' }}
               >
                 <span>Counterparty</span>
                 <span>Activity</span>
                 <span>Amount (AED)</span>
                 <span>Classification</span>
+                <span className="text-right">Action</span>
               </div>
               <div>
                 {transactions.map((tx: any) => (
                   <div
                     key={tx.id}
-                    className="grid grid-cols-4 gap-2 px-4 py-3"
+                    className="grid grid-cols-5 gap-2 px-4 py-3 items-center"
                     style={{ borderBottom: '1px solid var(--ts-border-subtle)', fontSize: 13 }}
                   >
                     <span style={{ color: 'var(--ts-fg-primary)', fontWeight: 500 }}>{tx.counterparty}</span>
@@ -232,6 +342,17 @@ export default function TransactionsPage() {
                     <span style={{ color: CLASS_COLORS[tx.classification] ?? 'var(--ts-fg-muted)', fontWeight: 600, fontSize: 11, letterSpacing: '0.06em' }}>
                       {tx.classification}
                     </span>
+                    <div className="flex justify-end">
+                      {tx.classification === 'UNCLASSIFIED' && (
+                        <button
+                          onClick={() => setClassifyingTx(tx)}
+                          className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all hover:bg-blue-500/10 hover:text-blue-500"
+                          style={{ background: 'var(--ts-bg-elevated)', border: '1px solid var(--ts-border)', color: 'var(--ts-fg-primary)', cursor: 'pointer' }}
+                        >
+                          <Edit2 size={12} /> Classify
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -242,6 +363,9 @@ export default function TransactionsPage() {
 
       {showImport && (
         <CsvImportDialog taxPeriodId={taxPeriodId} onClose={() => setShowImport(false)} />
+      )}
+      {classifyingTx && (
+        <ClassifyDialog transaction={classifyingTx} onClose={() => setClassifyingTx(null)} />
       )}
     </div>
   );

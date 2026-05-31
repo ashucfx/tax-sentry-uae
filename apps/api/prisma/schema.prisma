@@ -139,7 +139,6 @@ model User {
   orgId               String
   email               String?
   phone               String?
-  passwordHash        String?
   firstName           String?
   lastName            String?
   role                UserRole  @default(VIEWER)
@@ -157,8 +156,6 @@ model User {
   // Relations
   organization          Organization           @relation(fields: [orgId], references: [id], onDelete: Cascade)
   sessions              Session[]
-  passwordResetTokens   PasswordResetToken[]
-  emailVerifTokens      EmailVerificationToken[]
   auditLogs             AuditLog[]
   overrides             ClassificationOverride[]
 
@@ -190,37 +187,7 @@ model Session {
   @@map("sessions")
 }
 
-// ─── PASSWORD RESET TOKENS ───────────────────────────────────────────────────
 
-model PasswordResetToken {
-  id        String    @id @default(cuid())
-  userId    String
-  tokenHash String    @unique
-  expiresAt DateTime
-  usedAt    DateTime?
-  createdAt DateTime  @default(now())
-
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@map("password_reset_tokens")
-}
-
-// ─── EMAIL VERIFICATION TOKENS ───────────────────────────────────────────────
-
-model EmailVerificationToken {
-  id        String    @id @default(cuid())
-  userId    String
-  tokenHash String    @unique
-  expiresAt DateTime
-  usedAt    DateTime?
-  createdAt DateTime  @default(now())
-
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@map("email_verification_tokens")
-}
 
 // ─── TAX PERIODS ─────────────────────────────────────────────────────────────
 
