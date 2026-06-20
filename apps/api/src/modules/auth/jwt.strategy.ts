@@ -19,7 +19,7 @@ interface JwtPayload {
 export class JwtStrategy extends PassportStrategy(Strategy) {
   private readonly userCache = new (LRUCache as any)({
     max: 1000,
-    ttl: 60 * 1000, // 60 seconds
+    ttl: 15 * 1000, // 15 seconds — short window to minimise deactivated-user access
   });
 
   constructor(
@@ -59,5 +59,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     this.userCache.set(payload.sub, user);
     return user;
+  }
+
+  invalidateUser(userId: string): void {
+    this.userCache.delete(userId);
   }
 }

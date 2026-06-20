@@ -13,6 +13,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { FreeZone, UserRole } from '@prisma/client';
 import * as argon2 from 'argon2';
 import { randomBytes, createHash } from 'crypto';
+import { JwtStrategy } from './jwt.strategy';
 
 const LOCKOUT_MAX_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000;
@@ -34,6 +35,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly config: ConfigService,
+    private readonly jwtStrategy: JwtStrategy,
   ) {}
 
 
@@ -104,6 +106,10 @@ export class AuthService {
   async logout(rawRefreshToken: string) {
     if (!rawRefreshToken) return;
     const tokenHash = sha256(rawRefreshToken);
+    const session = await this.prisma.session.findUnique({ where: { tokenHash }, select: { userId: true } }).catch(() => null);
+    if (session?.userId) {
+      this.jwtStrategy.invalidateUser(session.userId);
+    }
     await this.prisma.session
       .updateMany({
         where: { tokenHash, isRevoked: false },
@@ -118,6 +124,7 @@ export class AuthService {
       where: { userId, isRevoked: false },
       data: { isRevoked: true, revokedAt: new Date() },
     });
+    this.jwtStrategy.invalidateUser(userId);
     this.logger.log(`All sessions revoked for user ${userId}`);
   }
 
@@ -174,6 +181,120 @@ export class AuthService {
   }
 
 
+
+  // ── Get current user profile ────────────────────────────────────────────────
+  async getProfile(userId: string) {
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        phone: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        emailVerified: true,
+        mfaEnabled: true,
+        lastLoginAt: true,
+        createdAt: true,
+        organization: {
+          select: {
+            id: true,
+            name: true,
+            freeZone: true,
+            tradeLicenseNo: true,
+            subscriptionTier: true,
+            subscriptionStatus: true,
+            trialEndsAt: true,
+            currentPeriodEnd: true,
+          },
+        },
+      },
+    });
+    return user;
+  }
+
+  // ── Update user profile ─────────────────────────────────────────────────────
+  async updateProfile(userId: string, dto: { firstName?: string; lastName?: string }) {
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...(dto.firstName !== undefined && { firstName: dto.firstName }),
+        ...(dto.lastName !== undefined && { lastName: dto.lastName }),
+      },
+      select: {
+        id: true,
+        email: true,
+        phone: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        emailVerified: true,
+        mfaEnabled: true,
+        lastLoginAt: true,
+        createdAt: true,
+      },
+    });
+
+    const fullUser = await this.prisma.user.findUnique({ where: { id: userId }, select: { orgId: true } });
+    if (fullUser) {
+      await this.prisma.auditLog.create({
+        data: {
+          orgId: fullUser.orgId,
+          actorId: userId,
+          action: 'USER_PROFILE_UPDATED',
+          entity: 'User',
+          entityId: userId,
+          afterJson: dto,
+        },
+      }).catch(() => {});
+    }
+
+    return user;
+  }
+
+  // ── List active sessions ────────────────────────────────────────────────────
+  async listSessions(userId: string) {
+    const sessions = await this.prisma.session.findMany({
+      where: { userId, isRevoked: false, expiresAt: { gt: new Date() } },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        ipAddress: true,
+        userAgent: true,
+        deviceInfo: true,
+        createdAt: true,
+        expiresAt: true,
+      },
+    });
+    return sessions.map((s) => ({
+      ...s,
+      deviceLabel: this.parseDeviceLabel(s.userAgent ?? ''),
+    }));
+  }
+
+  // ── Revoke a specific session ───────────────────────────────────────────────
+  async revokeSession(userId: string, sessionId: string) {
+    const session = await this.prisma.session.findUnique({ where: { id: sessionId } });
+    if (!session || session.userId !== userId) {
+      throw new UnauthorizedException('Session not found');
+    }
+    await this.prisma.session.update({
+      where: { id: sessionId },
+      data: { isRevoked: true, revokedAt: new Date() },
+    });
+  }
+
+  private parseDeviceLabel(userAgent: string): string {
+    if (!userAgent) return 'Unknown device';
+    if (/Mobile|Android|iPhone/i.test(userAgent)) return 'Mobile browser';
+    if (/iPad|Tablet/i.test(userAgent)) return 'Tablet browser';
+    if (/Chrome/i.test(userAgent)) return 'Chrome on Desktop';
+    if (/Firefox/i.test(userAgent)) return 'Firefox on Desktop';
+    if (/Safari/i.test(userAgent)) return 'Safari on Desktop';
+    if (/Edge/i.test(userAgent)) return 'Edge on Desktop';
+    return 'Desktop browser';
+  }
 
   // ── Private helpers ─────────────────────────────────────────────────────────
 
