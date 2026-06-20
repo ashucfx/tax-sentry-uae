@@ -119,4 +119,30 @@ export class OrganizationsController {
   ) {
     await this.orgService.revokeInvitation(orgId, invitationId);
   }
+
+  // ── Notification Preferences ─────────────────────────────────────────────────
+
+  @Get('me/notifications')
+  @ApiOperation({ summary: 'Get notification preferences' })
+  async getNotifications(@CurrentUser('orgId') orgId: string) {
+    return { data: await this.orgService.getNotificationPrefs(orgId) };
+  }
+
+  @Patch('me/notifications')
+  @ApiOperation({ summary: 'Update notification preferences' })
+  @Roles(UserRole.OWNER, UserRole.FINANCE)
+  async updateNotifications(
+    @CurrentUser('orgId') orgId: string,
+    @Body() dto: Record<string, boolean>,
+  ) {
+    return { data: await this.orgService.updateNotificationPrefs(orgId, dto) };
+  }
+
+  // ── Onboarding Status ─────────────────────────────────────────────────────────
+
+  @Get('me/onboarding')
+  @ApiOperation({ summary: 'Get onboarding progress for current org' })
+  async getOnboarding(@CurrentUser('orgId') orgId: string) {
+    return { data: await this.orgService.getOnboardingStatus(orgId) };
+  }
 }

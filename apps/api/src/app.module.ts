@@ -17,6 +17,7 @@ import { AuditModule } from './modules/audit/audit.module';
 import { HealthModule } from './modules/health/health.module';
 import { BillingModule } from './modules/billing/billing.module';
 import { LeadsModule } from './modules/leads/leads.module';
+import { SupportModule } from './modules/support/support.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { SubscriptionGuard } from './common/guards/subscription.guard';
 import { RolesGuard } from './common/guards/roles.guard';
@@ -56,6 +57,7 @@ import { IntegrationsModule } from './modules/integrations/integrations.module';
     ReportsModule,
     BillingModule,
     LeadsModule,
+    SupportModule,
   ],
   providers: [
     // Rate limiting — must be first so brute-force attacks are blocked before any auth work

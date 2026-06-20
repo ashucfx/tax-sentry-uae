@@ -271,7 +271,95 @@ export class OrganizationsService {
 
     await this.prisma.invitation.update({
       where: { id: invitationId },
-      data: { expiresAt: new Date() }, // expire immediately = revoked
+      data: { expiresAt: new Date() },
     });
+  }
+
+  // ── Notification Preferences ─────────────────────────────────────────────────
+
+  async getNotificationPrefs(orgId: string) {
+    const org = await this.prisma.organization.findUnique({
+      where: { id: orgId },
+      select: { notificationPrefsJson: true },
+    });
+    const defaults = {
+      emailAlerts: true,
+      breachAlerts: true,
+      weeklyDigest: false,
+      thresholdWarnings: true,
+    };
+    return { ...(org?.notificationPrefsJson as object ?? {}), ...defaults, ...(org?.notificationPrefsJson as object ?? {}) };
+  }
+
+  async updateNotificationPrefs(orgId: string, prefs: Record<string, boolean>) {
+    const current = await this.getNotificationPrefs(orgId);
+    const merged = { ...current, ...prefs };
+    await this.prisma.organization.update({
+      where: { id: orgId },
+      data: { notificationPrefsJson: merged },
+    });
+    return merged;
+  }
+
+  // ── Onboarding Status ────────────────────────────────────────────────────────
+
+  async getOnboardingStatus(orgId: string) {
+    const [org, taxPeriod, transactions, substance] = await Promise.all([
+      this.prisma.organization.findUnique({
+        where: { id: orgId },
+        select: { name: true, tradeLicenseNo: true, taxRegistrationNo: true, freeZone: true, subscriptionStatus: true, subscriptionTier: true, createdAt: true },
+      }),
+      this.prisma.taxPeriod.findFirst({ where: { orgId } }),
+      this.prisma.revenueTransaction.findFirst({ where: { orgId, isDeleted: false } }),
+      this.prisma.substanceDocument.findFirst({ where: { orgId, isDeleted: false } }),
+    ]);
+
+    const steps = [
+      {
+        id: 'org_setup',
+        label: 'Organisation Setup',
+        description: 'Set your company name, free zone, and tax period',
+        complete: !!(org?.tradeLicenseNo && taxPeriod),
+      },
+      {
+        id: 'profile',
+        label: 'Complete Profile',
+        description: 'Add your TRN and primary activity',
+        complete: !!(org?.taxRegistrationNo),
+      },
+      {
+        id: 'revenue_data',
+        label: 'Upload Revenue Data',
+        description: 'Import your first revenue transactions',
+        complete: !!transactions,
+      },
+      {
+        id: 'classification',
+        label: 'Review Classification',
+        description: 'Verify QI/NQI classification results',
+        complete: !!transactions,
+      },
+      {
+        id: 'substance',
+        label: 'Monitor Compliance',
+        description: 'Upload substance documents and review risk score',
+        complete: !!substance,
+      },
+      {
+        id: 'subscription',
+        label: 'Activate Subscription',
+        description: 'Subscribe to continue after your trial',
+        complete: org?.subscriptionStatus === 'ACTIVE',
+      },
+    ];
+
+    const completedCount = steps.filter((s) => s.complete).length;
+    return {
+      steps,
+      completedCount,
+      totalSteps: steps.length,
+      percentComplete: Math.round((completedCount / steps.length) * 100),
+      isComplete: completedCount === steps.length,
+    };
   }
 }
