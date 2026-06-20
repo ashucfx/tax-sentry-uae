@@ -2,7 +2,10 @@ import {
   Controller,
   Post,
   Get,
+  Patch,
+  Delete,
   Body,
+  Param,
   Req,
   Res,
   HttpCode,
@@ -18,6 +21,7 @@ import { AuthService } from './auth.service';
 import { OtpService } from './otp.service';
 import { SendOtpDto } from './dto/send-otp.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 import { Public } from '../../common/decorators/public.decorator';
 import { SkipSubscriptionCheck } from '../../common/guards/subscription.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -112,6 +116,53 @@ export class AuthController {
   ) {
     await this.authService.logoutAll(userId);
     res.clearCookie(REFRESH_COOKIE, this.clearCookieOpts());
+  }
+
+  // ── Get current user profile ─────────────────────────────────────────────────
+
+  @Get('me')
+  @SkipSubscriptionCheck()
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get current user profile' })
+  async getMe(@CurrentUser('id') userId: string) {
+    return { data: await this.authService.getProfile(userId) };
+  }
+
+  // ── Update profile ────────────────────────────────────────────────────────────
+
+  @Patch('me')
+  @SkipSubscriptionCheck()
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update user profile (firstName, lastName)' })
+  async updateMe(
+    @CurrentUser('id') userId: string,
+    @Body() dto: UpdateProfileDto,
+  ) {
+    return { data: await this.authService.updateProfile(userId, dto) };
+  }
+
+  // ── List active sessions ──────────────────────────────────────────────────────
+
+  @Get('sessions')
+  @SkipSubscriptionCheck()
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'List active sessions for current user' })
+  async listSessions(@CurrentUser('id') userId: string) {
+    return { data: await this.authService.listSessions(userId) };
+  }
+
+  // ── Revoke a specific session ─────────────────────────────────────────────────
+
+  @Delete('sessions/:id')
+  @SkipSubscriptionCheck()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Revoke a specific session by ID' })
+  async revokeSession(
+    @CurrentUser('id') userId: string,
+    @Param('id') sessionId: string,
+  ) {
+    await this.authService.revokeSession(userId, sessionId);
   }
 
 
