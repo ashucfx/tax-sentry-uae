@@ -225,20 +225,32 @@ export class RiskEngine {
   }
 
   private async sendAlertEmail(orgId: string, subject: string, message: string) {
-    if (!process.env.RESEND_API_KEY) {
-      this.logger.warn(`Resend API key missing. Mocking alert to org ${orgId}: ${subject}`);
+    const owner = await this.prisma.user.findFirst({
+      where: { orgId, role: 'OWNER', isActive: true },
+      select: { email: true },
+    });
+
+    if (!owner?.email) {
+      this.logger.warn(`No active OWNER found for org ${orgId} — cannot send alert: ${subject}`);
       return;
     }
+
+    const apiKey = process.env.RESEND_API_KEY;
+    if (!apiKey || apiKey === 're_placeholder' || apiKey.startsWith('re_dummy')) {
+      this.logger.warn(`Resend not configured — would have sent "${subject}" to ${owner.email}`);
+      return;
+    }
+
     try {
       await this.resend.emails.send({
-        from: 'hello@gettaxsentry.com',
-        to: ['finance@organization.com'], // In production, fetch org members
+        from: process.env.EMAIL_FROM || 'hello@gettaxsentry.com',
+        to: owner.email,
         subject,
         text: message,
       });
-      this.logger.log(`Alert email sent to org ${orgId}`);
+      this.logger.log(`Alert email sent to ${owner.email} for org ${orgId}`);
     } catch (e) {
-      this.logger.error(`Failed to send alert email: ${(e as Error).message}`);
+      this.logger.error(`Failed to send alert email to ${owner.email}: ${(e as Error).message}`);
     }
   }
 
