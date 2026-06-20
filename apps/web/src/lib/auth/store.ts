@@ -1,5 +1,19 @@
 import { create } from 'zustand';
 
+const SESSION_COOKIE = 'ts_session_exists';
+
+function setSessionCookie() {
+  if (typeof document !== 'undefined') {
+    document.cookie = `${SESSION_COOKIE}=1; path=/; max-age=${30 * 24 * 60 * 60}; SameSite=Lax`;
+  }
+}
+
+function clearSessionCookie() {
+  if (typeof document !== 'undefined') {
+    document.cookie = `${SESSION_COOKIE}=; path=/; max-age=0; SameSite=Lax`;
+  }
+}
+
 export interface AuthUser {
   id: string;
   email: string;
@@ -38,13 +52,15 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   setAuth: (accessToken, user, broadcast = true) => {
     set({ accessToken, user, isLoading: false });
+    setSessionCookie();
     if (broadcast && channel) {
       channel.postMessage({ type: 'SET_AUTH', payload: { accessToken, user } });
     }
   },
-  
+
   clearAuth: (broadcast = true) => {
     set({ accessToken: null, user: null, isLoading: false });
+    clearSessionCookie();
     if (broadcast && channel) {
       channel.postMessage({ type: 'CLEAR_AUTH' });
     }
