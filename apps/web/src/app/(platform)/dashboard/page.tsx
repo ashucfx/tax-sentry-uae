@@ -6,6 +6,7 @@ import { ActionFeedRow } from '@/components/dashboard/ActionFeedRow';
 import { SubstanceHealthRow } from '@/components/dashboard/SubstanceHealthRow';
 import { TopRibbon } from '@/components/dashboard/TopRibbon';
 import { DashboardBillingBanner } from '@/components/dashboard/DashboardBillingBanner';
+import { OnboardingProgressBanner } from '@/components/dashboard/OnboardingProgressBanner';
 import { Lock, ShieldCheck, BookOpen, Users } from 'lucide-react';
 
 export default function DashboardPage() {
@@ -15,7 +16,8 @@ export default function DashboardPage() {
 
       <div className="flex-1 w-full max-w-[1200px] mx-auto px-6 py-6 space-y-6">
         <DashboardBillingBanner />
-        
+        <OnboardingProgressBanner />
+
         {/* 1. KPI strip */}
         <MetricsCards />
 

@@ -14,6 +14,10 @@ import {
   Menu,
   X,
   Users,
+  User,
+  Activity,
+  CreditCard,
+  Rocket,
 } from 'lucide-react';
 import { logoutAction } from '@/lib/auth/actions';
 import { useState, useEffect } from 'react';
@@ -23,14 +27,19 @@ interface NavItem {
   icon: React.ElementType;
   label: string;
   badge?: number;
+  section?: string;
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { href: '/dashboard',    icon: LayoutDashboard, label: 'Dashboard' },
-  { href: '/revenue',      icon: TrendingUp,      label: 'Revenue',  badge: 1 },
-  { href: '/substance',    icon: FileText,        label: 'Substance' },
-  { href: '/reports',      icon: BarChart3,       label: 'Reports' },
-  { href: '/settings/team', icon: Users,          label: 'Team Settings' },
+  { href: '/dashboard',           icon: LayoutDashboard, label: 'Dashboard',       section: 'Compliance' },
+  { href: '/revenue',             icon: TrendingUp,      label: 'Revenue',         section: 'Compliance' },
+  { href: '/substance',           icon: FileText,        label: 'Substance',       section: 'Compliance' },
+  { href: '/reports',             icon: BarChart3,       label: 'Reports',         section: 'Compliance' },
+  { href: '/activity',            icon: Activity,        label: 'Activity',        section: 'Account' },
+  { href: '/account',             icon: User,            label: 'My Account',      section: 'Account' },
+  { href: '/settings',            icon: Settings,        label: 'Settings',        section: 'Account' },
+  { href: '/billing',             icon: CreditCard,      label: 'Billing',         section: 'Account' },
+  { href: '/onboarding/progress', icon: Rocket,          label: 'Getting Started', section: 'Account' },
 ];
 
 export function Sidebar() {
@@ -120,89 +129,88 @@ export function Sidebar() {
         </div>
 
       {/* Navigation */}
-      <nav className="flex-1 sidebar-nav px-2.5 py-4">
-        <p
-          className="px-2.5 mb-2"
-          style={{
-            fontSize: 8,
-            fontWeight: 700,
-            letterSpacing: '0.12em',
-            textTransform: 'uppercase',
-            color: 'oklch(0.52 0 0)',
-          }}
-        >
-          Main Menu
-        </p>
-        <div className="space-y-0.5">
-          {NAV_ITEMS.map(({ href, icon: Icon, label, badge }) => {
-            const active = pathname === href || pathname.startsWith(href + '/');
-            return (
-              <Link
-                key={href}
-                href={href}
-                className={cn(
-                  'group relative flex items-center gap-2.5 rounded-[10px] px-3 py-2.5 text-[13px] font-medium transition-all',
-                  active
-                    ? 'text-[var(--ts-blue-500)]'
-                    : 'text-[var(--ts-fg-secondary)] hover:text-[var(--ts-fg-primary)]',
-                )}
+      <nav className="flex-1 sidebar-nav px-2.5 py-4 overflow-y-auto">
+        {(['Compliance', 'Account'] as const).map((section) => {
+          const sectionItems = NAV_ITEMS.filter((i) => i.section === section);
+          return (
+            <div key={section} className="mb-3">
+              <p
+                className="px-2.5 mb-1"
                 style={{
-                  background: active
-                    ? 'oklch(0.55 0.22 260 / 0.1)'
-                    : 'transparent',
-                  color: active
-                    ? 'var(--ts-blue-600)'
-                    : 'var(--ts-fg-secondary)',
-                }}
-                onMouseEnter={e => {
-                  if (!active) {
-                    (e.currentTarget as HTMLElement).style.background = 'var(--ts-bg-card)';
-                    (e.currentTarget as HTMLElement).style.color = 'var(--ts-fg-primary)';
-                  }
-                }}
-                onMouseLeave={e => {
-                  if (!active) {
-                    (e.currentTarget as HTMLElement).style.background = 'transparent';
-                    (e.currentTarget as HTMLElement).style.color = 'var(--ts-fg-secondary)';
-                  }
+                  fontSize: 8,
+                  fontWeight: 700,
+                  letterSpacing: '0.12em',
+                  textTransform: 'uppercase',
+                  color: 'oklch(0.52 0 0)',
                 }}
               >
-                {active && (
-                  <span
-                    className="absolute left-0 top-1/2 -translate-y-1/2 rounded-r-full"
-                    style={{ width: 3, height: 20, background: 'var(--ts-blue-500)' }}
-                  />
-                )}
-                <Icon
-                  className="flex-shrink-0"
-                  size={17}
-                  color={active ? 'var(--ts-blue-500)' : 'currentColor'}
-                />
-                <span className="flex-1">{label}</span>
-                {badge && (
-                  <span
-                    className="flex items-center justify-center rounded-full text-[9px] font-bold"
-                    style={{
-                      width: 18,
-                      height: 18,
-                      background: 'var(--ts-amber-500)',
-                      color: 'oklch(0.20 0.05 85)',
-                    }}
-                  >
-                    {badge}
-                  </span>
-                )}
-              </Link>
-            );
-          })}
-        </div>
+                {section}
+              </p>
+              <div className="space-y-0.5">
+                {sectionItems.map(({ href, icon: Icon, label, badge }) => {
+                  const active = pathname === href || (href !== '/settings' && pathname.startsWith(href + '/')) || (href === '/settings' && (pathname === '/settings' || pathname === '/settings/team'));
+                  return (
+                    <Link
+                      key={href}
+                      href={href}
+                      className={cn(
+                        'group relative flex items-center gap-2.5 rounded-[10px] px-3 py-2.5 text-[13px] font-medium transition-all',
+                        active
+                          ? 'text-[var(--ts-blue-500)]'
+                          : 'text-[var(--ts-fg-secondary)] hover:text-[var(--ts-fg-primary)]',
+                      )}
+                      style={{
+                        background: active ? 'oklch(0.55 0.22 260 / 0.1)' : 'transparent',
+                        color: active ? 'var(--ts-blue-600)' : 'var(--ts-fg-secondary)',
+                      }}
+                      onMouseEnter={e => {
+                        if (!active) {
+                          (e.currentTarget as HTMLElement).style.background = 'var(--ts-bg-card)';
+                          (e.currentTarget as HTMLElement).style.color = 'var(--ts-fg-primary)';
+                        }
+                      }}
+                      onMouseLeave={e => {
+                        if (!active) {
+                          (e.currentTarget as HTMLElement).style.background = 'transparent';
+                          (e.currentTarget as HTMLElement).style.color = 'var(--ts-fg-secondary)';
+                        }
+                      }}
+                    >
+                      {active && (
+                        <span
+                          className="absolute left-0 top-1/2 -translate-y-1/2 rounded-r-full"
+                          style={{ width: 3, height: 20, background: 'var(--ts-blue-500)' }}
+                        />
+                      )}
+                      <Icon
+                        className="flex-shrink-0"
+                        size={17}
+                        color={active ? 'var(--ts-blue-500)' : 'currentColor'}
+                      />
+                      <span className="flex-1">{label}</span>
+                      {badge && (
+                        <span
+                          className="flex items-center justify-center rounded-full text-[9px] font-bold"
+                          style={{ width: 18, height: 18, background: 'var(--ts-amber-500)', color: 'oklch(0.20 0.05 85)' }}
+                        >
+                          {badge}
+                        </span>
+                      )}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
       </nav>
 
       {/* Help & Sign Out */}
       <div className="px-2.5" style={{ borderTop: '1px solid var(--ts-border-subtle)' }}>
-        <button
+        <Link
+          href="/support"
           className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-[12px] transition-all"
-          style={{ color: 'var(--ts-fg-secondary)' }}
+          style={{ color: 'var(--ts-fg-secondary)', textDecoration: 'none' }}
           onMouseEnter={e => {
             (e.currentTarget as HTMLElement).style.background = 'var(--ts-bg-card)';
             (e.currentTarget as HTMLElement).style.color = 'var(--ts-fg-primary)';
@@ -214,7 +222,7 @@ export function Sidebar() {
         >
           <HelpCircle size={15} color="currentColor" />
           Help &amp; Support
-        </button>
+        </Link>
         <button
           className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-[12px] transition-all"
           style={{ color: 'var(--ts-fg-secondary)' }}

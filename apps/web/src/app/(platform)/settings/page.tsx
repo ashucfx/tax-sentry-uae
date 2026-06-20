@@ -165,10 +165,31 @@ export default function SettingsPage() {
     },
   });
 
-  const [emailAlerts, setEmailAlerts] = useState(true);
-  const [breachAlerts, setBreachAlerts] = useState(true);
-  const [weeklyDigest, setWeeklyDigest] = useState(false);
-  const [thresholdWarnings, setThresholdWarnings] = useState(true);
+  const [notifSaved, setNotifSaved] = useState(false);
+  const [notifPrefs, setNotifPrefs] = useState({
+    emailAlerts: true,
+    breachAlerts: true,
+    weeklyDigest: false,
+    thresholdWarnings: true,
+  });
+
+  const { data: notifData } = useQuery({
+    queryKey: ['notification-prefs'],
+    queryFn: () => api.get('/organizations/me/notifications').then((r) => r.data.data),
+    onSuccess: (d: any) => {
+      if (d) setNotifPrefs((prev) => ({ ...prev, ...d }));
+    },
+    enabled: activeTab === 'notifications',
+  } as any);
+
+  const saveNotifMutation = useMutation({
+    mutationFn: () => api.patch('/organizations/me/notifications', notifPrefs).then((r) => r.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notification-prefs'] });
+      setNotifSaved(true);
+      setTimeout(() => setNotifSaved(false), 3000);
+    },
+  });
 
   // Team tab state
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -311,22 +332,33 @@ export default function SettingsPage() {
                 </p>
 
                 <SettingRow label="Email Alerts" description="Receive alerts via email for all compliance events">
-                  <Toggle enabled={emailAlerts} onChange={setEmailAlerts} />
+                  <Toggle enabled={notifPrefs.emailAlerts} onChange={(v) => setNotifPrefs((p) => ({ ...p, emailAlerts: v }))} />
                 </SettingRow>
                 <SettingRow label="Breach Imminent Alerts" description="Immediate notification when de-minimis exceeds 80%">
-                  <Toggle enabled={breachAlerts} onChange={setBreachAlerts} />
+                  <Toggle enabled={notifPrefs.breachAlerts} onChange={(v) => setNotifPrefs((p) => ({ ...p, breachAlerts: v }))} />
                 </SettingRow>
                 <SettingRow label="Weekly Digest" description="Summary email every Monday with compliance status">
-                  <Toggle enabled={weeklyDigest} onChange={setWeeklyDigest} />
+                  <Toggle enabled={notifPrefs.weeklyDigest} onChange={(v) => setNotifPrefs((p) => ({ ...p, weeklyDigest: v }))} />
                 </SettingRow>
                 <SettingRow label="Threshold Warnings" description="Warnings at 50%, 70%, and 90% of de-minimis limits">
-                  <Toggle enabled={thresholdWarnings} onChange={setThresholdWarnings} />
+                  <Toggle enabled={notifPrefs.thresholdWarnings} onChange={(v) => setNotifPrefs((p) => ({ ...p, thresholdWarnings: v }))} />
                 </SettingRow>
 
-                <div style={{ marginTop: 24 }}>
-                  <span style={{ fontSize: 12, color: 'var(--ts-fg-muted)', padding: '8px 12px', background: 'var(--ts-bg-elevated)', borderRadius: 8, border: '1px solid var(--ts-border)' }}>
-                    Notification preferences — coming soon
-                  </span>
+                <div style={{ marginTop: 24, display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <button
+                    onClick={() => saveNotifMutation.mutate()}
+                    disabled={saveNotifMutation.isPending}
+                    className="flex items-center gap-2 rounded-xl px-5 py-2.5 text-[13px] font-bold transition-all"
+                    style={{ background: 'var(--ts-blue-500)', color: 'white', border: 'none', cursor: saveNotifMutation.isPending ? 'default' : 'pointer', opacity: saveNotifMutation.isPending ? 0.7 : 1 }}
+                  >
+                    <Save size={14} />
+                    {saveNotifMutation.isPending ? 'Saving…' : 'Save Preferences'}
+                  </button>
+                  {notifSaved && (
+                    <span className="flex items-center gap-1.5" style={{ fontSize: 13, color: 'var(--ts-green-500)' }}>
+                      <CheckCircle2 size={14} /> Saved
+                    </span>
+                  )}
                 </div>
               </div>
             )}
