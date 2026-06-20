@@ -22,6 +22,7 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '../../common/interceptors/fastify-file.interceptor';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiConsumes } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { UserRole, Classification } from '@prisma/client';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -74,13 +75,15 @@ export class RevenueController {
   }
   @Get('transactions/export')
   @ApiOperation({ summary: 'Export revenue transactions to CSV' })
+  @Throttle({ short: { limit: 5, ttl: 60000 }, medium: { limit: 10, ttl: 3600000 } })
   async export(
     @CurrentUser('orgId') orgId: string,
     @Query('taxPeriodId') taxPeriodId: string,
+    @Query('page') page = 1,
     @Res() reply: any,
   ) {
     const transactions = await this.revenueService.getTransactions(orgId, taxPeriodId, {
-      page: 1, limit: 10000 
+      page: +page, limit: 500,
     });
 
     const { stringify } = require('csv-stringify/sync');
@@ -105,7 +108,8 @@ export class RevenueController {
 
     reply
       .header('Content-Type', 'text/csv')
-      .header('Content-Disposition', `attachment; filename="transactions-export.csv"`)
+      .header('Content-Disposition', `attachment; filename="transactions-export-p${+page}.csv"`)
+      .header('X-Total-Count', String(transactions.pagination?.total ?? 0))
       .send(csv);
   }
 
@@ -144,6 +148,7 @@ export class RevenueController {
   @ApiOperation({ summary: 'Import transactions from CSV — returns imported count + error rows' })
   @ApiConsumes('multipart/form-data')
   @Roles(UserRole.FINANCE, UserRole.OWNER)
+  @Throttle({ short: { limit: 3, ttl: 60000 }, medium: { limit: 10, ttl: 3600000 } })
   @UseInterceptors(FileInterceptor('file'))
   async csvImport(
     @CurrentUser('orgId') orgId: string,

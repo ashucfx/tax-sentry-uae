@@ -13,6 +13,10 @@ import { CreateTransactionDto, OverrideClassificationDto } from './dto/create-tr
 import Decimal from 'decimal.js';
 import { createHash } from 'crypto';
 
+function stripFormulaChars(value: string): string {
+  return value.replace(/^[=+\-@\t\r]+/, '').trim();
+}
+
 interface PaginationParams {
   page: number;
   limit: number;
@@ -382,11 +386,11 @@ export class RevenueService {
       validRows.push({
         date: row.date,
         amountAed: row.amount_aed,
-        counterparty: row.counterparty,
+        counterparty: stripFormulaChars(row.counterparty),
         counterpartyType: (row.counterparty_type as CounterpartyType) || CounterpartyType.THIRD_PARTY,
         activityCode: row.activity_code || undefined,
-        invoiceNo: row.invoice_no || undefined,
-        description: row.description || undefined,
+        invoiceNo: row.invoice_no ? stripFormulaChars(row.invoice_no) : undefined,
+        description: row.description ? stripFormulaChars(row.description) : undefined,
         source: TransactionSource.CSV,
         isCreditNote: row.is_credit_note === 'true',
         isRelatedParty: row.is_related_party === 'true',
