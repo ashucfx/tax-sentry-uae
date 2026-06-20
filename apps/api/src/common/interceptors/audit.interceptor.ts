@@ -1,12 +1,15 @@
-import { Injectable, NestInterceptor, ExecutionContext, CallHandler } from '@nestjs/common';
+import { Injectable, NestInterceptor, ExecutionContext, CallHandler, Logger } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
+import * as Sentry from '@sentry/node';
 import { PrismaService } from '../../modules/prisma/prisma.service';
 
 const AUDITED_METHODS = ['POST', 'PUT', 'PATCH', 'DELETE'];
 
 @Injectable()
 export class AuditInterceptor implements NestInterceptor {
+  private readonly logger = new Logger(AuditInterceptor.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
@@ -37,8 +40,15 @@ export class AuditInterceptor implements NestInterceptor {
                 userAgent: request.headers['user-agent'],
               },
             });
-          } catch {
-            // Ignore audit log failures
+          } catch (err) {
+            this.logger.error(
+              `Audit log write FAILED for ${method}:${url} actor=${user.id} — ${(err as Error).message}`,
+              (err as Error).stack,
+            );
+            Sentry.captureException(err, {
+              tags: { component: 'AuditInterceptor', method, url },
+              user: { id: user.id, email: user.email },
+            });
           }
         },
         error: async (err) => {
@@ -57,10 +67,15 @@ export class AuditInterceptor implements NestInterceptor {
                 userAgent: request.headers['user-agent'],
               },
             });
-          } catch {
-            // Ignore audit log failures
+          } catch (auditErr) {
+            this.logger.error(
+              `Audit error-log write FAILED for ${method}:${url} actor=${user.id} — ${(auditErr as Error).message}`,
+            );
+            Sentry.captureException(auditErr, {
+              tags: { component: 'AuditInterceptor', method, url },
+            });
           }
-        }
+        },
       }),
     );
   }
