@@ -235,16 +235,9 @@ export class BillingService {
         proration_billing_mode: 'prorated_immediately',
       });
 
-      // Optimistically update DB
-      await this.prisma.organization.update({
-        where: { id: orgId },
-        data: {
-          subscriptionTier: tier,
-          subscriptionInterval: interval,
-        },
-      });
-
-      this.logger.log(`[UPGRADE] ✓ Plan changed successfully to ${newProductId}`);
+      // DB tier update is intentionally deferred — subscription.active webhook is the
+      // authoritative source of truth and will update tier + interval when it fires.
+      this.logger.log(`[UPGRADE] ✓ Plan change requested to ${newProductId} for org=${orgId}`);
       return { success: true };
     } catch (err) {
       this.logger.error(
