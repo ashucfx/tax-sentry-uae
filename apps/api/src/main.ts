@@ -42,12 +42,34 @@ async function bootstrap() {
   const port = configService.get<number>('PORT') ?? configService.get<number>('API_PORT', 3001);
   const nodeEnv = configService.get<string>('NODE_ENV', 'development');
 
+  // Validate JWT secret at startup — refuse to run in prod/staging with a known weak value
+  const jwtSecret = configService.get<string>('JWT_SECRET', '');
+  const KNOWN_WEAK_JWT_SECRETS = new Set([
+    'dev-secret-must-be-32-chars-min-here',
+    'changeme',
+    'secret',
+    'supersecret',
+    'your-jwt-secret',
+    'jwt-secret',
+  ]);
+  if (!jwtSecret || jwtSecret.length < 64 || KNOWN_WEAK_JWT_SECRETS.has(jwtSecret)) {
+    const generateCmd = `node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"`;
+    if (nodeEnv === 'production' || nodeEnv === 'staging') {
+      throw new Error(
+        `FATAL: JWT_SECRET is too short or a known weak placeholder. ` +
+        `Generate a secure secret with: ${generateCmd}`,
+      );
+    }
+    logger.warn(`⚠  JWT_SECRET is weak — replace before deploying: ${generateCmd}`);
+  }
+
   // Security
   await app.register(require('@fastify/helmet'), {
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
         styleSrc: ["'self'", "'unsafe-inline'"],
+        frameAncestors: ["'none'"],
       },
     },
   });
