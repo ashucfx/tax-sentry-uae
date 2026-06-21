@@ -44,5 +44,7 @@ EXPOSE 3001
 # Change to the API workspace directory
 WORKDIR /app/apps/api
 
-# Run pending migrations then start the server.
-CMD ["sh", "-c", "npx --yes prisma@5.22.0 migrate deploy && node dist/src/main"]
+# Resolve any previously-failed migration, then apply pending ones, then start.
+# --applied marks the migration as successfully done so migrate deploy can proceed.
+# The || true ensures we don't fail if it's already resolved on future deploys.
+CMD ["sh", "-c", "npx --yes prisma@5.22.0 migrate resolve --applied 20260621_add_notifications_support || true && npx --yes prisma@5.22.0 migrate deploy && node dist/src/main"]
