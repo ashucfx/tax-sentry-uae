@@ -2,6 +2,8 @@ import {
   Controller,
   Get,
   Post,
+  Put,
+  Patch,
   Delete,
   Param,
   Query,
@@ -97,5 +99,50 @@ export class SubstanceController {
     @CurrentUser('id') userId: string,
   ) {
     await this.substanceService.softDeleteDocument(id, orgId, userId);
+  }
+
+  @Put('documents/:id/replace')
+  @ApiOperation({ summary: 'Replace a document with a new version, incrementing version number' })
+  @ApiConsumes('multipart/form-data')
+  @Roles(UserRole.FINANCE, UserRole.OWNER)
+  @UseInterceptors(FileInterceptor('file'))
+  async replace(
+    @Param('id') id: string,
+    @CurrentUser('orgId') orgId: string,
+    @CurrentUser('id') userId: string,
+    @Query('expiresAt') expiresAt?: string,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 50 * 1024 * 1024 }),
+          new FileTypeValidator({ fileType: /^(application\/pdf|image\/jpeg|image\/png)$/ }),
+        ],
+      }),
+    )
+    file?: Express.Multer.File,
+  ) {
+    if (!file) throw new BadRequestException('File is required');
+
+    let parsedExpiresAt: Date | undefined;
+    if (expiresAt) {
+      parsedExpiresAt = new Date(expiresAt);
+      if (isNaN(parsedExpiresAt.getTime())) {
+        throw new BadRequestException('Invalid expiresAt date format');
+      }
+    }
+
+    return this.substanceService.replaceDocument(orgId, userId, id, file, { expiresAt: parsedExpiresAt });
+  }
+
+  @Patch('documents/:id')
+  @ApiOperation({ summary: 'Update expiry date and/or notes on an existing document' })
+  @Roles(UserRole.FINANCE, UserRole.OWNER)
+  async update(
+    @Param('id') id: string,
+    @CurrentUser('orgId') orgId: string,
+    @CurrentUser('id') userId: string,
+    @Body() dto: { expiresAt?: string; notes?: string },
+  ) {
+    return this.substanceService.updateDocument(orgId, userId, id, dto);
   }
 }

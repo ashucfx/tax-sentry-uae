@@ -245,6 +245,145 @@ export class SubstanceService {
     ]);
   }
 
+  async replaceDocument(
+    orgId: string,
+    actorId: string,
+    documentId: string,
+    file: Express.Multer.File,
+    meta: { expiresAt?: Date },
+  ) {
+    const existing = await this.prisma.substanceDocument.findFirst({
+      where: { id: documentId, orgId, isDeleted: false },
+    });
+
+    if (!existing) throw new NotFoundException('Document not found');
+
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      throw new BadRequestException('File size exceeds 50MB limit');
+    }
+
+    const detectedMime = this.detectMimeFromBuffer(file.buffer);
+    if (!detectedMime || !ALLOWED_MIME_TYPES.has(detectedMime)) {
+      throw new BadRequestException(
+        'File type not allowed. Allowed: PDF, JPEG, PNG, WebP, Word (.doc/.docx), Excel (.xls/.xlsx)',
+      );
+    }
+
+    const safeName = file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const fileKey = `${orgId}/${existing.docType}/${randomUUID()}-${safeName}`;
+
+    const { error: uploadError } = await this.supabase.storage
+      .from(this.bucket)
+      .upload(fileKey, file.buffer, {
+        contentType: detectedMime,
+        upsert: false,
+      });
+
+    if (uploadError) {
+      this.logger.error(`Storage upload failed: ${uploadError.message}`);
+      throw new BadRequestException('File upload failed — please retry');
+    }
+
+    const expiryStatus = meta.expiresAt
+      ? this.computeExpiryStatus(meta.expiresAt)
+      : undefined;
+
+    const newVersion = existing.version + 1;
+
+    const [newDoc] = await this.prisma.$transaction([
+      this.prisma.substanceDocument.create({
+        data: {
+          orgId,
+          docType: existing.docType,
+          displayName: existing.displayName,
+          fileKey,
+          fileName: file.originalname,
+          fileSize: file.size,
+          mimeType: detectedMime,
+          expiresAt: meta.expiresAt,
+          status: (expiryStatus ?? 'ACTIVE') as any,
+          virusScanStatus: 'PENDING',
+          version: newVersion,
+          previousVersionId: existing.id,
+        },
+      }),
+      this.prisma.substanceDocument.update({
+        where: { id: existing.id },
+        data: { isDeleted: true, deletedAt: new Date(), deletedBy: actorId, status: 'DELETED' },
+      }),
+      this.prisma.auditLog.create({
+        data: {
+          orgId,
+          actorId,
+          action: 'SUBSTANCE_DOCUMENT_REPLACED',
+          entity: 'SubstanceDocument',
+          entityId: existing.id,
+          beforeJson: { docType: existing.docType, fileName: existing.fileName, version: existing.version },
+          afterJson: {
+            docType: existing.docType,
+            fileName: file.originalname,
+            version: newVersion,
+            previousVersionId: existing.id,
+            expiresAt: meta.expiresAt,
+          },
+        },
+      }),
+    ]);
+
+    return newDoc;
+  }
+
+  async updateDocument(
+    orgId: string,
+    actorId: string,
+    documentId: string,
+    dto: { expiresAt?: string; notes?: string },
+  ) {
+    const doc = await this.prisma.substanceDocument.findFirst({
+      where: { id: documentId, orgId, isDeleted: false },
+    });
+
+    if (!doc) throw new NotFoundException('Document not found');
+
+    const updateData: Record<string, any> = {};
+
+    if (dto.expiresAt !== undefined) {
+      const parsedDate = new Date(dto.expiresAt);
+      if (isNaN(parsedDate.getTime())) {
+        throw new BadRequestException('Invalid expiresAt date format');
+      }
+      updateData.expiresAt = parsedDate;
+      updateData.status = this.computeExpiryStatus(parsedDate);
+    }
+
+    if (dto.notes !== undefined) {
+      updateData.notes = dto.notes;
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      throw new BadRequestException('No fields to update — provide expiresAt and/or notes');
+    }
+
+    const updated = await this.prisma.substanceDocument.update({
+      where: { id: documentId },
+      data: updateData,
+    });
+
+    await this.prisma.auditLog.create({
+      data: {
+        orgId,
+        actorId,
+        action: 'SUBSTANCE_DOCUMENT_UPDATED',
+        entity: 'SubstanceDocument',
+        entityId: documentId,
+        beforeJson: { expiresAt: doc.expiresAt, notes: doc.notes },
+        afterJson: { expiresAt: updated.expiresAt, notes: updated.notes },
+      },
+    });
+
+    return updated;
+  }
+
   private computeExpiryStatus(expiresAt: Date): string {
     const now = new Date();
     const thirtyDays = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
