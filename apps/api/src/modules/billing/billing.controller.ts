@@ -2,6 +2,7 @@ import {
   Controller,
   Post,
   Get,
+  Delete,
   Body,
   Req,
   Res,
@@ -12,7 +13,7 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiBody } from '@nestjs/swagger';
 import { BillingService } from './billing.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCheckoutDto } from './dto/create-checkout.dto';
@@ -128,6 +129,40 @@ export class BillingController {
       dto.tier,
       dto.interval,
     );
+    return { data: result };
+  }
+
+  // ── POST /billing/subscription/cancel ──────────────────────────────────────
+  @Post('subscription/cancel')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Cancel subscription — at period end or immediately' })
+  @ApiBody({
+    schema: {
+      properties: { immediately: { type: 'boolean', default: false } },
+    },
+  })
+  async cancelSubscription(
+    @Body() body: { immediately?: boolean },
+    @CurrentUser() user: JwtUser,
+  ) {
+    const result = await this.billingService.cancelSubscription(
+      user.orgId,
+      user.sub,
+      body.immediately ?? false,
+    );
+    return { data: result };
+  }
+
+  // ── DELETE /billing/subscription/cancel ────────────────────────────────────
+  @Delete('subscription/cancel')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Reactivate subscription — remove scheduled cancellation' })
+  async reactivateSubscription(@CurrentUser() user: JwtUser) {
+    const result = await this.billingService.reactivateSubscription(user.orgId);
     return { data: result };
   }
 

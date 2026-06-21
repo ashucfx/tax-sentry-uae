@@ -5,6 +5,7 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { SubscriptionStatus, SubscriptionTier } from '@prisma/client';
 import { Webhook } from 'svix';
@@ -142,6 +143,7 @@ export class BillingService {
         subscriptionInterval: true,
         currentPeriodEnd: true,
         cancelAtPeriodEnd: true,
+        cancelledAt: true,
         trialEndsAt: true,
         dodoSubscriptionId: true,
         dodoCustomerId: true,
@@ -246,6 +248,249 @@ export class BillingService {
       );
       throw new UnprocessableEntityException('Failed to upgrade subscription. Please contact support.');
     }
+  }
+
+  // ── Cancel Subscription ────────────────────────────────────────────────────
+  async cancelSubscription(
+    orgId: string,
+    userId: string,
+    immediately: boolean,
+  ): Promise<{ cancelledAt: string | null; cancelAtPeriodEnd: boolean }> {
+    this.logger.log(`[CANCEL] org=${orgId} userId=${userId} immediately=${immediately}`);
+
+    const org = await this.prisma.organization.findUniqueOrThrow({
+      where: { id: orgId },
+      select: {
+        dodoSubscriptionId: true,
+        subscriptionStatus: true,
+        currentPeriodEnd: true,
+        cancelAtPeriodEnd: true,
+      },
+    });
+
+    if (
+      org.subscriptionStatus === SubscriptionStatus.CANCELLED ||
+      org.subscriptionStatus === SubscriptionStatus.EXPIRED
+    ) {
+      throw new BadRequestException('Subscription is already cancelled or expired.');
+    }
+
+    const now = new Date();
+
+    if (immediately) {
+      // Immediately cancel: mark as CANCELLED now
+      await this.prisma.$transaction(async (tx) => {
+        await tx.organization.update({
+          where: { id: orgId },
+          data: {
+            subscriptionStatus: SubscriptionStatus.CANCELLED,
+            cancelAtPeriodEnd: true,
+            cancelledAt: now,
+          },
+        });
+
+        await tx.auditLog.create({
+          data: {
+            orgId,
+            actorId: userId,
+            action: 'SUBSCRIPTION_CANCELLED',
+            entity: 'Organization',
+            entityId: orgId,
+            beforeJson: {
+              subscriptionStatus: org.subscriptionStatus,
+              cancelAtPeriodEnd: org.cancelAtPeriodEnd,
+            },
+            afterJson: {
+              subscriptionStatus: SubscriptionStatus.CANCELLED,
+              cancelAtPeriodEnd: true,
+              cancelledAt: now.toISOString(),
+            },
+          },
+        });
+      });
+
+      // Attempt Dodo API cancellation — non-fatal if it fails (can be reconciled via webhook)
+      if (org.dodoSubscriptionId) {
+        try {
+          await this.dodo.subscriptions.update(org.dodoSubscriptionId, {
+            cancel_at_next_billing_date: true,
+            cancel_reason: 'cancelled_by_customer',
+          });
+          this.logger.log(`[CANCEL] ✓ Dodo subscription cancelled sub=${org.dodoSubscriptionId}`);
+        } catch (err) {
+          this.logger.error(
+            `[CANCEL] ✗ Dodo API cancellation failed (DB already updated): ${(err as Error).message}`,
+          );
+        }
+      }
+
+      this.logger.log(`[CANCEL] ✓ Subscription immediately cancelled org=${orgId}`);
+      return { cancelledAt: now.toISOString(), cancelAtPeriodEnd: true };
+    } else {
+      // Cancel at period end: schedule cancellation
+      await this.prisma.$transaction(async (tx) => {
+        await tx.organization.update({
+          where: { id: orgId },
+          data: {
+            cancelAtPeriodEnd: true,
+          },
+        });
+
+        await tx.auditLog.create({
+          data: {
+            orgId,
+            actorId: userId,
+            action: 'SUBSCRIPTION_CANCELLED',
+            entity: 'Organization',
+            entityId: orgId,
+            beforeJson: {
+              subscriptionStatus: org.subscriptionStatus,
+              cancelAtPeriodEnd: org.cancelAtPeriodEnd,
+            },
+            afterJson: {
+              cancelAtPeriodEnd: true,
+              scheduledCancelAt: org.currentPeriodEnd?.toISOString() ?? null,
+            },
+          },
+        });
+      });
+
+      // Schedule cancellation with Dodo at period end
+      if (org.dodoSubscriptionId) {
+        try {
+          await this.dodo.subscriptions.update(org.dodoSubscriptionId, {
+            cancel_at_next_billing_date: true,
+          });
+          this.logger.log(`[CANCEL] ✓ Dodo cancellation scheduled at period end sub=${org.dodoSubscriptionId}`);
+        } catch (err) {
+          this.logger.error(
+            `[CANCEL] ✗ Dodo API schedule cancellation failed (DB already updated): ${(err as Error).message}`,
+          );
+        }
+      }
+
+      this.logger.log(`[CANCEL] ✓ Cancellation scheduled at period end org=${orgId}`);
+      return {
+        cancelledAt: org.currentPeriodEnd?.toISOString() ?? null,
+        cancelAtPeriodEnd: true,
+      };
+    }
+  }
+
+  // ── Reactivate Subscription (remove scheduled cancellation) ───────────────
+  async reactivateSubscription(orgId: string): Promise<{ cancelAtPeriodEnd: boolean }> {
+    this.logger.log(`[REACTIVATE] Removing cancellation flag for org=${orgId}`);
+
+    const org = await this.prisma.organization.findUniqueOrThrow({
+      where: { id: orgId },
+      select: {
+        dodoSubscriptionId: true,
+        subscriptionStatus: true,
+        cancelAtPeriodEnd: true,
+      },
+    });
+
+    if (!org.cancelAtPeriodEnd) {
+      throw new BadRequestException('No scheduled cancellation found for this subscription.');
+    }
+
+    if (
+      org.subscriptionStatus === SubscriptionStatus.CANCELLED ||
+      org.subscriptionStatus === SubscriptionStatus.EXPIRED
+    ) {
+      throw new BadRequestException('Subscription is already cancelled or expired and cannot be reactivated here.');
+    }
+
+    await this.prisma.organization.update({
+      where: { id: orgId },
+      data: {
+        cancelAtPeriodEnd: false,
+        cancelledAt: null,
+      },
+    });
+
+    // Sync with Dodo
+    if (org.dodoSubscriptionId) {
+      try {
+        await this.dodo.subscriptions.update(org.dodoSubscriptionId, {
+          cancel_at_next_billing_date: false,
+        });
+        this.logger.log(`[REACTIVATE] ✓ Dodo cancellation flag removed sub=${org.dodoSubscriptionId}`);
+      } catch (err) {
+        this.logger.error(
+          `[REACTIVATE] ✗ Dodo API reactivation failed (DB already updated): ${(err as Error).message}`,
+        );
+      }
+    }
+
+    this.logger.log(`[REACTIVATE] ✓ Cancellation removed org=${orgId}`);
+    return { cancelAtPeriodEnd: false };
+  }
+
+  // ── Dunning management cron — daily at 9am ─────────────────────────────────
+  @Cron('0 9 * * *')
+  async handleDunning(): Promise<void> {
+    this.logger.log('[DUNNING] Starting daily dunning sweep...');
+
+    const gracePeriodCutoff = new Date();
+    gracePeriodCutoff.setDate(gracePeriodCutoff.getDate() - 7);
+
+    // Find all PAST_DUE orgs whose period ended more than 7 days ago
+    const overdueOrgs = await this.prisma.organization.findMany({
+      where: {
+        subscriptionStatus: SubscriptionStatus.PAST_DUE,
+        currentPeriodEnd: { lt: gracePeriodCutoff },
+      },
+      select: { id: true, name: true },
+    });
+
+    if (overdueOrgs.length === 0) {
+      this.logger.log('[DUNNING] No orgs exceeded grace period.');
+      return;
+    }
+
+    this.logger.log(`[DUNNING] ${overdueOrgs.length} org(s) exceeded 7-day grace period. Expiring...`);
+
+    let expiredCount = 0;
+
+    for (const org of overdueOrgs) {
+      try {
+        await this.prisma.$transaction(async (tx) => {
+          await tx.organization.update({
+            where: { id: org.id },
+            data: {
+              subscriptionStatus: SubscriptionStatus.EXPIRED,
+              isActive: false,
+            },
+          });
+
+          await tx.auditLog.create({
+            data: {
+              orgId: org.id,
+              actorId: 'SYSTEM',
+              action: 'SUBSCRIPTION_EXPIRED',
+              entity: 'Organization',
+              entityId: org.id,
+              beforeJson: { subscriptionStatus: SubscriptionStatus.PAST_DUE },
+              afterJson: {
+                subscriptionStatus: SubscriptionStatus.EXPIRED,
+                reason: 'Dunning: grace period exceeded',
+              },
+            },
+          });
+        });
+
+        expiredCount++;
+        this.logger.warn(`[DUNNING] Org expired: ${org.id} (${org.name})`);
+      } catch (err) {
+        this.logger.error(
+          `[DUNNING] Failed to expire org=${org.id}: ${(err as Error).message}`,
+          (err as Error).stack,
+        );
+      }
+    }
+
+    this.logger.log(`[DUNNING] ✓ Sweep complete. Expired ${expiredCount}/${overdueOrgs.length} orgs.`);
   }
 
   // ── Webhook handler — called from controller with raw body ──────────────────
@@ -368,7 +613,7 @@ export class BillingService {
 
       const { Resend } = await import('resend');
       const resend = new Resend(this.cfg.get<string>('RESEND_API_KEY'));
-      
+
       await resend.emails.send({
         from: this.cfg.get<string>('EMAIL_FROM', 'hello@gettaxsentry.com'),
         to: owner.email,
@@ -425,13 +670,14 @@ export class BillingService {
         currentPeriodStart: new Date(),
         currentPeriodEnd: nextBilling,
         cancelAtPeriodEnd: sub.cancel_at_next_billing_date ?? false,
+        cancelledAt: null,
         trialEndsAt: null,
         isActive: true,
       },
     });
 
     this.logger.log(`[SUBSCRIPTION.ACTIVE] ✓ Subscription ACTIVATED org=${orgId}`);
-    
+
     await this.sendBillingEmail(
       orgId,
       'Your TaxSentry subscription is active',
@@ -509,6 +755,7 @@ export class BillingService {
       data: {
         subscriptionStatus: SubscriptionStatus.CANCELLED,
         cancelAtPeriodEnd: true,
+        cancelledAt: new Date(),
       },
     });
 
