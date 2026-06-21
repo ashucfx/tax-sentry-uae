@@ -111,6 +111,13 @@ model Organization {
   cancelAtPeriodEnd    Boolean            @default(false)
   trialEndsAt          DateTime?
   isActive             Boolean            @default(true)
+  billingEmail         String?
+  billingAddress       String?
+  dpaAcceptedAt        DateTime?
+  alertThresholdsJson  Json?              // custom alert thresholds per org
+  cancelledAt          DateTime?
+  deletedAt            DateTime?
+  deletedBy            String?
   notificationPrefsJson Json?              // { emailAlerts, breachAlerts, weeklyDigest, thresholdWarnings }
   onboardingStepsJson   Json?              // tracks which onboarding steps are complete
   createdAt           DateTime         @default(now())
@@ -129,6 +136,9 @@ model Organization {
   billingEvents        BillingEvent[]
   invitations          Invitation[]
   supportRequests      SupportRequest[]
+  reportRecords        ReportRecord[]
+  notificationLogs     NotificationLog[]
+  apiKeys              ApiKey[]
 
   @@index([tradeLicenseNo])
   @@index([freeZone])
@@ -150,6 +160,13 @@ model User {
   failedLoginAttempts Int       @default(0)
   lockedUntil         DateTime?
   mfaEnabled          Boolean   @default(false)
+  totpSecret          String?
+  totpBackupCodes     String[]
+  totpVerifiedAt      DateTime?
+  pendingEmail        String?
+  pendingEmailToken   String?
+  pendingEmailExpiry  DateTime?
+  notificationPrefsJson Json?
   isActive            Boolean   @default(true)
   lastLoginAt         DateTime?
   lastLoginIp         String?
@@ -352,26 +369,30 @@ model ClassificationOverride {
 // ─── SUBSTANCE DOCUMENTS ─────────────────────────────────────────────────────
 
 model SubstanceDocument {
-  id           String         @id @default(cuid())
-  orgId        String
-  docType      String
-  displayName  String
-  fileKey      String         @unique
-  fileName     String
-  fileSize     Int
-  mimeType     String
-  uploadedAt   DateTime       @default(now())
-  expiresAt    DateTime?
-  status       DocumentStatus @default(ACTIVE)
-  notes        String?
-  isDeleted    Boolean        @default(false)
-  deletedAt    DateTime?
-  deletedBy    String?
-  virusScanStatus String?     @default("PENDING")
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
+  id                String         @id @default(cuid())
+  orgId             String
+  docType           String
+  displayName       String
+  fileKey           String         @unique
+  fileName          String
+  fileSize          Int
+  mimeType          String
+  uploadedAt        DateTime       @default(now())
+  expiresAt         DateTime?
+  status            DocumentStatus @default(ACTIVE)
+  notes             String?
+  version           Int            @default(1)
+  previousVersionId String?
+  isDeleted         Boolean        @default(false)
+  deletedAt         DateTime?
+  deletedBy         String?
+  virusScanStatus   String?        @default("PENDING")
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
 
-  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  organization  Organization       @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  previousVersion SubstanceDocument? @relation("DocumentVersions", fields: [previousVersionId], references: [id])
+  newerVersions   SubstanceDocument[] @relation("DocumentVersions")
 
   @@index([orgId, docType])
   @@index([orgId, status])
@@ -558,22 +579,26 @@ enum SupportStatus {
 }
 
 model SupportRequest {
-  id           String          @id @default(cuid())
-  orgId        String
-  userId       String?
-  category     SupportCategory @default(OTHER)
-  subject      String
-  description  String          @db.Text
-  priority     String          @default("NORMAL")  // LOW, NORMAL, HIGH, URGENT
-  status       SupportStatus   @default(OPEN)
-  referenceNo  String          @unique             // e.g. SR-2024-001
-  attachments  Json?
-  resolvedAt   DateTime?
-  resolvedNote String?         @db.Text
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
+  id              String          @id @default(cuid())
+  orgId           String
+  userId          String?
+  category        SupportCategory @default(OTHER)
+  subject         String
+  description     String          @db.Text
+  priority        String          @default("NORMAL")  // LOW, NORMAL, HIGH, URGENT
+  status          SupportStatus   @default(OPEN)
+  referenceNo     String          @unique             // e.g. SR-2024-001
+  attachments     Json?
+  assignedTo      String?
+  firstResponseAt DateTime?
+  internalNote    String?         @db.Text
+  resolvedAt      DateTime?
+  resolvedNote    String?         @db.Text
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
 
-  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  organization Organization    @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  comments     SupportComment[]
 
   @@index([orgId, status])
   @@index([orgId, createdAt])
@@ -600,4 +625,83 @@ model Lead {
   createdAt    DateTime @default(now())
 
   @@map("leads")
+}
+
+// ─── SUPPORT COMMENTS ────────────────────────────────────────────────────────
+
+model SupportComment {
+  id         String   @id @default(cuid())
+  requestId  String
+  orgId      String
+  userId     String?
+  isInternal Boolean  @default(false)
+  body       String   @db.Text
+  attachments Json?
+  createdAt  DateTime @default(now())
+
+  request SupportRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@index([requestId])
+  @@index([orgId])
+  @@map("support_comments")
+}
+
+// ─── NOTIFICATION LOGS ───────────────────────────────────────────────────────
+
+model NotificationLog {
+  id          String   @id @default(cuid())
+  orgId       String
+  type        String   // EMAIL_ALERT, WEEKLY_DIGEST, BREACH_ALERT, etc.
+  recipient   String
+  subject     String
+  sentAt      DateTime @default(now())
+  status      String   @default("SENT") // SENT, FAILED, PENDING
+  errorText   String?
+  metadata    Json?
+
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId, type])
+  @@index([orgId, sentAt])
+  @@map("notification_logs")
+}
+
+// ─── REPORT RECORDS ──────────────────────────────────────────────────────────
+
+model ReportRecord {
+  id                String   @id @default(cuid())
+  orgId             String
+  taxPeriodId       String?
+  type              String   // FTA_RETURN, EXECUTIVE_SUMMARY, COMPLIANCE_REPORT
+  fileKey           String?
+  generatedAt       DateTime @default(now())
+  generatedByUserId String
+  parametersJson    Json?
+  status            String   @default("COMPLETED") // PENDING, COMPLETED, FAILED
+  errorText         String?
+
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId, type])
+  @@index([orgId, generatedAt])
+  @@map("report_records")
+}
+
+// ─── API KEYS ────────────────────────────────────────────────────────────────
+
+model ApiKey {
+  id          String    @id @default(cuid())
+  orgId       String
+  name        String
+  keyHash     String    @unique
+  prefix      String    // first 8 chars for display identification
+  lastUsedAt  DateTime?
+  expiresAt   DateTime?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId])
+  @@map("api_keys")
 }
