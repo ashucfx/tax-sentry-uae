@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api/client';
 import { cn } from '@/lib/utils';
 import {
@@ -14,6 +14,8 @@ import {
   XCircle,
   Pause,
   RefreshCw,
+  X,
+  AlertCircle,
 } from 'lucide-react';
 import { InvoicesTable } from '@/components/billing/InvoicesTable';
 import { ChangePlanModal } from '@/components/billing/ChangePlanModal';
@@ -44,8 +46,153 @@ const TIER_LABELS: Record<string, string> = {
   ENTERPRISE: 'Enterprise',
 };
 
+type CancelMode = 'period_end' | 'immediately';
+
+function CancelSubscriptionModal({
+  periodEnd,
+  onClose,
+  onSuccess,
+}: {
+  periodEnd: string | null;
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
+  const [mode, setMode] = useState<CancelMode>('period_end');
+  const [error, setError] = useState('');
+
+  const cancelMutation = useMutation({
+    mutationFn: () =>
+      api.post('/billing/subscription/cancel', { immediately: mode === 'immediately' }).then((r) => r.data),
+    onSuccess: () => {
+      onSuccess();
+      onClose();
+    },
+    onError: (err: any) => {
+      setError(err?.response?.data?.message ?? 'Failed to cancel subscription. Please try again.');
+    },
+  });
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}>
+      <div
+        className="relative w-full max-w-md rounded-2xl p-6 shadow-2xl"
+        style={{ background: 'var(--ts-bg-card)', border: '1px solid var(--ts-border)' }}
+      >
+        <button
+          onClick={onClose}
+          className="absolute right-4 top-4 flex items-center justify-center rounded-full"
+          style={{ width: 28, height: 28, background: 'var(--ts-bg-elevated)', border: '1px solid var(--ts-border)', cursor: 'pointer' }}
+        >
+          <X size={14} color="var(--ts-fg-muted)" />
+        </button>
+
+        <div className="mb-5 flex items-center gap-3">
+          <div
+            className="flex items-center justify-center rounded-xl flex-shrink-0"
+            style={{ width: 40, height: 40, background: 'oklch(0.55 0.22 25 / 0.12)' }}
+          >
+            <AlertCircle size={20} color="var(--ts-red-400)" />
+          </div>
+          <div>
+            <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--ts-fg-primary)', margin: 0 }}>
+              Cancel Subscription
+            </h2>
+            <p style={{ fontSize: 12, color: 'var(--ts-fg-muted)', margin: 0 }}>
+              This action cannot be easily undone
+            </p>
+          </div>
+        </div>
+
+        <p style={{ fontSize: 13, color: 'var(--ts-fg-secondary)', lineHeight: 1.6, marginBottom: 20 }}>
+          Are you sure you want to cancel your subscription?
+          {periodEnd && (
+            <>
+              {' '}Your access continues until{' '}
+              <span style={{ fontWeight: 600, color: 'var(--ts-fg-primary)' }}>{periodEnd}</span>.
+            </>
+          )}{' '}
+          After that, you&apos;ll lose access to all paid features.
+        </p>
+
+        {/* Mode selection */}
+        <div className="space-y-2 mb-5">
+          {([
+            {
+              value: 'period_end' as CancelMode,
+              title: 'Cancel at Period End',
+              desc: periodEnd ? `Access continues until ${periodEnd}` : 'Access continues until end of billing period',
+            },
+            {
+              value: 'immediately' as CancelMode,
+              title: 'Cancel Immediately',
+              desc: 'Lose access right now — no refunds',
+            },
+          ] as const).map(({ value, title, desc }) => (
+            <label
+              key={value}
+              className="flex items-start gap-3 rounded-xl p-3 cursor-pointer"
+              style={{
+                background: mode === value ? 'oklch(0.55 0.22 25 / 0.06)' : 'var(--ts-bg-elevated)',
+                border: `1px solid ${mode === value ? 'oklch(0.55 0.22 25 / 0.35)' : 'var(--ts-border)'}`,
+              }}
+            >
+              <input
+                type="radio"
+                name="cancel-mode"
+                value={value}
+                checked={mode === value}
+                onChange={() => setMode(value)}
+                className="mt-0.5 flex-shrink-0"
+              />
+              <div>
+                <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--ts-fg-primary)', margin: 0 }}>{title}</p>
+                <p style={{ fontSize: 12, color: 'var(--ts-fg-muted)', margin: 0 }}>{desc}</p>
+              </div>
+            </label>
+          ))}
+        </div>
+
+        {error && (
+          <p style={{ fontSize: 12, color: 'var(--ts-red-400)', marginBottom: 12 }}>{error}</p>
+        )}
+
+        <div className="flex gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 rounded-xl py-2.5 text-[13px] font-semibold"
+            style={{
+              background: 'var(--ts-bg-elevated)',
+              border: '1px solid var(--ts-border)',
+              color: 'var(--ts-fg-secondary)',
+              cursor: 'pointer',
+            }}
+          >
+            Keep Subscription
+          </button>
+          <button
+            onClick={() => cancelMutation.mutate()}
+            disabled={cancelMutation.isPending}
+            className="flex-1 rounded-xl py-2.5 text-[13px] font-bold disabled:opacity-50"
+            style={{
+              background: 'var(--ts-red-400)',
+              border: 'none',
+              color: 'white',
+              cursor: 'pointer',
+            }}
+          >
+            {cancelMutation.isPending ? 'Cancelling…' : 'Confirm Cancellation'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function BillingPage() {
+  const queryClient = useQueryClient();
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [cancelSuccess, setCancelSuccess] = useState('');
 
   const { data, isLoading } = useQuery({
     queryKey: ['billing-status'],
@@ -57,6 +204,15 @@ export default function BillingPage() {
     mutationFn: () => api.get('/billing/portal').then((r) => r.data.data),
     onSuccess: (d) => {
       window.location.href = d.url;
+    },
+  });
+
+  const reactivateMutation = useMutation({
+    mutationFn: () => api.delete('/billing/subscription/cancel').then((r) => r.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['billing-status'] });
+      setCancelSuccess('Subscription reactivated. You will be billed at the end of your current period.');
+      setTimeout(() => setCancelSuccess(''), 5000);
     },
   });
 
@@ -76,6 +232,7 @@ export default function BillingPage() {
 
   const isCancelPending = data?.cancelAtPeriodEnd && status === 'ACTIVE';
   const needsAction = status === 'PAST_DUE' || status === 'EXPIRED';
+  const canCancel = status === 'ACTIVE' && !isCancelPending;
 
   return (
     <div className="max-w-2xl mx-auto px-6 py-10 space-y-6">
@@ -85,6 +242,53 @@ export default function BillingPage() {
           Manage your plan, payment method, and invoices
         </p>
       </div>
+
+      {/* Cancel success toast */}
+      {cancelSuccess && (
+        <div
+          className="flex items-center gap-3 rounded-xl px-4 py-3"
+          style={{
+            background: 'oklch(0.70 0.20 155 / 0.12)',
+            border: '1px solid oklch(0.70 0.20 155 / 0.3)',
+          }}
+        >
+          <CheckCircle2 size={16} color="var(--ts-green-500)" className="flex-shrink-0" />
+          <p style={{ fontSize: 13, color: 'var(--ts-green-500)', margin: 0 }}>{cancelSuccess}</p>
+        </div>
+      )}
+
+      {/* Scheduled cancellation banner */}
+      {isCancelPending && (
+        <div
+          className="flex items-center justify-between gap-4 rounded-xl px-4 py-3"
+          style={{
+            background: 'oklch(0.80 0.18 85 / 0.1)',
+            border: '1px solid oklch(0.80 0.18 85 / 0.3)',
+          }}
+        >
+          <div className="flex items-center gap-3">
+            <AlertTriangle size={16} color="var(--ts-amber-500)" className="flex-shrink-0" />
+            <p style={{ fontSize: 13, color: 'var(--ts-fg-secondary)', margin: 0 }}>
+              Your subscription is scheduled to cancel on{' '}
+              <span style={{ fontWeight: 600, color: 'var(--ts-fg-primary)' }}>{periodEnd ?? '—'}</span>.
+              You retain access until then.
+            </p>
+          </div>
+          <button
+            onClick={() => reactivateMutation.mutate()}
+            disabled={reactivateMutation.isPending}
+            className="flex-shrink-0 rounded-lg px-3 py-1.5 text-[12px] font-semibold disabled:opacity-50"
+            style={{
+              background: 'var(--ts-amber-500)',
+              color: 'white',
+              border: 'none',
+              cursor: 'pointer',
+            }}
+          >
+            {reactivateMutation.isPending ? 'Reactivating…' : 'Reactivate'}
+          </button>
+        </div>
+      )}
 
       {/* Current plan card */}
       <div className={cn('rounded-xl border p-6 space-y-4', config.cls)}>
@@ -210,6 +414,31 @@ export default function BillingPage() {
             <ArrowUpRight className="w-4 h-4 text-muted-foreground" />
           </button>
         )}
+
+        {/* Cancel subscription (Active, not pending cancel) */}
+        {canCancel && (
+          <button
+            onClick={() => setIsCancelModalOpen(true)}
+            className="w-full flex items-center justify-between px-4 py-3 rounded-lg border text-sm font-medium"
+            style={{
+              background: 'oklch(0.55 0.22 25 / 0.05)',
+              borderColor: 'oklch(0.55 0.22 25 / 0.25)',
+              color: 'var(--ts-red-400)',
+              cursor: 'pointer',
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLElement).style.background = 'oklch(0.55 0.22 25 / 0.10)';
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLElement).style.background = 'oklch(0.55 0.22 25 / 0.05)';
+            }}
+          >
+            <span className="flex items-center gap-2.5">
+              <XCircle className="w-4 h-4" />
+              Cancel subscription
+            </span>
+          </button>
+        )}
       </div>
 
       {/* Invoice History Native UI */}
@@ -229,6 +458,18 @@ export default function BillingPage() {
         currentTier={data?.subscriptionTier}
         currentInterval={data?.subscriptionInterval}
       />
+
+      {isCancelModalOpen && (
+        <CancelSubscriptionModal
+          periodEnd={periodEnd}
+          onClose={() => setIsCancelModalOpen(false)}
+          onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ['billing-status'] });
+            setCancelSuccess('Subscription cancelled. Your access continues until the end of the billing period.');
+            setTimeout(() => setCancelSuccess(''), 6000);
+          }}
+        />
+      )}
     </div>
   );
 }

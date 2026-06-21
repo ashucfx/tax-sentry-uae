@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api/client';
 import {
@@ -17,6 +17,8 @@ import {
   CreditCard,
   Wrench,
   Shield,
+  Send,
+  ChevronDown,
 } from 'lucide-react';
 
 type SupportCategory = 'BILLING' | 'TECHNICAL' | 'COMPLIANCE' | 'FEATURE_REQUEST' | 'OTHER';
@@ -67,11 +69,210 @@ const FAQS = [
   },
 ];
 
+function formatTimeAgo(dateStr: string): string {
+  const d = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - d.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  if (diffMins < 1) return 'just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  const diffHrs = Math.floor(diffMins / 60);
+  if (diffHrs < 24) return `${diffHrs}h ago`;
+  const diffDays = Math.floor(diffHrs / 24);
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return d.toLocaleDateString('en-AE', { day: 'numeric', month: 'short' });
+}
+
+function TicketThread({ requestId, onClose }: { requestId: string; onClose: () => void }) {
+  const queryClient = useQueryClient();
+  const [replyBody, setReplyBody] = useState('');
+  const [replyError, setReplyError] = useState('');
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  const { data: comments, isLoading } = useQuery({
+    queryKey: ['support-comments', requestId],
+    queryFn: () => api.get(`/support/requests/${requestId}/comments`).then((r) => r.data.data ?? r.data),
+    staleTime: 30_000,
+  });
+
+  const replyMutation = useMutation({
+    mutationFn: () =>
+      api.post(`/support/requests/${requestId}/comments`, { body: replyBody }).then((r) => r.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['support-comments', requestId] });
+      setReplyBody('');
+      setReplyError('');
+    },
+    onError: (err: any) => {
+      setReplyError(err?.response?.data?.message ?? 'Failed to send reply. Please try again.');
+    },
+  });
+
+  // Scroll to bottom when new comments arrive
+  useEffect(() => {
+    if (comments?.length) {
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [comments?.length]);
+
+  return (
+    <div
+      className="rounded-xl overflow-hidden mt-1"
+      style={{
+        background: 'var(--ts-bg-elevated)',
+        border: '1px solid var(--ts-border)',
+      }}
+    >
+      {/* Thread header */}
+      <div
+        className="flex items-center justify-between px-4 py-3"
+        style={{ borderBottom: '1px solid var(--ts-border-subtle)', background: 'var(--ts-bg-card)' }}
+      >
+        <div className="flex items-center gap-2">
+          <MessageSquare size={14} color="var(--ts-blue-400)" />
+          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--ts-fg-primary)' }}>
+            Conversation Thread
+          </span>
+        </div>
+        <button
+          onClick={onClose}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ts-fg-muted)', padding: 4 }}
+        >
+          <ChevronDown size={16} />
+        </button>
+      </div>
+
+      {/* Comments */}
+      <div className="px-4 py-3 space-y-4 max-h-80 overflow-y-auto">
+        {isLoading ? (
+          <div className="py-4 text-center">
+            <p style={{ fontSize: 12, color: 'var(--ts-fg-muted)' }}>Loading conversation…</p>
+          </div>
+        ) : !comments || comments.length === 0 ? (
+          <div className="py-6 text-center">
+            <MessageSquare size={24} style={{ color: 'var(--ts-fg-muted)', margin: '0 auto 8px' }} />
+            <p style={{ fontSize: 13, color: 'var(--ts-fg-muted)' }}>No replies yet</p>
+            <p style={{ fontSize: 12, color: 'var(--ts-fg-dimmer)' }}>Our team will respond within 24 hours</p>
+          </div>
+        ) : (
+          (comments as any[]).map((comment: any) => {
+            const isAgent = comment.authorRole === 'AGENT' || comment.authorRole === 'ADMIN';
+            const initial = (comment.authorName ?? comment.authorEmail ?? 'U').charAt(0).toUpperCase();
+            return (
+              <div key={comment.id} className={`flex gap-3 ${isAgent ? '' : 'flex-row-reverse'}`}>
+                {/* Avatar */}
+                <div
+                  className="flex items-center justify-center rounded-full flex-shrink-0 text-[11px] font-bold"
+                  style={{
+                    width: 30,
+                    height: 30,
+                    background: isAgent
+                      ? 'oklch(0.55 0.22 260 / 0.15)'
+                      : 'oklch(0.70 0.20 155 / 0.15)',
+                    color: isAgent ? 'var(--ts-blue-400)' : 'var(--ts-green-500)',
+                    border: `1px solid ${isAgent ? 'oklch(0.55 0.22 260 / 0.3)' : 'oklch(0.70 0.20 155 / 0.3)'}`,
+                  }}
+                >
+                  {initial}
+                </div>
+                {/* Bubble */}
+                <div className={`flex-1 max-w-[80%] ${isAgent ? '' : 'flex flex-col items-end'}`}>
+                  <div className="flex items-baseline gap-2 mb-1">
+                    <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--ts-fg-secondary)' }}>
+                      {isAgent ? (comment.authorName ?? 'Support Team') : (comment.authorName ?? 'You')}
+                    </span>
+                    <span style={{ fontSize: 10, color: 'var(--ts-fg-muted)' }}>
+                      {formatTimeAgo(comment.createdAt)}
+                    </span>
+                  </div>
+                  <div
+                    className="rounded-xl px-3 py-2.5"
+                    style={{
+                      background: isAgent ? 'var(--ts-bg-card)' : 'oklch(0.55 0.22 260 / 0.1)',
+                      border: `1px solid ${isAgent ? 'var(--ts-border)' : 'oklch(0.55 0.22 260 / 0.2)'}`,
+                      fontSize: 13,
+                      color: 'var(--ts-fg-primary)',
+                      lineHeight: 1.55,
+                      whiteSpace: 'pre-wrap',
+                    }}
+                  >
+                    {comment.body}
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        )}
+        <div ref={bottomRef} />
+      </div>
+
+      {/* Reply box */}
+      <div
+        className="px-4 py-3"
+        style={{ borderTop: '1px solid var(--ts-border-subtle)', background: 'var(--ts-bg-card)' }}
+      >
+        {replyError && (
+          <p style={{ fontSize: 11, color: 'var(--ts-red-400)', marginBottom: 8 }}>{replyError}</p>
+        )}
+        <div className="flex gap-2">
+          <textarea
+            value={replyBody}
+            onChange={(e) => setReplyBody(e.target.value)}
+            placeholder="Write a reply…"
+            rows={2}
+            className="flex-1 rounded-lg px-3 py-2 text-[13px] outline-none resize-none"
+            style={{
+              background: 'var(--ts-bg-elevated)',
+              border: '1px solid var(--ts-border)',
+              color: 'var(--ts-fg-primary)',
+              fontFamily: 'var(--font-sans)',
+            }}
+            onFocus={(e) => { (e.target as HTMLElement).style.borderColor = 'var(--ts-blue-500)'; }}
+            onBlur={(e) => { (e.target as HTMLElement).style.borderColor = 'var(--ts-border)'; }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && replyBody.trim()) {
+                e.preventDefault();
+                replyMutation.mutate();
+              }
+            }}
+          />
+          <button
+            onClick={() => replyMutation.mutate()}
+            disabled={!replyBody.trim() || replyMutation.isPending}
+            className="flex items-center justify-center rounded-lg flex-shrink-0 disabled:opacity-40"
+            style={{
+              width: 40,
+              background: 'var(--ts-blue-500)',
+              border: 'none',
+              cursor: 'pointer',
+              color: 'white',
+            }}
+            title="Send reply (Ctrl+Enter)"
+          >
+            {replyMutation.isPending ? (
+              <div
+                className="rounded-full border-2 border-white/30 border-t-white animate-spin"
+                style={{ width: 14, height: 14 }}
+              />
+            ) : (
+              <Send size={14} />
+            )}
+          </button>
+        </div>
+        <p style={{ fontSize: 10, color: 'var(--ts-fg-muted)', marginTop: 4 }}>
+          Ctrl+Enter to send
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export default function SupportPage() {
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [submitted, setSubmitted] = useState<{ referenceNo: string } | null>(null);
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
+  const [expandedTicket, setExpandedTicket] = useState<string | null>(null);
 
   const [category, setCategory] = useState<SupportCategory>('TECHNICAL');
   const [subject, setSubject] = useState('');
@@ -327,35 +528,90 @@ export default function SupportPage() {
                 const catCfg = CATEGORY_CONFIG[req.category as SupportCategory] ?? CATEGORY_CONFIG.OTHER;
                 const stsCfg = STATUS_CONFIG[req.status as SupportStatus] ?? STATUS_CONFIG.OPEN;
                 const CatIcon = catCfg.icon;
+                const isExpanded = expandedTicket === req.id;
                 return (
                   <div
                     key={req.id}
-                    className="flex items-center gap-3 px-4 py-3"
                     style={{ borderBottom: idx < requests.length - 1 ? '1px solid var(--ts-border-subtle)' : 'none' }}
                   >
-                    <div
-                      className="flex items-center justify-center rounded-lg flex-shrink-0"
-                      style={{ width: 32, height: 32, background: `${catCfg.color}22` }}
+                    {/* Ticket row — clickable */}
+                    <button
+                      className="w-full flex items-center gap-3 px-4 py-3 text-left transition-colors"
+                      style={{
+                        background: isExpanded ? 'oklch(0.55 0.22 260 / 0.04)' : 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                      }}
+                      onClick={() => setExpandedTicket(isExpanded ? null : req.id)}
+                      onMouseEnter={(e) => {
+                        if (!isExpanded) (e.currentTarget as HTMLElement).style.background = 'var(--ts-bg-elevated)';
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isExpanded) (e.currentTarget as HTMLElement).style.background = 'transparent';
+                      }}
                     >
-                      <CatIcon size={14} style={{ color: catCfg.color }} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--ts-fg-primary)', margin: 0 }}>
-                        {req.subject}
-                      </p>
-                      <p style={{ fontSize: 11, color: 'var(--ts-fg-muted)', margin: 0 }}>
-                        {req.referenceNo} · {catCfg.label} · {PRIORITY_CONFIG[req.priority]?.label ?? req.priority}
-                      </p>
-                    </div>
-                    <span
-                      className="rounded-full px-2.5 py-0.5 text-[11px] font-semibold flex-shrink-0"
-                      style={{ background: stsCfg.bg, color: stsCfg.color }}
-                    >
-                      {stsCfg.label}
-                    </span>
-                    <span style={{ fontSize: 11, color: 'var(--ts-fg-muted)', flexShrink: 0 }}>
-                      {new Date(req.createdAt).toLocaleDateString('en-AE', { day: 'numeric', month: 'short' })}
-                    </span>
+                      <div
+                        className="flex items-center justify-center rounded-lg flex-shrink-0"
+                        style={{ width: 32, height: 32, background: `${catCfg.color}22` }}
+                      >
+                        <CatIcon size={14} style={{ color: catCfg.color }} />
+                      </div>
+                      <div className="flex-1 min-w-0 text-left">
+                        <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--ts-fg-primary)', margin: 0 }}>
+                          {req.subject}
+                        </p>
+                        <p style={{ fontSize: 11, color: 'var(--ts-fg-muted)', margin: 0 }}>
+                          {req.referenceNo} · {catCfg.label} · {PRIORITY_CONFIG[req.priority]?.label ?? req.priority}
+                        </p>
+                      </div>
+                      <span
+                        className="rounded-full px-2.5 py-0.5 text-[11px] font-semibold flex-shrink-0"
+                        style={{ background: stsCfg.bg, color: stsCfg.color }}
+                      >
+                        {stsCfg.label}
+                      </span>
+                      <span style={{ fontSize: 11, color: 'var(--ts-fg-muted)', flexShrink: 0 }}>
+                        {new Date(req.createdAt).toLocaleDateString('en-AE', { day: 'numeric', month: 'short' })}
+                      </span>
+                      <ChevronRight
+                        size={14}
+                        style={{
+                          color: 'var(--ts-fg-muted)',
+                          flexShrink: 0,
+                          transform: isExpanded ? 'rotate(90deg)' : 'none',
+                          transition: 'transform 0.2s',
+                        }}
+                      />
+                    </button>
+
+                    {/* Expanded: description + thread */}
+                    {isExpanded && (
+                      <div className="px-4 pb-4">
+                        {/* Full description */}
+                        {req.description && (
+                          <div
+                            className="rounded-lg px-3 py-3 mb-3"
+                            style={{
+                              background: 'var(--ts-bg-elevated)',
+                              border: '1px solid var(--ts-border-subtle)',
+                              fontSize: 13,
+                              color: 'var(--ts-fg-secondary)',
+                              lineHeight: 1.6,
+                              whiteSpace: 'pre-wrap',
+                            }}
+                          >
+                            <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--ts-fg-muted)', marginBottom: 6, margin: '0 0 6px' }}>
+                              Original Request
+                            </p>
+                            {req.description}
+                          </div>
+                        )}
+                        <TicketThread
+                          requestId={req.id}
+                          onClose={() => setExpandedTicket(null)}
+                        />
+                      </div>
+                    )}
                   </div>
                 );
               })}

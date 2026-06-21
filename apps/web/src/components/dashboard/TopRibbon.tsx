@@ -3,7 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api/client';
 import { useAuthStore } from '@/lib/auth/store';
-import { Bell } from 'lucide-react';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
 
 type StatusBadge = 'SAFE' | 'AT_RISK' | 'BREACH_IMMINENT' | 'BREACHED';
 
@@ -77,12 +77,6 @@ export function TopRibbon() {
     refetchInterval: 5 * 60 * 1000,
   });
 
-  const { data: alertsData } = useQuery({
-    queryKey: ['alerts-count'],
-    queryFn: () => api.get('/alerts?limit=1').then((r) => r.data.data),
-    refetchInterval: 60 * 1000,
-  });
-
   const statusBadge: StatusBadge =
     dmData?.deMinimis?.statusBadge ?? 'SAFE';
   const sc = STATUS_CONFIG[statusBadge];
@@ -93,7 +87,6 @@ export function TopRibbon() {
   const freeZone: string = user?.org?.freeZone ?? 'DMCC';
   const licenseNo: string = user?.org?.tradeLicenseNo ?? '';
   const companyName = user?.org?.name ?? 'Your Company';
-  const pendingCount: number = alertsData?.unreadCount ?? 0;
 
   const riskBand = RISK_BAND_CONFIG[band];
 
@@ -233,33 +226,8 @@ export function TopRibbon() {
 
         <div style={{ width: 1, height: 32, background: 'var(--ts-border)', margin: '0 4px' }} />
 
-        {/* Bell */}
-        <button
-          className="relative flex items-center justify-center rounded-full"
-          style={{
-            width: 36,
-            height: 36,
-            background: 'var(--ts-bg-base)',
-            border: '1px solid var(--ts-border)',
-            cursor: 'pointer',
-          }}
-        >
-          <Bell size={16} color="var(--ts-fg-secondary)" strokeWidth={1.5} />
-          {pendingCount > 0 && (
-            <span
-              className="absolute -top-1 -right-1 flex items-center justify-center rounded-full text-[9px] font-bold"
-              style={{
-                width: 18,
-                height: 18,
-                background: 'var(--ts-amber-500)',
-                color: 'white',
-                border: '2px solid white',
-              }}
-            >
-              {pendingCount}
-            </span>
-          )}
-        </button>
+        {/* Notification Bell */}
+        <NotificationBell />
 
         {/* User avatar */}
         <button

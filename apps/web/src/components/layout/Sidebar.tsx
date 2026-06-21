@@ -18,6 +18,7 @@ import {
   Activity,
   CreditCard,
   Rocket,
+  ShieldAlert,
 } from 'lucide-react';
 import { logoutAction } from '@/lib/auth/actions';
 import { useState, useEffect } from 'react';
@@ -34,6 +35,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/dashboard',           icon: LayoutDashboard, label: 'Dashboard',       section: 'Compliance' },
   { href: '/revenue',             icon: TrendingUp,      label: 'Revenue',         section: 'Compliance' },
   { href: '/substance',           icon: FileText,        label: 'Substance',       section: 'Compliance' },
+  { href: '/risk',                icon: ShieldAlert,     label: 'Risk Analysis',   section: 'Compliance' },
   { href: '/reports',             icon: BarChart3,       label: 'Reports',         section: 'Compliance' },
   { href: '/activity',            icon: Activity,        label: 'Activity',        section: 'Account' },
   { href: '/account',             icon: User,            label: 'My Account',      section: 'Account' },
