@@ -22,6 +22,8 @@ import { OtpService } from './otp.service';
 import { SendOtpDto } from './dto/send-otp.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { MfaVerifyDto, MfaDisableDto } from './dto/mfa.dto';
+import { RequestEmailChangeDto, ConfirmEmailChangeDto } from './dto/change-email.dto';
 import { Public } from '../../common/decorators/public.decorator';
 import { SkipSubscriptionCheck } from '../../common/guards/subscription.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -217,5 +219,89 @@ export class AuthController {
     return { accessToken: result.accessToken, user: result.user, isNewUser: result.isNewUser };
   }
 
+  // ── MFA: Enroll ───────────────────────────────────────────────────────────────
+
+  @Post('mfa/enroll')
+  @SkipSubscriptionCheck()
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ short: { limit: 5, ttl: 60000 } })
+  @ApiOperation({ summary: 'Begin TOTP MFA enrollment — returns secret and otpauth URL' })
+  async enrollMfa(@CurrentUser('id') userId: string) {
+    return { data: await this.authService.enrollMfa(userId) };
+  }
+
+  // ── MFA: Verify enrollment ────────────────────────────────────────────────────
+
+  @Post('mfa/verify')
+  @SkipSubscriptionCheck()
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ short: { limit: 10, ttl: 60000 } })
+  @ApiOperation({ summary: 'Verify TOTP code to activate MFA — returns one-time backup codes' })
+  async verifyMfa(
+    @CurrentUser('id') userId: string,
+    @Body() dto: MfaVerifyDto,
+  ) {
+    return { data: await this.authService.verifyMfaEnrollment(userId, dto.code) };
+  }
+
+  // ── MFA: Disable ──────────────────────────────────────────────────────────────
+
+  @Post('mfa/disable')
+  @SkipSubscriptionCheck()
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ short: { limit: 5, ttl: 60000 } })
+  @ApiOperation({ summary: 'Disable MFA — requires valid TOTP code or backup code' })
+  async disableMfa(
+    @CurrentUser('id') userId: string,
+    @Body() dto: MfaDisableDto,
+  ) {
+    return { data: await this.authService.disableMfa(userId, dto) };
+  }
+
+  // ── MFA: Regenerate backup codes ──────────────────────────────────────────────
+
+  @Post('mfa/backup-codes/regenerate')
+  @SkipSubscriptionCheck()
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ short: { limit: 3, ttl: 300000 } })
+  @ApiOperation({ summary: 'Regenerate MFA backup codes — invalidates previous codes' })
+  async regenerateBackupCodes(@CurrentUser('id') userId: string) {
+    return { data: await this.authService.regenerateBackupCodes(userId) };
+  }
+
+  // ── Email change: Request ─────────────────────────────────────────────────────
+
+  @Post('change-email/request')
+  @SkipSubscriptionCheck()
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ short: { limit: 3, ttl: 300000 } })
+  @ApiOperation({ summary: 'Request email address change — sends verification token to new email' })
+  async requestEmailChange(
+    @CurrentUser('id') userId: string,
+    @CurrentUser('orgId') orgId: string,
+    @Body() dto: RequestEmailChangeDto,
+  ) {
+    return await this.authService.requestEmailChange(userId, orgId, dto.newEmail);
+  }
+
+  // ── Email change: Confirm ─────────────────────────────────────────────────────
+
+  @Post('change-email/confirm')
+  @SkipSubscriptionCheck()
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ short: { limit: 10, ttl: 60000 } })
+  @ApiOperation({ summary: 'Confirm email change with the token sent to new address' })
+  async confirmEmailChange(
+    @CurrentUser('id') userId: string,
+    @Body() dto: ConfirmEmailChangeDto,
+  ) {
+    return await this.authService.confirmEmailChange(userId, dto.token);
+  }
 
 }

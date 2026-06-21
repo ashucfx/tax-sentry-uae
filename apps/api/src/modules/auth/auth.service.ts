@@ -14,6 +14,7 @@ import { FreeZone, UserRole } from '@prisma/client';
 import * as argon2 from 'argon2';
 import { randomBytes, createHash } from 'crypto';
 import { JwtStrategy } from './jwt.strategy';
+import { authenticator } from 'otplib';
 
 const LOCKOUT_MAX_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000;
@@ -283,6 +284,257 @@ export class AuthService {
       where: { id: sessionId },
       data: { isRevoked: true, revokedAt: new Date() },
     });
+  }
+
+  // ── MFA: Enroll ─────────────────────────────────────────────────────────────
+  async enrollMfa(userId: string) {
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+      select: { email: true, mfaEnabled: true },
+    });
+
+    if (user.mfaEnabled) {
+      throw new BadRequestException('MFA is already enabled');
+    }
+
+    const secret = authenticator.generateSecret();
+    const otpauthUrl = authenticator.keyuri(user.email ?? userId, 'TaxSentry', secret);
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { totpSecret: secret },
+    });
+
+    return { secret, otpauthUrl, qrCodeData: otpauthUrl };
+  }
+
+  // ── MFA: Verify enrollment ──────────────────────────────────────────────────
+  async verifyMfaEnrollment(userId: string, code: string) {
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+      select: { totpSecret: true, mfaEnabled: true, orgId: true },
+    });
+
+    if (user.mfaEnabled) {
+      throw new BadRequestException('MFA is already enabled');
+    }
+    if (!user.totpSecret) {
+      throw new BadRequestException('MFA enrollment not started — call /auth/mfa/enroll first');
+    }
+
+    const isValid = authenticator.verify({ token: code, secret: user.totpSecret });
+    if (!isValid) {
+      throw new UnauthorizedException('Invalid TOTP code');
+    }
+
+    const plainCodes = Array.from({ length: 10 }, () => randomBytes(4).toString('hex'));
+    const hashedCodes = plainCodes.map((c) => sha256(c));
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        mfaEnabled: true,
+        totpVerifiedAt: new Date(),
+        totpBackupCodes: hashedCodes,
+      },
+    });
+
+    await this.prisma.auditLog.create({
+      data: {
+        orgId: user.orgId,
+        actorId: userId,
+        action: 'MFA_ENABLED',
+        entity: 'User',
+        entityId: userId,
+        afterJson: { mfaEnabled: true },
+      },
+    }).catch(() => {});
+
+    return { backupCodes: plainCodes };
+  }
+
+  // ── MFA: Disable ─────────────────────────────────────────────────────────────
+  async disableMfa(userId: string, dto: { code?: string; backupCode?: string }) {
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+      select: { totpSecret: true, mfaEnabled: true, totpBackupCodes: true, orgId: true },
+    });
+
+    if (!user.mfaEnabled) {
+      throw new BadRequestException('MFA is not enabled');
+    }
+
+    let verified = false;
+
+    if (dto.code && user.totpSecret) {
+      verified = authenticator.verify({ token: dto.code, secret: user.totpSecret });
+    } else if (dto.backupCode) {
+      const hashedInput = sha256(dto.backupCode);
+      verified = user.totpBackupCodes.includes(hashedInput);
+      if (verified) {
+        // consume the used backup code
+        await this.prisma.user.update({
+          where: { id: userId },
+          data: { totpBackupCodes: user.totpBackupCodes.filter((c) => c !== hashedInput) },
+        });
+      }
+    }
+
+    if (!verified) {
+      throw new UnauthorizedException('Invalid code or backup code');
+    }
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        mfaEnabled: false,
+        totpSecret: null,
+        totpBackupCodes: [],
+        totpVerifiedAt: null,
+      },
+    });
+
+    await this.prisma.auditLog.create({
+      data: {
+        orgId: user.orgId,
+        actorId: userId,
+        action: 'MFA_DISABLED',
+        entity: 'User',
+        entityId: userId,
+        afterJson: { mfaEnabled: false },
+      },
+    }).catch(() => {});
+
+    return { message: 'MFA disabled successfully' };
+  }
+
+  // ── MFA: Regenerate backup codes ────────────────────────────────────────────
+  async regenerateBackupCodes(userId: string) {
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+      select: { mfaEnabled: true, orgId: true },
+    });
+
+    if (!user.mfaEnabled) {
+      throw new BadRequestException('MFA is not enabled');
+    }
+
+    const plainCodes = Array.from({ length: 10 }, () => randomBytes(4).toString('hex'));
+    const hashedCodes = plainCodes.map((c) => sha256(c));
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { totpBackupCodes: hashedCodes },
+    });
+
+    await this.prisma.auditLog.create({
+      data: {
+        orgId: user.orgId,
+        actorId: userId,
+        action: 'MFA_BACKUP_CODES_REGENERATED',
+        entity: 'User',
+        entityId: userId,
+        afterJson: {},
+      },
+    }).catch(() => {});
+
+    return { backupCodes: plainCodes };
+  }
+
+  // ── Email change: Request ───────────────────────────────────────────────────
+  async requestEmailChange(userId: string, orgId: string, newEmail: string) {
+    // Check no one in the same org already has this email
+    const conflict = await this.prisma.user.findFirst({
+      where: { orgId, email: newEmail },
+    });
+    if (conflict) {
+      throw new ConflictException('This email is already in use within your organization');
+    }
+
+    // Generate 6-char alphanumeric token
+    const plainToken = randomBytes(3).toString('hex').toUpperCase(); // 6 hex chars
+    const tokenHash = sha256(plainToken);
+    const expiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        pendingEmail: newEmail,
+        pendingEmailToken: tokenHash,
+        pendingEmailExpiry: expiry,
+      },
+    });
+
+    const webUrl = this.config.get<string>('WEB_URL', 'http://localhost:3000');
+
+    try {
+      const Resend = (await import('resend')).Resend;
+      const resend = new Resend(this.config.get<string>('RESEND_API_KEY'));
+      await resend.emails.send({
+        from: this.config.get<string>('EMAIL_FROM', 'hello@gettaxsentry.com'),
+        to: newEmail,
+        subject: 'Confirm your new email address — TaxSentry',
+        html: `<p>Your email change verification code is: <strong>${plainToken}</strong></p>
+               <p>This code expires in 24 hours. If you did not request this, you can safely ignore it.</p>`,
+      });
+    } catch (err: any) {
+      this.logger.warn(`Email delivery failed for email-change request (user ${userId}): ${err.message}. Token: ${plainToken}`);
+    }
+
+    return { message: 'Verification email sent' };
+  }
+
+  // ── Email change: Confirm ───────────────────────────────────────────────────
+  async confirmEmailChange(userId: string, token: string) {
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+      select: {
+        pendingEmail: true,
+        pendingEmailToken: true,
+        pendingEmailExpiry: true,
+        orgId: true,
+        email: true,
+      },
+    });
+
+    if (!user.pendingEmail || !user.pendingEmailToken || !user.pendingEmailExpiry) {
+      throw new BadRequestException('No pending email change found');
+    }
+
+    if (user.pendingEmailExpiry < new Date()) {
+      throw new BadRequestException('Email change token has expired');
+    }
+
+    const tokenHash = sha256(token.toUpperCase());
+    if (tokenHash !== user.pendingEmailToken) {
+      throw new UnauthorizedException('Invalid verification token');
+    }
+
+    const oldEmail = user.email;
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        email: user.pendingEmail,
+        pendingEmail: null,
+        pendingEmailToken: null,
+        pendingEmailExpiry: null,
+      },
+    });
+
+    await this.prisma.auditLog.create({
+      data: {
+        orgId: user.orgId,
+        actorId: userId,
+        action: 'EMAIL_CHANGED',
+        entity: 'User',
+        entityId: userId,
+        beforeJson: { email: oldEmail },
+        afterJson: { email: user.pendingEmail },
+      },
+    }).catch(() => {});
+
+    return { message: 'Email updated successfully' };
   }
 
   private parseDeviceLabel(userAgent: string): string {
