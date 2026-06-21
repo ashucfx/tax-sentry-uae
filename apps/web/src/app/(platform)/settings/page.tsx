@@ -4,9 +4,27 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api/client';
 import { TopRibbon } from '@/components/dashboard/TopRibbon';
-import { Settings, Building2, Bell, Shield, Users, Save, ChevronRight, CheckCircle2, UserPlus, X, Trash2, Clock } from 'lucide-react';
+import {
+  Settings,
+  Building2,
+  Bell,
+  Shield,
+  Users,
+  Save,
+  ChevronRight,
+  CheckCircle2,
+  UserPlus,
+  X,
+  Trash2,
+  Clock,
+  Key,
+  Copy,
+  AlertTriangle,
+  ExternalLink,
+} from 'lucide-react';
+import Link from 'next/link';
 
-type TabId = 'company' | 'notifications' | 'security' | 'team';
+type TabId = 'company' | 'notifications' | 'security' | 'team' | 'apikeys';
 
 type Invitation = {
   id: string;
@@ -14,6 +32,21 @@ type Invitation = {
   role: string;
   expiresAt: string;
 };
+
+interface ApiKey {
+  id: string;
+  name: string;
+  prefix: string;
+  createdAt: string;
+  lastUsedAt?: string | null;
+  expiresAt?: string | null;
+}
+
+interface AlertThresholds {
+  warningPct?: number;
+  dangerPct?: number;
+  absLimitM?: number;
+}
 
 const ROLE_LABELS: Record<string, string> = {
   OWNER: 'Owner',
@@ -27,6 +60,7 @@ const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
   { id: 'notifications', label: 'Notifications', icon: Bell },
   { id: 'security', label: 'Security', icon: Shield },
   { id: 'team', label: 'Team', icon: Users },
+  { id: 'apikeys', label: 'API Keys', icon: Key },
 ];
 
 const FREE_ZONES = [
@@ -85,13 +119,32 @@ function Toggle({ enabled, onChange }: { enabled: boolean; onChange: (v: boolean
   );
 }
 
-function StyledInput({ value, onChange, type = 'text', placeholder }: { value: string; onChange: (v: string) => void; type?: string; placeholder?: string }) {
+function StyledInput({
+  value,
+  onChange,
+  type = 'text',
+  placeholder,
+  min,
+  max,
+  step,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  type?: string;
+  placeholder?: string;
+  min?: string;
+  max?: string;
+  step?: string;
+}) {
   return (
     <input
       type={type}
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
+      min={min}
+      max={max}
+      step={step}
       className="rounded-lg px-3 py-2 text-[13px] outline-none transition-all"
       style={{
         background: 'var(--ts-bg-elevated)',
@@ -130,6 +183,335 @@ function StyledSelect({ value, onChange, options }: { value: string; onChange: (
   );
 }
 
+function NumberInput({
+  value,
+  onChange,
+  min,
+  max,
+  label,
+  suffix,
+}: {
+  value: number;
+  onChange: (v: number) => void;
+  min?: number;
+  max?: number;
+  label: string;
+  suffix?: string;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <label style={{ fontSize: 12, fontWeight: 500, color: 'var(--ts-fg-secondary)', display: 'block' }}>
+        {label}
+      </label>
+      <div className="flex items-center gap-2">
+        <input
+          type="number"
+          value={value}
+          onChange={(e) => onChange(Number(e.target.value))}
+          min={min}
+          max={max}
+          className="rounded-lg px-3 py-2 text-[13px] outline-none transition-all"
+          style={{
+            background: 'var(--ts-bg-elevated)',
+            border: '1px solid var(--ts-border)',
+            color: 'var(--ts-fg-primary)',
+            width: 100,
+            fontFamily: 'var(--font-sans)',
+          }}
+          onFocus={e => { (e.target as HTMLElement).style.borderColor = 'var(--ts-blue-500)'; }}
+          onBlur={e => { (e.target as HTMLElement).style.borderColor = 'var(--ts-border)'; }}
+        />
+        {suffix && (
+          <span style={{ fontSize: 12, color: 'var(--ts-fg-muted)' }}>{suffix}</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── API KEYS TAB ──────────────────────────────────────────────────────────────
+
+function ApiKeysTab() {
+  const queryClient = useQueryClient();
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newKeyName, setNewKeyName] = useState('');
+  const [newKeyExpiry, setNewKeyExpiry] = useState('');
+  const [createdKey, setCreatedKey] = useState<string | null>(null);
+  const [createError, setCreateError] = useState('');
+  const [copied, setCopied] = useState(false);
+
+  const { data: apiKeys, isLoading } = useQuery<ApiKey[]>({
+    queryKey: ['api-keys'],
+    queryFn: () => api.get('/api-keys').then((r) => r.data.data ?? r.data),
+  });
+
+  const createMutation = useMutation({
+    mutationFn: () =>
+      api.post('/api-keys', {
+        name: newKeyName,
+        ...(newKeyExpiry ? { expiresAt: new Date(newKeyExpiry).toISOString() } : {}),
+      }).then((r) => r.data.data ?? r.data),
+    onSuccess: (data: { key: string }) => {
+      setCreatedKey(data.key);
+      setCreateError('');
+      queryClient.invalidateQueries({ queryKey: ['api-keys'] });
+    },
+    onError: (err: unknown) => {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+        'Could not create API key.';
+      setCreateError(msg);
+    },
+  });
+
+  const revokeMutation = useMutation({
+    mutationFn: (id: string) => api.delete(`/api-keys/${id}`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['api-keys'] }),
+  });
+
+  function copyKey(key: string) {
+    navigator.clipboard.writeText(key).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
+
+  function closeCreateModal() {
+    setShowCreateModal(false);
+    setNewKeyName('');
+    setNewKeyExpiry('');
+    setCreatedKey(null);
+    setCreateError('');
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1">
+        <div>
+          <h2 style={{ fontSize: 15, fontWeight: 600, color: 'var(--ts-fg-primary)', margin: 0 }}>
+            API Keys
+          </h2>
+        </div>
+        <button
+          onClick={() => { setShowCreateModal(true); setCreateError(''); setCreatedKey(null); }}
+          className="flex items-center gap-2 rounded-xl px-3 py-2 text-[12px] font-medium"
+          style={{ background: 'var(--ts-blue-600)', color: 'white', border: 'none', cursor: 'pointer' }}
+        >
+          <Key size={13} />
+          Create New Key
+        </button>
+      </div>
+      <p style={{ fontSize: 12, color: 'var(--ts-fg-muted)', marginBottom: 20 }}>
+        Create long-lived API keys for integrations and automation. Keys are shown only once at creation.
+      </p>
+
+      {isLoading ? (
+        <div style={{ color: 'var(--ts-fg-muted)', fontSize: 13 }}>Loading keys…</div>
+      ) : !apiKeys || apiKeys.length === 0 ? (
+        <div
+          className="text-center py-10 rounded-xl"
+          style={{ background: 'var(--ts-bg-elevated)', border: '1px solid var(--ts-border)', color: 'var(--ts-fg-muted)', fontSize: 13 }}
+        >
+          No API keys yet. Create one to get started.
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {apiKeys.map((key) => (
+            <div
+              key={key.id}
+              className="flex items-center justify-between p-4 rounded-xl"
+              style={{ background: 'var(--ts-bg-elevated)', border: '1px solid var(--ts-border)' }}
+            >
+              <div className="flex items-center gap-3">
+                <div
+                  className="flex items-center justify-center rounded-lg flex-shrink-0"
+                  style={{ width: 36, height: 36, background: 'var(--ts-bg-card)', border: '1px solid var(--ts-border)' }}
+                >
+                  <Key size={15} style={{ color: 'var(--ts-fg-muted)' }} />
+                </div>
+                <div>
+                  <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--ts-fg-primary)', margin: 0 }}>
+                    {key.name}
+                  </p>
+                  <p style={{ fontSize: 11, color: 'var(--ts-fg-muted)', margin: 0 }}>
+                    <span
+                      style={{
+                        fontFamily: 'monospace',
+                        background: 'var(--ts-bg-card)',
+                        padding: '1px 4px',
+                        borderRadius: 4,
+                        border: '1px solid var(--ts-border)',
+                        marginRight: 6,
+                      }}
+                    >
+                      {key.prefix}…
+                    </span>
+                    Created {new Date(key.createdAt).toLocaleDateString('en-AE', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    {key.lastUsedAt && (
+                      <> · Last used {new Date(key.lastUsedAt).toLocaleDateString('en-AE', { day: 'numeric', month: 'short' })}</>
+                    )}
+                    {key.expiresAt && (
+                      <> · Expires {new Date(key.expiresAt).toLocaleDateString('en-AE', { day: 'numeric', month: 'short', year: 'numeric' })}</>
+                    )}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => revokeMutation.mutate(key.id)}
+                disabled={revokeMutation.isPending}
+                className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12px] font-medium transition-all"
+                style={{
+                  background: 'oklch(0.55 0.22 15 / 0.08)',
+                  border: '1px solid oklch(0.55 0.22 15 / 0.2)',
+                  color: 'var(--ts-red-400)',
+                  cursor: revokeMutation.isPending ? 'default' : 'pointer',
+                }}
+              >
+                <Trash2 size={12} />
+                Revoke
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Create Key Modal */}
+      {showCreateModal && (
+        <div
+          className="fixed inset-0 flex items-center justify-center z-50"
+          style={{ background: 'rgba(0,0,0,0.6)' }}
+          onClick={(e) => { if (e.target === e.currentTarget) closeCreateModal(); }}
+        >
+          <div
+            className="rounded-2xl p-6 w-full max-w-sm"
+            style={{ background: 'var(--ts-bg-card)', border: '1px solid var(--ts-border)' }}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 style={{ fontSize: 15, fontWeight: 600, color: 'var(--ts-fg-primary)', margin: 0 }}>
+                Create API Key
+              </h3>
+              <button
+                onClick={closeCreateModal}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ts-fg-muted)', padding: 2 }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {createdKey ? (
+              <div>
+                <div
+                  className="flex items-start gap-3 p-4 rounded-xl mb-4"
+                  style={{ background: 'oklch(0.75 0.18 85 / 0.12)', border: '1px solid oklch(0.75 0.18 85 / 0.35)' }}
+                >
+                  <AlertTriangle size={16} style={{ color: 'var(--ts-amber-500)', flexShrink: 0, marginTop: 1 }} />
+                  <p style={{ fontSize: 12, color: 'var(--ts-fg-primary)', margin: 0, fontWeight: 500 }}>
+                    This key will not be shown again. Copy it now.
+                  </p>
+                </div>
+                <div
+                  className="flex items-center gap-2 p-3 rounded-lg mb-4"
+                  style={{ background: 'var(--ts-bg-elevated)', border: '1px solid var(--ts-border)' }}
+                >
+                  <span
+                    style={{
+                      fontFamily: 'monospace',
+                      fontSize: 12,
+                      color: 'var(--ts-fg-primary)',
+                      flex: 1,
+                      wordBreak: 'break-all',
+                    }}
+                  >
+                    {createdKey}
+                  </span>
+                  <button
+                    onClick={() => copyKey(createdKey)}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ts-fg-muted)', flexShrink: 0 }}
+                    title="Copy key"
+                  >
+                    <Copy size={14} style={{ color: copied ? 'var(--ts-green-500)' : 'var(--ts-fg-muted)' }} />
+                  </button>
+                </div>
+                {copied && (
+                  <p style={{ fontSize: 12, color: 'var(--ts-green-500)', marginBottom: 8 }}>Copied to clipboard!</p>
+                )}
+                <button
+                  onClick={closeCreateModal}
+                  className="w-full py-2.5 rounded-lg text-sm font-semibold"
+                  style={{ background: 'var(--ts-blue-600)', color: '#fff', border: 'none', cursor: 'pointer' }}
+                >
+                  Done
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <label style={{ fontSize: 12, fontWeight: 500, color: 'var(--ts-fg-secondary)', display: 'block', marginBottom: 6 }}>
+                    Key Name <span style={{ color: 'var(--ts-red-400)' }}>*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={newKeyName}
+                    onChange={(e) => setNewKeyName(e.target.value.slice(0, 50))}
+                    placeholder="e.g. CI/CD Pipeline"
+                    maxLength={50}
+                    className="w-full px-3.5 py-2.5 rounded-lg text-sm outline-none"
+                    style={{
+                      background: 'var(--ts-bg-elevated)',
+                      border: '1px solid var(--ts-border)',
+                      color: 'var(--ts-fg-primary)',
+                    }}
+                    onFocus={e => { (e.target as HTMLElement).style.borderColor = 'var(--ts-blue-500)'; }}
+                    onBlur={e => { (e.target as HTMLElement).style.borderColor = 'var(--ts-border)'; }}
+                  />
+                  <p style={{ fontSize: 11, color: 'var(--ts-fg-muted)', marginTop: 4 }}>
+                    {newKeyName.length}/50 characters
+                  </p>
+                </div>
+                <div>
+                  <label style={{ fontSize: 12, fontWeight: 500, color: 'var(--ts-fg-secondary)', display: 'block', marginBottom: 6 }}>
+                    Expiry Date <span style={{ color: 'var(--ts-fg-muted)' }}>(optional)</span>
+                  </label>
+                  <input
+                    type="date"
+                    value={newKeyExpiry}
+                    onChange={(e) => setNewKeyExpiry(e.target.value)}
+                    min={new Date().toISOString().split('T')[0]}
+                    className="w-full px-3.5 py-2.5 rounded-lg text-sm outline-none"
+                    style={{
+                      background: 'var(--ts-bg-elevated)',
+                      border: '1px solid var(--ts-border)',
+                      color: 'var(--ts-fg-primary)',
+                      cursor: 'pointer',
+                    }}
+                    onFocus={e => { (e.target as HTMLElement).style.borderColor = 'var(--ts-blue-500)'; }}
+                    onBlur={e => { (e.target as HTMLElement).style.borderColor = 'var(--ts-border)'; }}
+                  />
+                </div>
+
+                {createError && (
+                  <p style={{ fontSize: 12, color: 'var(--ts-red-400)' }}>{createError}</p>
+                )}
+
+                <button
+                  onClick={() => { setCreateError(''); createMutation.mutate(); }}
+                  disabled={!newKeyName.trim() || createMutation.isPending}
+                  className="w-full py-2.5 rounded-lg text-sm font-semibold transition-opacity disabled:opacity-60"
+                  style={{ background: 'var(--ts-blue-600)', color: '#fff', border: 'none', cursor: 'pointer' }}
+                >
+                  {createMutation.isPending ? 'Creating…' : 'Create Key'}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── MAIN PAGE ─────────────────────────────────────────────────────────────────
+
 export default function SettingsPage() {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<TabId>('company');
@@ -139,6 +521,11 @@ export default function SettingsPage() {
   const [freeZone, setFreeZone] = useState('DMCC');
   const [licenseNo, setLicenseNo] = useState('');
   const [taxRegNo, setTaxRegNo] = useState('');
+
+  // Alert thresholds
+  const [warningPct, setWarningPct] = useState(50);
+  const [dangerPct, setDangerPct] = useState(80);
+  const [absLimitM, setAbsLimitM] = useState(5);
 
   const { data: orgData } = useQuery({
     queryKey: ['org-me'],
@@ -152,6 +539,13 @@ export default function SettingsPage() {
       setFreeZone(orgData.freeZone ?? 'DMCC');
       setLicenseNo(orgData.tradeLicenseNo ?? '');
       setTaxRegNo(orgData.taxRegistrationNo ?? '');
+
+      const thresholds = orgData.alertThresholdsJson as AlertThresholds | null | undefined;
+      if (thresholds) {
+        if (thresholds.warningPct != null) setWarningPct(thresholds.warningPct);
+        if (thresholds.dangerPct != null) setDangerPct(thresholds.dangerPct);
+        if (thresholds.absLimitM != null) setAbsLimitM(thresholds.absLimitM);
+      }
     }
   }, [orgData]);
 
@@ -176,16 +570,26 @@ export default function SettingsPage() {
   const { data: notifData } = useQuery({
     queryKey: ['notification-prefs'],
     queryFn: () => api.get('/organizations/me/notifications').then((r) => r.data.data),
-    onSuccess: (d: any) => {
+    onSuccess: (d: Record<string, boolean>) => {
       if (d) setNotifPrefs((prev) => ({ ...prev, ...d }));
     },
     enabled: activeTab === 'notifications',
-  } as any);
+  } as Parameters<typeof useQuery>[0]);
+
+  // Keep linter happy — notifData used only for side-effect via onSuccess
+  void notifData;
 
   const saveNotifMutation = useMutation({
-    mutationFn: () => api.patch('/organizations/me/notifications', notifPrefs).then((r) => r.data),
+    mutationFn: () =>
+      Promise.all([
+        api.patch('/organizations/me/notifications', notifPrefs),
+        api.patch('/organizations/me/thresholds', {
+          alertThresholdsJson: { warningPct, dangerPct, absLimitM },
+        }),
+      ]),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notification-prefs'] });
+      queryClient.invalidateQueries({ queryKey: ['org-me'] });
       setNotifSaved(true);
       setTimeout(() => setNotifSaved(false), 3000);
     },
@@ -344,6 +748,44 @@ export default function SettingsPage() {
                   <Toggle enabled={notifPrefs.thresholdWarnings} onChange={(v) => setNotifPrefs((p) => ({ ...p, thresholdWarnings: v }))} />
                 </SettingRow>
 
+                {/* Custom Alert Thresholds */}
+                <div
+                  className="mt-6 p-5 rounded-xl"
+                  style={{ background: 'var(--ts-bg-elevated)', border: '1px solid var(--ts-border)' }}
+                >
+                  <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--ts-fg-primary)', marginBottom: 4 }}>
+                    Custom Alert Thresholds
+                  </p>
+                  <p style={{ fontSize: 12, color: 'var(--ts-fg-muted)', marginBottom: 16 }}>
+                    Override the default thresholds that trigger warning and danger alerts for your organisation.
+                  </p>
+                  <div className="grid grid-cols-3 gap-4">
+                    <NumberInput
+                      label="De-Minimis Warning (%)"
+                      value={warningPct}
+                      onChange={setWarningPct}
+                      min={1}
+                      max={99}
+                      suffix="%"
+                    />
+                    <NumberInput
+                      label="De-Minimis Danger (%)"
+                      value={dangerPct}
+                      onChange={setDangerPct}
+                      min={1}
+                      max={100}
+                      suffix="%"
+                    />
+                    <NumberInput
+                      label="NQI Absolute Limit (AED M)"
+                      value={absLimitM}
+                      onChange={setAbsLimitM}
+                      min={0}
+                      suffix="M AED"
+                    />
+                  </div>
+                </div>
+
                 <div style={{ marginTop: 24, display: 'flex', alignItems: 'center', gap: 12 }}>
                   <button
                     onClick={() => saveNotifMutation.mutate()}
@@ -373,12 +815,12 @@ export default function SettingsPage() {
                 </p>
 
                 {[
-                  { label: 'AES-256 Data Encryption', desc: 'All data at rest encrypted with AES-256-GCM', status: 'ACTIVE' },
-                  { label: 'TLS 1.3 in Transit', desc: 'All API communication over TLS 1.3', status: 'ACTIVE' },
-                  { label: 'Immutable Audit Log', desc: 'All actions logged and tamper-proof', status: 'ACTIVE' },
-                  { label: 'Two-Factor Authentication', desc: 'TOTP-based 2FA — coming soon', status: 'CONFIGURE' },
-                  { label: 'Session Timeout', desc: 'Auto-sign-out after 8 hours of inactivity', status: 'ACTIVE' },
-                ].map(({ label, desc, status }) => (
+                  { label: 'AES-256 Data Encryption', desc: 'All data at rest encrypted with AES-256-GCM', status: 'ACTIVE', actionHref: null },
+                  { label: 'TLS 1.3 in Transit', desc: 'All API communication over TLS 1.3', status: 'ACTIVE', actionHref: null },
+                  { label: 'Immutable Audit Log', desc: 'All actions logged and tamper-proof', status: 'ACTIVE', actionHref: null },
+                  { label: 'Two-Factor Authentication', desc: 'Set up TOTP-based 2FA on your personal account', status: 'CONFIGURE', actionHref: '/account?tab=mfa' },
+                  { label: 'Session Timeout', desc: 'Auto-sign-out after 8 hours of inactivity', status: 'ACTIVE', actionHref: null },
+                ].map(({ label, desc, status, actionHref }) => (
                   <div
                     key={label}
                     className="flex items-center justify-between py-4"
@@ -388,16 +830,32 @@ export default function SettingsPage() {
                       <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--ts-fg-primary)', margin: 0 }}>{label}</p>
                       <p style={{ fontSize: 12, color: 'var(--ts-fg-muted)', margin: 0, marginTop: 2 }}>{desc}</p>
                     </div>
-                    <span
-                      className="rounded-full px-3 py-1 text-[11px] font-bold tracking-wide"
-                      style={{
-                        background: status === 'ACTIVE' ? 'oklch(0.70 0.20 155 / 0.1)' : 'oklch(0.55 0.22 260 / 0.1)',
-                        color: status === 'ACTIVE' ? 'var(--ts-green-500)' : 'var(--ts-blue-400)',
-                        border: `1px solid ${status === 'ACTIVE' ? 'oklch(0.70 0.20 155 / 0.25)' : 'oklch(0.55 0.22 260 / 0.25)'}`,
-                      }}
-                    >
-                      {status === 'ACTIVE' ? '✓ Active' : 'Configure →'}
-                    </span>
+                    {actionHref ? (
+                      <Link
+                        href={actionHref}
+                        className="flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-bold tracking-wide"
+                        style={{
+                          background: 'oklch(0.55 0.22 260 / 0.1)',
+                          color: 'var(--ts-blue-400)',
+                          border: '1px solid oklch(0.55 0.22 260 / 0.25)',
+                          textDecoration: 'none',
+                        }}
+                      >
+                        Configure
+                        <ExternalLink size={10} />
+                      </Link>
+                    ) : (
+                      <span
+                        className="rounded-full px-3 py-1 text-[11px] font-bold tracking-wide"
+                        style={{
+                          background: 'oklch(0.70 0.20 155 / 0.1)',
+                          color: 'var(--ts-green-500)',
+                          border: '1px solid oklch(0.70 0.20 155 / 0.25)',
+                        }}
+                      >
+                        Active
+                      </span>
+                    )}
                   </div>
                 ))}
               </div>
@@ -549,6 +1007,8 @@ export default function SettingsPage() {
                 )}
               </div>
             )}
+
+            {activeTab === 'apikeys' && <ApiKeysTab />}
           </div>
         </div>
       </div>
