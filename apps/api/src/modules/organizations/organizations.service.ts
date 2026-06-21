@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ConflictException, ForbiddenException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { FreeZone, UserRole } from '@prisma/client';
@@ -299,6 +299,284 @@ export class OrganizationsService {
       data: { notificationPrefsJson: merged },
     });
     return merged;
+  }
+
+  // ── Member management ────────────────────────────────────────────────────────
+
+  async changeMemberRole(orgId: string, actorId: string, targetUserId: string, role: UserRole) {
+    if (actorId === targetUserId) {
+      throw new BadRequestException('You cannot change your own role');
+    }
+    if (role === UserRole.OWNER) {
+      throw new BadRequestException('Use the transfer-ownership endpoint to assign the OWNER role');
+    }
+
+    const target = await this.prisma.user.findFirst({ where: { id: targetUserId, orgId } });
+    if (!target) throw new NotFoundException('Member not found in this organization');
+
+    const previous = target.role;
+    await this.prisma.user.update({ where: { id: targetUserId }, data: { role } });
+
+    await this.prisma.auditLog.create({
+      data: {
+        orgId,
+        actorId,
+        action: 'MEMBER_ROLE_CHANGED',
+        entity: 'User',
+        entityId: targetUserId,
+        beforeJson: { role: previous },
+        afterJson: { role },
+      },
+    }).catch(() => {});
+
+    return { message: 'Member role updated' };
+  }
+
+  async deactivateMember(orgId: string, actorId: string, targetUserId: string) {
+    if (actorId === targetUserId) {
+      throw new BadRequestException('You cannot deactivate your own account');
+    }
+
+    const target = await this.prisma.user.findFirst({ where: { id: targetUserId, orgId } });
+    if (!target) throw new NotFoundException('Member not found in this organization');
+
+    await this.prisma.user.update({ where: { id: targetUserId }, data: { isActive: false } });
+
+    // Revoke all active sessions for the deactivated member
+    await this.prisma.session.updateMany({
+      where: { userId: targetUserId, isRevoked: false },
+      data: { isRevoked: true, revokedAt: new Date() },
+    });
+
+    await this.prisma.auditLog.create({
+      data: {
+        orgId,
+        actorId,
+        action: 'MEMBER_DEACTIVATED',
+        entity: 'User',
+        entityId: targetUserId,
+        afterJson: { isActive: false },
+      },
+    }).catch(() => {});
+  }
+
+  async transferOwnership(orgId: string, actorId: string, newOwnerId: string) {
+    if (actorId === newOwnerId) {
+      throw new BadRequestException('You are already the owner');
+    }
+
+    const newOwner = await this.prisma.user.findFirst({ where: { id: newOwnerId, orgId } });
+    if (!newOwner) throw new NotFoundException('Target user not found in this organization');
+
+    // Transfer: new owner gets OWNER, current owner steps down to FINANCE
+    await this.prisma.$transaction([
+      this.prisma.user.update({ where: { id: newOwnerId }, data: { role: UserRole.OWNER } }),
+      this.prisma.user.update({ where: { id: actorId }, data: { role: UserRole.FINANCE } }),
+    ]);
+
+    await this.prisma.auditLog.create({
+      data: {
+        orgId,
+        actorId,
+        action: 'OWNERSHIP_TRANSFERRED',
+        entity: 'Organization',
+        entityId: orgId,
+        beforeJson: { ownerId: actorId },
+        afterJson: { ownerId: newOwnerId },
+      },
+    }).catch(() => {});
+
+    return { message: 'Ownership transferred successfully' };
+  }
+
+  async resendInvitation(orgId: string, actorId: string, invitationId: string) {
+    const invitation = await this.prisma.invitation.findFirst({
+      where: { id: invitationId, orgId, acceptedAt: null },
+    });
+    if (!invitation) throw new NotFoundException('Invitation not found or already accepted');
+
+    const rawToken = generateOpaqueToken();
+    const tokenHash = sha256(rawToken);
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+    await this.prisma.invitation.update({
+      where: { id: invitationId },
+      data: { tokenHash, expiresAt },
+    });
+
+    const org = await this.prisma.organization.findUnique({ where: { id: orgId }, select: { name: true } });
+    const webUrl = this.config.get<string>('WEB_URL', 'http://localhost:3000');
+    const inviteLink = `${webUrl}/accept-invite?token=${rawToken}`;
+
+    try {
+      const Resend = (await import('resend')).Resend;
+      const resend = new Resend(this.config.get<string>('RESEND_API_KEY'));
+      await resend.emails.send({
+        from: this.config.get<string>('EMAIL_FROM', 'hello@gettaxsentry.com'),
+        to: invitation.email,
+        subject: `Reminder: You've been invited to join ${org?.name ?? 'TaxSentry'}`,
+        html: `<p>This is a reminder that you have been invited to join <strong>${org?.name ?? 'an organization'}</strong> on TaxSentry as <strong>${invitation.role}</strong>.</p>
+               <p><a href="${inviteLink}">Accept invitation</a></p>
+               <p>This invitation expires in 7 days. If you did not expect this, you can safely ignore it.</p>`,
+      });
+    } catch (err: any) {
+      throw new BadRequestException(`Invitation refreshed but email delivery failed: ${err.message}`);
+    }
+
+    return { message: `Invitation resent to ${invitation.email}` };
+  }
+
+  // ── Billing & Config ─────────────────────────────────────────────────────────
+
+  async updateBilling(orgId: string, actorId: string, dto: { billingEmail?: string; billingAddress?: string }) {
+    const org = await this.prisma.organization.update({
+      where: { id: orgId },
+      data: {
+        ...(dto.billingEmail !== undefined && { billingEmail: dto.billingEmail }),
+        ...(dto.billingAddress !== undefined && { billingAddress: dto.billingAddress }),
+      },
+      select: { id: true, billingEmail: true, billingAddress: true },
+    });
+
+    await this.prisma.auditLog.create({
+      data: {
+        orgId,
+        actorId,
+        action: 'BILLING_UPDATED',
+        entity: 'Organization',
+        entityId: orgId,
+        afterJson: dto,
+      },
+    }).catch(() => {});
+
+    return org;
+  }
+
+  async updateAlertThresholds(orgId: string, actorId: string, thresholds: Record<string, unknown>) {
+    const org = await this.prisma.organization.update({
+      where: { id: orgId },
+      data: { alertThresholdsJson: thresholds as any },
+      select: { id: true, alertThresholdsJson: true },
+    });
+
+    await this.prisma.auditLog.create({
+      data: {
+        orgId,
+        actorId,
+        action: 'ALERT_THRESHOLDS_UPDATED',
+        entity: 'Organization',
+        entityId: orgId,
+        afterJson: thresholds as any,
+      },
+    }).catch(() => {});
+
+    return org;
+  }
+
+  async exportOrgData(orgId: string) {
+    const [org, users, taxPeriods, txCount, substanceDocs] = await Promise.all([
+      this.prisma.organization.findUniqueOrThrow({
+        where: { id: orgId },
+        select: {
+          id: true,
+          name: true,
+          tradeLicenseNo: true,
+          freeZone: true,
+          taxRegistrationNo: true,
+          primaryActivityCode: true,
+          subscriptionTier: true,
+          subscriptionStatus: true,
+          billingEmail: true,
+          billingAddress: true,
+          createdAt: true,
+        },
+      }),
+      this.prisma.user.findMany({
+        where: { orgId },
+        select: { id: true, email: true, role: true, isActive: true, createdAt: true },
+      }),
+      this.prisma.taxPeriod.findMany({
+        where: { orgId },
+        orderBy: { startDate: 'desc' },
+        select: { id: true, startDate: true, endDate: true, status: true, createdAt: true },
+      }),
+      this.prisma.revenueTransaction.count({ where: { orgId, isDeleted: false } }),
+      this.prisma.substanceDocument.findMany({
+        where: { orgId, isDeleted: false },
+        select: { id: true, docType: true, status: true, expiresAt: true, createdAt: true },
+      }),
+    ]);
+
+    return {
+      exportedAt: new Date().toISOString(),
+      organization: org,
+      users,
+      taxPeriods,
+      transactionCount: txCount,
+      substanceDocuments: substanceDocs,
+    };
+  }
+
+  async acceptDpa(orgId: string, actorId: string) {
+    await this.prisma.organization.update({
+      where: { id: orgId },
+      data: { dpaAcceptedAt: new Date() },
+    });
+
+    await this.prisma.auditLog.create({
+      data: {
+        orgId,
+        actorId,
+        action: 'DPA_ACCEPTED',
+        entity: 'Organization',
+        entityId: orgId,
+        afterJson: { dpaAcceptedAt: new Date().toISOString() },
+      },
+    }).catch(() => {});
+
+    return { message: 'Data Processing Agreement accepted', dpaAcceptedAt: new Date() };
+  }
+
+  async softDeleteOrganization(orgId: string, actorId: string, confirmation: string) {
+    if (confirmation !== 'DELETE') {
+      throw new BadRequestException('Confirmation string must be exactly "DELETE"');
+    }
+
+    const org = await this.prisma.organization.findUnique({ where: { id: orgId } });
+    if (!org) throw new NotFoundException('Organization not found');
+    if (org.deletedAt) throw new BadRequestException('Organization is already deleted');
+
+    const now = new Date();
+    await this.prisma.organization.update({
+      where: { id: orgId },
+      data: {
+        deletedAt: now,
+        deletedBy: actorId,
+        isActive: false,
+        cancelledAt: org.cancelledAt ?? now,
+      },
+    });
+
+    // Revoke all sessions for all org members
+    const memberIds = await this.prisma.user.findMany({
+      where: { orgId },
+      select: { id: true },
+    });
+    await this.prisma.session.updateMany({
+      where: { userId: { in: memberIds.map((m) => m.id) }, isRevoked: false },
+      data: { isRevoked: true, revokedAt: now },
+    });
+
+    await this.prisma.auditLog.create({
+      data: {
+        orgId,
+        actorId,
+        action: 'ORGANIZATION_DELETED',
+        entity: 'Organization',
+        entityId: orgId,
+        afterJson: { deletedAt: now.toISOString(), deletedBy: actorId },
+      },
+    }).catch(() => {});
   }
 
   // ── Onboarding Status ────────────────────────────────────────────────────────
