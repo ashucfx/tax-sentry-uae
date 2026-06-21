@@ -8,9 +8,12 @@ import {
   Min,
   MaxLength,
   MinLength,
+  IsArray,
+  ArrayMinSize,
+  ArrayMaxSize,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { CounterpartyType, TransactionSource } from '@prisma/client';
+import { Classification, CounterpartyType, TransactionSource } from '@prisma/client';
 import { Type } from 'class-transformer';
 
 export class CreateTransactionDto {
@@ -118,4 +121,46 @@ export class CsvUploadDto {
   @ApiProperty({ description: 'Tax period ID to associate transactions with' })
   @IsString()
   taxPeriodId: string;
+}
+
+export class BulkClassifyDto {
+  @ApiProperty({ type: [String], description: 'Transaction IDs to classify (max 200)' })
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(200)
+  @IsString({ each: true })
+  transactionIds: string[];
+
+  @ApiProperty({ enum: Classification, example: 'QI' })
+  @IsEnum(Classification)
+  classification: Classification;
+
+  @ApiProperty({ example: 'TP_CONFIRMED', description: 'Reason code for audit trail' })
+  @IsString()
+  @MinLength(2)
+  reasonCode: string;
+
+  @ApiProperty({ example: 'Bulk reclassification following TP documentation review.' })
+  @IsString()
+  @MinLength(20)
+  @MaxLength(2000)
+  reasonText: string;
+}
+
+export class ReclassifyAllDto {
+  @ApiProperty({ description: 'Tax period ID whose transactions should be re-classified' })
+  @IsString()
+  taxPeriodId: string;
+}
+
+export class ResolveReviewFlagDto {
+  @ApiProperty({ description: 'Whether to mark the review flag as resolved' })
+  @IsBoolean()
+  resolved: boolean;
+
+  @ApiPropertyOptional({ description: 'Optional reviewer note', maxLength: 1000 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  note?: string;
 }

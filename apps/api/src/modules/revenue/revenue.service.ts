@@ -9,7 +9,12 @@ import { Classification, CounterpartyType, TransactionSource } from '@prisma/cli
 import { PrismaService } from '../prisma/prisma.service';
 import { ClassificationEngine } from '../classification/classification.engine';
 import { AlertsEngine } from '../alerts/alerts.engine';
-import { CreateTransactionDto, OverrideClassificationDto } from './dto/create-transaction.dto';
+import {
+  CreateTransactionDto,
+  OverrideClassificationDto,
+  BulkClassifyDto,
+  ResolveReviewFlagDto,
+} from './dto/create-transaction.dto';
 import Decimal from 'decimal.js';
 import { createHash } from 'crypto';
 
@@ -458,5 +463,268 @@ export class RevenueService {
     });
 
     return { imported: result.count, errors };
+  }
+
+  async bulkClassify(
+    orgId: string,
+    userId: string,
+    dto: BulkClassifyDto,
+  ): Promise<{ updated: number; errors: string[] }> {
+    const { transactionIds, classification, reasonCode, reasonText } = dto;
+
+    // Fetch all requested transactions scoped to this org (non-deleted)
+    const existing = await this.prisma.revenueTransaction.findMany({
+      where: { id: { in: transactionIds }, orgId, isDeleted: false },
+      select: { id: true, classification: true },
+    });
+
+    const foundIds = new Set(existing.map((t) => t.id));
+    const errors: string[] = [];
+
+    // Report any IDs that were not found or belong to another org
+    for (const id of transactionIds) {
+      if (!foundIds.has(id)) {
+        errors.push(`Transaction ${id}: not found or already deleted`);
+      }
+    }
+
+    const validTransactions = existing;
+    if (validTransactions.length === 0) {
+      return { updated: 0, errors };
+    }
+
+    // Build atomic operations for all valid transactions
+    const operations = validTransactions.flatMap((tx) => [
+      this.prisma.revenueTransaction.update({
+        where: { id: tx.id },
+        data: {
+          classification,
+          confidence: 100,
+          requiresReview: false,
+        },
+      }),
+      this.prisma.classificationOverride.create({
+        data: {
+          transactionId: tx.id,
+          orgId,
+          previousClassification: tx.classification,
+          newClassification: classification,
+          reasonCode,
+          reasonText,
+          overriddenByUserId: userId,
+          afterPeriodLock: false,
+          requiresAcknowledgment: false,
+        },
+      }),
+      this.prisma.auditLog.create({
+        data: {
+          orgId,
+          actorId: userId,
+          action: 'BULK_CLASSIFY',
+          entity: 'RevenueTransaction',
+          entityId: tx.id,
+          beforeJson: { classification: tx.classification },
+          afterJson: { classification, reasonCode, reasonText },
+        },
+      }),
+    ]);
+
+    try {
+      await this.prisma.$transaction(operations);
+    } catch (err) {
+      // If the atomic batch fails entirely, report it
+      this.logger.error('bulkClassify transaction failed', err);
+      throw new BadRequestException(
+        `Bulk classification failed: ${(err as Error).message}`,
+      );
+    }
+
+    return { updated: validTransactions.length, errors };
+  }
+
+  async reclassifyAll(
+    orgId: string,
+    userId: string,
+    taxPeriodId: string,
+  ): Promise<{ reclassified: number; unchanged: number }> {
+    // Verify the period exists, belongs to org, and is OPEN
+    const period = await this.prisma.taxPeriod.findFirst({
+      where: { id: taxPeriodId, orgId },
+    });
+
+    if (!period) {
+      throw new NotFoundException('Tax period not found');
+    }
+
+    if (period.status === 'LOCKED' || period.status === 'FILED') {
+      throw new BadRequestException(
+        'Cannot reclassify transactions in a locked or filed period',
+      );
+    }
+
+    // Fetch all non-deleted transactions for the period that do NOT have existing overrides
+    const transactions = await this.prisma.revenueTransaction.findMany({
+      where: {
+        orgId,
+        taxPeriodId,
+        isDeleted: false,
+        overrides: { none: {} },
+      },
+      select: {
+        id: true,
+        activityCode: true,
+        counterpartyType: true,
+        amountAed: true,
+        counterparty: true,
+        classification: true,
+        confidence: true,
+        description: true,
+      },
+    });
+
+    if (transactions.length === 0) {
+      return { reclassified: 0, unchanged: 0 };
+    }
+
+    let reclassified = 0;
+    let unchanged = 0;
+    const updates: ReturnType<typeof this.prisma.revenueTransaction.update>[] = [];
+
+    for (const tx of transactions) {
+      if (!tx.activityCode) {
+        // No activity code — cannot classify; leave as-is
+        unchanged++;
+        continue;
+      }
+
+      const result = this.classifier.classify({
+        activityCode: tx.activityCode,
+        counterpartyType: tx.counterpartyType,
+        amountAed: new Decimal(tx.amountAed).abs().toNumber(),
+        counterpartyName: tx.counterparty,
+        isRelatedParty: tx.counterpartyType === CounterpartyType.RELATED,
+        description: tx.description ?? undefined,
+      });
+
+      if (
+        result.classification === tx.classification &&
+        result.confidence === tx.confidence
+      ) {
+        unchanged++;
+        continue;
+      }
+
+      reclassified++;
+      updates.push(
+        this.prisma.revenueTransaction.update({
+          where: { id: tx.id },
+          data: {
+            classification: result.classification,
+            confidence: result.confidence,
+            requiresReview: result.requiresReview,
+          },
+        }),
+      );
+    }
+
+    if (updates.length > 0) {
+      // Prisma $transaction accepts up to ~65k operations; 200-item batches are safe
+      await this.prisma.$transaction([
+        ...updates,
+        this.prisma.auditLog.create({
+          data: {
+            orgId,
+            actorId: userId,
+            action: 'RECLASSIFY_ALL',
+            entity: 'TaxPeriod',
+            entityId: taxPeriodId,
+            afterJson: { reclassified, unchanged, total: transactions.length },
+          },
+        }),
+      ]);
+    }
+
+    return { reclassified, unchanged };
+  }
+
+  async getReviewQueue(
+    orgId: string,
+    taxPeriodId: string | undefined,
+    page: number,
+    limit: number,
+  ) {
+    const where: Record<string, unknown> = {
+      orgId,
+      requiresReview: true,
+      isDeleted: false,
+    };
+
+    if (taxPeriodId) {
+      where.taxPeriodId = taxPeriodId;
+    }
+
+    const [total, transactions] = await Promise.all([
+      this.prisma.revenueTransaction.count({ where }),
+      this.prisma.revenueTransaction.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { date: 'desc' },
+        include: {
+          activityCatalog: { select: { code: true, name: true } },
+          overrides: {
+            select: { id: true, newClassification: true, reasonCode: true, createdAt: true },
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+          },
+        },
+      }),
+    ]);
+
+    return {
+      transactions,
+      pagination: { total, page, limit, totalPages: Math.ceil(total / limit) },
+    };
+  }
+
+  async resolveReviewFlag(
+    orgId: string,
+    userId: string,
+    transactionId: string,
+    dto: ResolveReviewFlagDto,
+  ) {
+    const transaction = await this.prisma.revenueTransaction.findFirst({
+      where: { id: transactionId, orgId, isDeleted: false },
+    });
+
+    if (!transaction) {
+      throw new NotFoundException('Transaction not found');
+    }
+
+    const [updated] = await this.prisma.$transaction([
+      this.prisma.revenueTransaction.update({
+        where: { id: transactionId },
+        data: {
+          requiresReview: dto.resolved ? false : transaction.requiresReview,
+        },
+      }),
+      this.prisma.auditLog.create({
+        data: {
+          orgId,
+          actorId: userId,
+          action: 'REVIEW_FLAG_RESOLVED',
+          entity: 'RevenueTransaction',
+          entityId: transactionId,
+          beforeJson: { requiresReview: transaction.requiresReview },
+          afterJson: {
+            requiresReview: dto.resolved ? false : transaction.requiresReview,
+            resolved: dto.resolved,
+            ...(dto.note ? { note: dto.note } : {}),
+          },
+        },
+      }),
+    ]);
+
+    return updated;
   }
 }

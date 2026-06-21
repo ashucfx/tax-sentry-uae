@@ -29,7 +29,13 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { RevenueService } from './revenue.service';
-import { CreateTransactionDto, OverrideClassificationDto } from './dto/create-transaction.dto';
+import {
+  CreateTransactionDto,
+  OverrideClassificationDto,
+  BulkClassifyDto,
+  ReclassifyAllDto,
+  ResolveReviewFlagDto,
+} from './dto/create-transaction.dto';
 
 @ApiTags('revenue')
 @ApiBearerAuth()
@@ -195,5 +201,57 @@ export class RevenueController {
     } catch (error) {
       throw new BadRequestException(`Failed to parse CSV file: ${(error as Error).message}`);
     }
+  }
+
+  @Post('transactions/bulk-classify')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Bulk-classify up to 200 transactions in one atomic operation' })
+  @Roles(UserRole.FINANCE, UserRole.OWNER)
+  @Throttle({ short: { limit: 5, ttl: 60000 } })
+  async bulkClassify(
+    @CurrentUser('orgId') orgId: string,
+    @CurrentUser('id') userId: string,
+    @Body() dto: BulkClassifyDto,
+  ) {
+    if (dto.transactionIds.length > 200) {
+      throw new BadRequestException('Cannot classify more than 200 transactions per request');
+    }
+    return this.revenueService.bulkClassify(orgId, userId, dto);
+  }
+
+  @Post('transactions/reclassify-all')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Re-run auto-classification engine on all non-overridden transactions in a period' })
+  @Roles(UserRole.FINANCE, UserRole.OWNER)
+  @Throttle({ short: { limit: 2, ttl: 60000 } })
+  async reclassifyAll(
+    @CurrentUser('orgId') orgId: string,
+    @CurrentUser('id') userId: string,
+    @Body() dto: ReclassifyAllDto,
+  ) {
+    return this.revenueService.reclassifyAll(orgId, userId, dto.taxPeriodId);
+  }
+
+  @Get('transactions/review-queue')
+  @ApiOperation({ summary: 'List transactions flagged for manual review, paginated' })
+  async getReviewQueue(
+    @CurrentUser('orgId') orgId: string,
+    @Query('taxPeriodId') taxPeriodId?: string,
+    @Query('page') page = 1,
+  ) {
+    const limit = 50;
+    return this.revenueService.getReviewQueue(orgId, taxPeriodId, +page, limit);
+  }
+
+  @Patch('transactions/:id/review')
+  @ApiOperation({ summary: 'Resolve or update the review flag on a transaction' })
+  @Roles(UserRole.FINANCE, UserRole.OWNER)
+  async resolveReviewFlag(
+    @Param('id') id: string,
+    @CurrentUser('orgId') orgId: string,
+    @CurrentUser('id') userId: string,
+    @Body() dto: ResolveReviewFlagDto,
+  ) {
+    return this.revenueService.resolveReviewFlag(orgId, userId, id, dto);
   }
 }
