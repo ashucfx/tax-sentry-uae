@@ -42,7 +42,11 @@ CREATE TABLE IF NOT EXISTS "support_requests" (
 CREATE INDEX IF NOT EXISTS "support_requests_orgId_status_idx" ON "support_requests"("orgId", "status");
 CREATE INDEX IF NOT EXISTS "support_requests_orgId_createdAt_idx" ON "support_requests"("orgId", "createdAt");
 
--- Foreign key
-ALTER TABLE "support_requests"
-  ADD CONSTRAINT "support_requests_orgId_fkey"
-  FOREIGN KEY ("orgId") REFERENCES "organizations"("id") ON DELETE CASCADE;
+-- Foreign key (idempotent — skip if constraint already exists)
+DO $$ BEGIN
+  ALTER TABLE "support_requests"
+    ADD CONSTRAINT "support_requests_orgId_fkey"
+    FOREIGN KEY ("orgId") REFERENCES "organizations"("id") ON DELETE CASCADE;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
