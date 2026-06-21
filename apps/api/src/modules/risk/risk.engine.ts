@@ -7,11 +7,12 @@
  * INVARIANT: Improving substance NEVER lowers score (monotonicity)
  */
 
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { DeMinimisEngine, DeMinimisBreakdown } from '../deminimis/deminimis.engine';
 import Decimal from 'decimal.js';
+import { SimulateRiskDto } from './dto/simulate-risk.dto';
 
 export type RiskBand = 'GREEN' | 'AMBER' | 'RED';
 
@@ -477,6 +478,229 @@ export class RiskEngine {
       }
     }
     this.logger.log('Finished weekly risk snapshots.');
+  }
+
+  async getRiskBreakdown(orgId: string, component: string) {
+    const validComponents = ['deMinimis', 'substance', 'classification', 'relatedParty', 'auditReadiness'];
+    if (!validComponents.includes(component)) {
+      throw new BadRequestException(
+        `Invalid component. Must be one of: ${validComponents.join(', ')}`,
+      );
+    }
+
+    const snapshot = await this.prisma.riskSnapshot.findFirst({
+      where: { orgId },
+      orderBy: { snapshotDate: 'desc' },
+    });
+
+    if (!snapshot) throw new NotFoundException('No risk snapshot found for this organisation');
+
+    const breakdown = snapshot.breakdownJson as Record<string, any>;
+
+    const componentMap: Record<string, string> = {
+      deMinimis: 'deMinimis',
+      substance: 'substance',
+      classification: 'classificationConfidence',
+      relatedParty: 'relatedParty',
+      auditReadiness: 'auditReadiness',
+    };
+
+    const snapshotKey = componentMap[component];
+    const componentData = breakdown[snapshotKey] ?? null;
+
+    let contributingTransactions: any[] = [];
+
+    const period = await this.prisma.taxPeriod.findFirst({
+      where: { orgId, status: 'OPEN' },
+      orderBy: { startDate: 'desc' },
+    });
+
+    if (period) {
+      if (component === 'classification') {
+        contributingTransactions = await this.prisma.revenueTransaction.findMany({
+          where: { orgId, taxPeriodId: period.id, classification: 'NQI', isDeleted: false },
+          orderBy: { amountAed: 'desc' },
+          take: 5,
+          select: {
+            id: true,
+            date: true,
+            amountAed: true,
+            counterparty: true,
+            counterpartyType: true,
+            classification: true,
+            description: true,
+            invoiceNo: true,
+          },
+        });
+      } else if (component === 'relatedParty') {
+        contributingTransactions = await this.prisma.revenueTransaction.findMany({
+          where: {
+            orgId,
+            taxPeriodId: period.id,
+            counterpartyType: 'RELATED',
+            isDeleted: false,
+            overrides: { none: {} },
+          },
+          orderBy: { amountAed: 'desc' },
+          take: 5,
+          select: {
+            id: true,
+            date: true,
+            amountAed: true,
+            counterparty: true,
+            counterpartyType: true,
+            classification: true,
+            description: true,
+            invoiceNo: true,
+          },
+        });
+      }
+    }
+
+    return {
+      component,
+      snapshotDate: snapshot.snapshotDate,
+      overallScore: snapshot.score,
+      componentData,
+      contributingTransactions,
+    };
+  }
+
+  async simulateRisk(orgId: string, dto: SimulateRiskDto) {
+    const period = await this.prisma.taxPeriod.findFirst({
+      where: { orgId, status: 'OPEN' },
+      orderBy: { startDate: 'desc' },
+    });
+
+    if (!period) throw new NotFoundException('No open tax period found');
+
+    const priorSnapshot = await this.prisma.riskSnapshot.findFirst({
+      where: { orgId },
+      orderBy: { snapshotDate: 'desc' },
+    });
+
+    const reclassifyIds = dto.reclassifyTransactionIds ?? [];
+    let nqiAdjustment = new Decimal(0);
+    let qiAdjustment = new Decimal(0);
+
+    if (reclassifyIds.length > 0) {
+      const txns = await this.prisma.revenueTransaction.findMany({
+        where: {
+          id: { in: reclassifyIds },
+          orgId,
+          taxPeriodId: period.id,
+          isDeleted: false,
+        },
+        select: { id: true, amountAed: true, classification: true },
+      });
+
+      for (const txn of txns) {
+        if (txn.classification === 'NQI') {
+          nqiAdjustment = nqiAdjustment.minus(new Decimal(txn.amountAed.toString()));
+          qiAdjustment = qiAdjustment.plus(new Decimal(txn.amountAed.toString()));
+        }
+      }
+    }
+
+    const aggregates = await this.prisma.revenueTransaction.groupBy({
+      by: ['classification'],
+      where: { orgId, taxPeriodId: period.id, isDeleted: false },
+      _sum: { amountAed: true },
+    });
+
+    let baseNqi = new Decimal(0);
+    let baseTotal = new Decimal(0);
+    for (const row of aggregates) {
+      const amount = new Decimal(row._sum.amountAed?.toString() ?? '0');
+      if (row.classification === 'NQI') baseNqi = baseNqi.plus(amount);
+      if (row.classification === 'QI' || row.classification === 'NQI') {
+        baseTotal = baseTotal.plus(amount);
+      }
+    }
+
+    const simulatedNqi = baseNqi
+      .plus(nqiAdjustment)
+      .plus(new Decimal(dto.additionalNqiRevenue ?? 0));
+    const simulatedTotal = baseTotal
+      .plus(qiAdjustment)
+      .plus(new Decimal(dto.additionalRevenue ?? 0))
+      .plus(new Decimal(dto.additionalNqiRevenue ?? 0));
+
+    const DE_MINIMIS_ABS = new Decimal(5_000_000);
+    const DE_MINIMIS_PCT = new Decimal(5);
+
+    let deMinimisSimPenalty = 0;
+    if (!simulatedTotal.isZero()) {
+      const nqrPct = simulatedNqi.div(simulatedTotal).mul(100);
+      const effectiveThreshold = Decimal.min(DE_MINIMIS_ABS, simulatedTotal.mul(DE_MINIMIS_PCT).div(100));
+      const ratio = effectiveThreshold.isZero() ? new Decimal(0) : simulatedNqi.div(effectiveThreshold);
+      deMinimisSimPenalty = Math.min(40, Math.round(ratio.mul(40).toNumber()));
+    }
+
+    const [substanceData, auditData, relatedPartyData, classificationData] = await Promise.all([
+      this.computeSubstanceComponent(orgId),
+      this.computeAuditReadinessComponent(orgId),
+      this.computeRelatedPartyComponent(orgId, period.id),
+      this.computeClassificationConfidenceComponentSimulated(orgId, period.id, reclassifyIds),
+    ]);
+
+    const totalPenalty =
+      deMinimisSimPenalty +
+      substanceData.penalty +
+      auditData.penalty +
+      relatedPartyData.penalty +
+      classificationData.penalty;
+
+    const simulatedScore = Math.max(0, Math.min(100, 100 - totalPenalty));
+    const currentScore = priorSnapshot?.score ?? null;
+
+    return {
+      simulatedScore,
+      currentScore,
+      delta: currentScore !== null ? simulatedScore - currentScore : null,
+      band: this.getBand(simulatedScore),
+      bandLabel: this.getBandLabel(this.getBand(simulatedScore)),
+      components: {
+        deMinimis: { penalty: deMinimisSimPenalty, score: 40 - deMinimisSimPenalty },
+        substance: { penalty: substanceData.penalty, score: 25 - substanceData.penalty },
+        auditReadiness: { penalty: auditData.penalty, score: 15 - auditData.penalty },
+        relatedParty: { penalty: relatedPartyData.penalty, score: 10 - relatedPartyData.penalty },
+        classificationConfidence: { penalty: classificationData.penalty, score: 10 - classificationData.penalty },
+      },
+      hypotheticals: {
+        additionalRevenue: dto.additionalRevenue ?? 0,
+        additionalNqiRevenue: dto.additionalNqiRevenue ?? 0,
+        reclassifiedTransactionCount: reclassifyIds.length,
+      },
+    };
+  }
+
+  private async computeClassificationConfidenceComponentSimulated(
+    orgId: string,
+    taxPeriodId: string,
+    excludeFromUnclassified: string[],
+  ): Promise<{ penalty: number; reason: string }> {
+    const where: any = {
+      orgId,
+      taxPeriodId,
+      classification: 'UNCLASSIFIED',
+      isDeleted: false,
+    };
+
+    if (excludeFromUnclassified.length > 0) {
+      where.id = { notIn: excludeFromUnclassified };
+    }
+
+    const unclassifiedCount = await this.prisma.revenueTransaction.count({ where });
+    const penalty = Math.min(10, Math.round(unclassifiedCount * 0.5));
+
+    return {
+      penalty,
+      reason:
+        unclassifiedCount === 0
+          ? 'All transactions are classified.'
+          : `${unclassifiedCount} unclassified transaction(s) — review required.`,
+    };
   }
 
   async createSnapshotForOrg(orgId: string) {

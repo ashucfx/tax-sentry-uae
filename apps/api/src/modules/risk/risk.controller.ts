@@ -1,11 +1,11 @@
-import { Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Query, Param, Body, UseGuards, NotFoundException } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { RiskEngine } from './risk.engine';
 import { PrismaService } from '../prisma/prisma.service';
-import { NotFoundException } from '@nestjs/common';
+import { SimulateRiskDto } from './dto/simulate-risk.dto';
 
 @ApiTags('risk')
 @ApiBearerAuth()
@@ -72,5 +72,21 @@ export class RiskController {
     });
   }
 
+  @Get('score/breakdown/:component')
+  @ApiOperation({ summary: 'Drill down on a specific risk component with contributing transactions' })
+  async getBreakdown(
+    @CurrentUser('orgId') orgId: string,
+    @Param('component') component: string,
+  ) {
+    return this.riskEngine.getRiskBreakdown(orgId, component);
+  }
 
+  @Post('simulate')
+  @ApiOperation({ summary: 'Simulate risk score with hypothetical data changes — does not persist' })
+  async simulate(
+    @CurrentUser('orgId') orgId: string,
+    @Body() dto: SimulateRiskDto,
+  ) {
+    return this.riskEngine.simulateRisk(orgId, dto);
+  }
 }
