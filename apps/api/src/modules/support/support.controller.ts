@@ -33,6 +33,13 @@ class SubmitSupportDto {
   priority?: string;
 }
 
+class AddCommentDto {
+  @IsString()
+  @MinLength(5)
+  @MaxLength(2000)
+  body: string;
+}
+
 @ApiTags('support')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
@@ -64,5 +71,25 @@ export class SupportController {
     @Param('id') id: string,
   ) {
     return { data: await this.supportService.getRequest(orgId, id) };
+  }
+
+  @Post('requests/:id/comments')
+  @ApiOperation({ summary: 'Add a comment (customer reply) to a support request' })
+  async addComment(
+    @CurrentUser('orgId') orgId: string,
+    @CurrentUser('id') userId: string,
+    @Param('id') id: string,
+    @Body() dto: AddCommentDto,
+  ) {
+    return { data: await this.supportService.addComment(orgId, userId, id, dto.body) };
+  }
+
+  @Get('requests/:id/comments')
+  @ApiOperation({ summary: 'List comments for a support request' })
+  async getComments(
+    @CurrentUser('orgId') orgId: string,
+    @Param('id') id: string,
+  ) {
+    return { data: await this.supportService.getComments(orgId, id) };
   }
 }

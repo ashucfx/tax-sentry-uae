@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { SupportCategory } from '@prisma/client';
 
@@ -70,5 +70,65 @@ export class SupportService {
     });
     if (!req) throw new NotFoundException('Support request not found');
     return req;
+  }
+
+  async addComment(
+    orgId: string,
+    userId: string | undefined,
+    requestId: string,
+    body: string,
+  ) {
+    // Validate the ticket belongs to this org
+    const request = await this.prisma.supportRequest.findFirst({
+      where: { id: requestId, orgId },
+      select: { id: true, firstResponseAt: true, status: true },
+    });
+    if (!request) throw new NotFoundException('Support request not found');
+
+    if (request.status === 'CLOSED' || request.status === 'RESOLVED') {
+      throw new BadRequestException('Cannot add comments to a closed or resolved request');
+    }
+
+    const comment = await this.prisma.supportComment.create({
+      data: {
+        requestId,
+        orgId,
+        userId: userId ?? null,
+        isInternal: false,
+        body,
+      },
+    });
+
+    // Set firstResponseAt if this is the first reply
+    if (!request.firstResponseAt) {
+      await this.prisma.supportRequest.update({
+        where: { id: requestId },
+        data: { firstResponseAt: comment.createdAt },
+      }).catch(() => {});
+    }
+
+    return comment;
+  }
+
+  async getComments(orgId: string, requestId: string) {
+    // Verify ticket belongs to org
+    const request = await this.prisma.supportRequest.findFirst({
+      where: { id: requestId, orgId },
+      select: { id: true },
+    });
+    if (!request) throw new NotFoundException('Support request not found');
+
+    return this.prisma.supportComment.findMany({
+      where: { requestId, orgId, isInternal: false },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        requestId: true,
+        userId: true,
+        body: true,
+        attachments: true,
+        createdAt: true,
+      },
+    });
   }
 }
