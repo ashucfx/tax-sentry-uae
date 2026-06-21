@@ -23,6 +23,9 @@ import { SubscriptionGuard } from './common/guards/subscription.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { QueuesModule } from './common/queues/queues.module';
 import { IntegrationsModule } from './modules/integrations/integrations.module';
+import { TaxPeriodsModule } from './modules/tax-periods/tax-periods.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
+import { ApiKeysModule } from './modules/api-keys/api-keys.module';
 
 @Module({
   imports: [
@@ -48,6 +51,7 @@ import { IntegrationsModule } from './modules/integrations/integrations.module';
     AuditModule,
     AuthModule,
     OrganizationsModule,
+    TaxPeriodsModule,
     RevenueModule,
     ClassificationModule,
     DeMinimisModule,
@@ -58,6 +62,8 @@ import { IntegrationsModule } from './modules/integrations/integrations.module';
     BillingModule,
     LeadsModule,
     SupportModule,
+    NotificationsModule,
+    ApiKeysModule,
   ],
   providers: [
     // Rate limiting — must be first so brute-force attacks are blocked before any auth work
